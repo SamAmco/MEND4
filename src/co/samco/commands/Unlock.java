@@ -4,12 +4,10 @@ import java.awt.Dimension;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.WindowEvent;
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.security.InvalidKeyException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -38,6 +36,8 @@ import org.xml.sax.SAXException;
 import org.w3c.dom.Node;
 
 import co.samco.mend.ColorSchemeData;
+import co.samco.mend.Command;
+import co.samco.mend.InputBoxListener;
 
 public class Unlock extends Command implements InputBoxListener
 {
@@ -52,8 +52,8 @@ public class Unlock extends Command implements InputBoxListener
 	@Override
 	public void printUsage() 
 	{
-		super.printUsage();
-		System.err.println("mend unlock");
+		System.out.print("Usage: "); 
+		System.out.println("mend unlock");
 	}
 
 	@Override
@@ -61,99 +61,82 @@ public class Unlock extends Command implements InputBoxListener
 	{
 		try 
 		{
-			//If there is already a prKey.dex file existent, just shred it and unlock again.
-			File existingKey = new File("prKey.dec");
-			if (existingKey.exists())
-			{
-				System.out.println("Removing existing prKey.dec");
-				System.out.println();
-				Process tr = Runtime.getRuntime().exec(new String[]{"shred", "-u", "prKey.dec"});
-				BufferedReader rd = new BufferedReader(new InputStreamReader(tr.getInputStream()));
-				String s = rd.readLine();
-				while (s != null)
-				{
-					System.out.println(s);
-					s = rd.readLine();
-				}
-			}
+			//If there is already a prKey.dec file existent, just shred it and unlock again.
+			if (new File(CONFIG_PATH + PRIVATE_KEY_FILE_DEC).exists())
+				new Lock().execute(new ArrayList<String>());
 			
 			//Check that the user has an options file.
-			File f = new File("Settings.xml");
-			if (f.exists())
+			File f = new File(CONFIG_PATH + SETTINGS_FILE);
+			if (!f.exists())
 			{
-				//Check that the options file contains a password hash.
-				DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
-				DocumentBuilder dBuilder;
-				dBuilder = dbFactory.newDocumentBuilder();
-				
-				Document doc = dBuilder.parse(f);
-				doc.getDocumentElement().normalize();
-
-				//Check that the user has an encrypted private key.
-				NodeList nList = doc.getElementsByTagName("passhash");
-				
-				if (nList.getLength() <= 0)
-				{
-					System.err.println("Could not find your passhash, please ensure your options file is configured correctly.");
-					return;
-				}
-				else if(nList.getLength() > 1)
-				{
-					System.err.println("Invalid Options file (contains multiple definitions for 'passhash').");
-					return;
-				}
-				else
-				{
-					Node node = nList.item(0);
-					if (node.getNodeType() == Node.ELEMENT_NODE)
-					{
-						Element el = (Element)node;
-						String hash = el.getAttribute("value");
-						
-						//Check that the users entered password hash matches the stored hash.
-						byte[] bytesOfFileHash = Base64.decodeBase64(hash);
-
-						MessageDigest md = MessageDigest.getInstance("MD5");
-						String passwordString = new String(password);
-						byte[] inputDigest = md.digest(passwordString.getBytes());
-						
-						if (Arrays.equals(bytesOfFileHash, inputDigest))
-						{
-							//Decrypt the private key with the password.
-							MessageDigest sha = MessageDigest.getInstance("SHA-1");
-					        byte[] key = sha.digest(passwordString.getBytes());
-					        
-					        SecretKeySpec secretKeySpec = new SecretKeySpec(Arrays.copyOf(key, 16), "AES");
-					        Cipher cipher = Cipher.getInstance("AES");
-					        cipher.init(Cipher.DECRYPT_MODE, secretKeySpec);
-					        
-					        byte[] encryptedPrivateKey = IOUtils.toByteArray(new FileInputStream(new File("prKey.enc")));
-					        byte[] decryptedPrivateKey = cipher.doFinal(encryptedPrivateKey);
-					        
-					        //Write the decrypted private key to a file
-					        File privateKeyFile = new File("prKey.dec");
-					        FileOutputStream fos = new FileOutputStream(privateKeyFile);
-					        fos.write(decryptedPrivateKey);
-					        fos.flush();
-					        fos.close();
-							
-							System.out.println("MEND Unlocked.");
-						}
-						else
-						{
-							System.err.println("Unlock Failed: Incorrect password.");
-						}
-					}
-					else
-					{
-						System.err.println("Invalid Options file. passhash is not a valid element node.");
-					}
-				}
+				System.err.println("Could not find " + SETTINGS_FILE);
+				return;
 			}
-			else
+
+			//Check that the options file contains a password hash.
+			DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+			DocumentBuilder dBuilder;
+			dBuilder = dbFactory.newDocumentBuilder();
+			
+			Document doc = dBuilder.parse(f);
+			doc.getDocumentElement().normalize();
+
+			//Check that the user has an encrypted private key.
+			NodeList nList = doc.getElementsByTagName("passhash");
+			
+			if (nList.getLength() <= 0)
 			{
-				System.err.println("Could not find Settings.xml");
+				System.err.println("Could not find your passhash, please ensure your options file is configured correctly.");
+				return;
 			}
+			if(nList.getLength() > 1)
+			{
+				System.err.println("Invalid Options file (contains multiple definitions for 'passhash').");
+				return;
+			}
+
+			Node node = nList.item(0);
+			if (node.getNodeType() != Node.ELEMENT_NODE)
+			{
+				System.err.println("Invalid Options file. passhash is not a valid element node.");
+				return;
+			}
+			
+			Element el = (Element)node;
+			String hash = el.getAttribute("value");
+			
+			//Check that the users entered password hash matches the stored hash.
+			byte[] bytesOfFileHash = Base64.decodeBase64(hash);
+
+			MessageDigest md = MessageDigest.getInstance("MD5");
+			String passwordString = new String(password);
+			byte[] inputDigest = md.digest(passwordString.getBytes());
+			
+			if (!Arrays.equals(bytesOfFileHash, inputDigest))
+			{
+				System.err.println("Unlock Failed: Incorrect password.");
+				return;
+			}
+			
+			//Decrypt the private key with the password.
+			MessageDigest sha = MessageDigest.getInstance("SHA-1");
+	        byte[] key = sha.digest(passwordString.getBytes());
+	        
+	        SecretKeySpec secretKeySpec = new SecretKeySpec(Arrays.copyOf(key, 16), "AES");
+	        Cipher cipher = Cipher.getInstance("AES");
+	        cipher.init(Cipher.DECRYPT_MODE, secretKeySpec);
+	        
+	        byte[] encryptedPrivateKey = IOUtils.toByteArray(new FileInputStream(new File(CONFIG_PATH + PRIVATE_KEY_FILE_ENC)));
+	        byte[] decryptedPrivateKey = cipher.doFinal(encryptedPrivateKey);
+	        
+	        //Write the decrypted private key to a file
+			File privateKeyFile = new File(CONFIG_PATH + PRIVATE_KEY_FILE_DEC);
+	        FileOutputStream fos = new FileOutputStream(privateKeyFile);
+	        fos.write(decryptedPrivateKey);
+	        fos.flush();
+	        fos.close();
+			
+			System.out.println("MEND Unlocked.");
 		} 
 		catch (ParserConfigurationException e) 
 		{
@@ -233,6 +216,13 @@ public class Unlock extends Command implements InputBoxListener
 
 		@Override
 		public void keyTyped(KeyEvent e) {}
+	}
+
+	
+	@Override
+	public void printDescription() 
+	{
+		System.err.println("To decrypt the private key.");	
 	}
 
 }

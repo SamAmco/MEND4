@@ -6,7 +6,8 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import co.samco.commands.Command;
+import co.samco.commands.Lock;
+import co.samco.commands.SetProperty;
 import co.samco.commands.SetupMend;
 import co.samco.commands.Unlock;
 
@@ -17,20 +18,30 @@ public class Main
 	{
 		commands.put("unlock", Unlock.class);
 		commands.put("setup", SetupMend.class);
+		commands.put("lock", Lock.class);
+		commands.put("set", SetProperty.class);
 	}
 	
 	public static void main(String[] args)
 	{		
-		//Map<String, String> env = System.getenv();
-		
-		Iterator<Entry<String, Class<?>>> it = commands.entrySet().iterator();
-		while (it.hasNext())
+		try
 		{
-			Entry<String, Class<?>> entry = it.next();
-			if (entry.getKey().equals(args[0]))
+			if (args.length < 1)
 			{
-				try 
+				System.err.println("mend requires at least one argument. ");
+				System.err.println();
+				printUsage();
+				return;
+			}
+			
+			Iterator<Entry<String, Class<?>>> it = commands.entrySet().iterator();
+			boolean found = false;
+			while (it.hasNext())
+			{
+				Entry<String, Class<?>> entry = it.next();
+				if (entry.getKey().equals(args[0]))
 				{
+					found = true;
 					ArrayList<String> arguments = new ArrayList<String>();
 					
 					for (int i = 1; i < args.length; i++)
@@ -41,12 +52,33 @@ public class Main
 					Command c = ((Command)entry.getValue().newInstance());
 					c.execute(arguments);
 				}
-				catch (InstantiationException | IllegalAccessException e) 
-				{
-					e.printStackTrace();
-				}
+			}
+			
+			if (!found)
+			{
+				System.err.println("Command not found.");
+				System.err.println();
+				printUsage();
 			}
 		}
+		catch (InstantiationException | IllegalAccessException e) 
+		{
+			System.err.println(e.getMessage());
+		}
 	}
-
+	
+	private static void printUsage() 
+			throws InstantiationException, IllegalAccessException
+	{
+		System.err.println("Usage: mend <command> [<args>]");
+		System.err.println();
+		System.err.println("Commands:");
+		Iterator<Entry<String, Class<?>>> it = commands.entrySet().iterator();
+		while (it.hasNext())
+		{
+			Entry<String, Class<?>> entry = it.next();
+			System.err.print("\t" + entry.getKey() + "\t");
+			((Command)entry.getValue().newInstance()).printDescription();
+		}
+	}
 }

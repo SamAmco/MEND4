@@ -30,6 +30,8 @@ import javax.xml.transform.stream.StreamResult;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
+import co.samco.mend.Command;
+
 import org.apache.commons.codec.binary.Base64;
 
 public class SetupMend extends Command
@@ -39,12 +41,21 @@ public class SetupMend extends Command
 	public void execute(ArrayList<String> args) 
 	{
 		if (args.size() != 1)
+		{
+			System.err.println("Please provide a password.");
 			printUsage();
+			return;
+		}
 		
 		String password = args.get(0);
 		
+		//TODO What if they're already set up? Maybe the user should be warned.
 		try 
-		{	
+		{
+			//Ensure the settings path exists
+			System.out.println("Creating Directory: " + CONFIG_PATH);
+			new File(CONFIG_PATH).mkdirs();
+			
 			//Generate an RSA key pair.
 			KeyPairGenerator keyGen;
 			keyGen = KeyPairGenerator.getInstance("RSA");
@@ -65,12 +76,12 @@ public class SetupMend extends Command
 	        
 	        
 	        //Write the encrypted private key to a file
-	        File privateKeyFile = new File("prKey.enc");
+	        File privateKeyFile = new File(CONFIG_PATH + PRIVATE_KEY_FILE_ENC);
+	        System.out.println("Creating File: " + privateKeyFile.getAbsolutePath());
 	        FileOutputStream fos = new FileOutputStream(privateKeyFile);
 	        fos.write(encryptedPrivateKey);
 	        fos.flush();
 	        fos.close();
-	        
 	        
 			//Generate a settings file.
 	        DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
@@ -98,14 +109,15 @@ public class SetupMend extends Command
 			
 			
 			//Write the settings file to disk.
-			File settingsFile = new File("Settings.xml");
+			File settingsFile = new File(CONFIG_PATH + SETTINGS_FILE);
+	        System.out.println("Creating File: " + settingsFile.getAbsolutePath());
 			TransformerFactory transformerFactory = TransformerFactory.newInstance();
 			Transformer transformer = transformerFactory.newTransformer();
 			DOMSource source = new DOMSource(doc);
 			StreamResult result = new StreamResult(settingsFile);
 
 			transformer.transform(source, result);
-			System.out.println("Successfully set up.");
+			System.out.println("MEND Successfully set up.");
 	        
 		} 
 		catch (NoSuchAlgorithmException e) 
@@ -154,8 +166,15 @@ public class SetupMend extends Command
 	@Override
 	public void printUsage()
 	{
-		super.printUsage();
-		System.err.println("mend setup <password>");
+		System.err.print("Usage: "); 
+		System.err.println("mend setup [password]");
+	}
+
+	
+	@Override
+	public void printDescription() 
+	{
+		System.err.println("Run this command first. It creates some basic config necessary.");	
 	}
 	
 }

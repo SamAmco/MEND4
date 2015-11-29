@@ -1,4 +1,4 @@
-package co.samco.commands;
+package co.samco.mend;
 
 public interface InputBoxListener 
 {
