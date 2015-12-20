@@ -1,9 +1,5 @@
 package co.samco.commands;
 
-import java.awt.Dimension;
-import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
-import java.awt.event.WindowEvent;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -13,16 +9,12 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.SecretKeySpec;
-import javax.swing.BorderFactory;
-import javax.swing.JFrame;
-import javax.swing.JPasswordField;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -35,16 +27,17 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 import org.w3c.dom.Node;
 
-import co.samco.mend.ColorSchemeData;
 import co.samco.mend.Command;
+import co.samco.mend.InputBox;
 import co.samco.mend.InputBoxListener;
 
 public class Unlock extends Command implements InputBoxListener
 {
+	InputBox inputBox;
 	@Override
 	public void execute(ArrayList<String> args) 
 	{
-		InputBox inputBox = new InputBox();
+		inputBox = new InputBox(false, true, 200, 25);
 		inputBox.addListener(this);
 		inputBox.setVisible(true);
 	}
@@ -59,6 +52,7 @@ public class Unlock extends Command implements InputBoxListener
 	@Override
 	public void OnEnter(char[] password) 
 	{
+		inputBox.close();
 		try 
 		{
 			//If there is already a prKey.dec file existent, just shred it and unlock again.
@@ -75,8 +69,7 @@ public class Unlock extends Command implements InputBoxListener
 
 			//Check that the options file contains a password hash.
 			DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
-			DocumentBuilder dBuilder;
-			dBuilder = dbFactory.newDocumentBuilder();
+			DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
 			
 			Document doc = dBuilder.parse(f);
 			doc.getDocumentElement().normalize();
@@ -171,58 +164,16 @@ public class Unlock extends Command implements InputBoxListener
 		}
 	}
 	
-	private class InputBox extends JFrame implements KeyListener
-	{
-		private static final long serialVersionUID = -7214084221385969252L;
-		
-		JPasswordField passwordField;
-		List<InputBoxListener> listeners = new ArrayList<InputBoxListener>();
-		
-		public InputBox()
-		{
-			setSize(200,25);
-			this.setUndecorated(true);
-			setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );
-			
-			passwordField = new JPasswordField();
-			passwordField.setPreferredSize(new Dimension(50, 25));
-			passwordField.setBackground(ColorSchemeData.getColor2());
-			passwordField.setFont(ColorSchemeData.getConsoleFont());
-			passwordField.setBorder(BorderFactory.createLineBorder(ColorSchemeData.getColor1()));
-			passwordField.addKeyListener(this);
-			this.add(passwordField);
-			
-		}
-		
-		public void addListener(InputBoxListener l)
-		{
-			listeners.add(l);
-		}
-
-		@Override
-		public void keyPressed(KeyEvent arg0) {}
-
-		@Override
-		public void keyReleased(KeyEvent e) 
-		{
-			if (e.getKeyCode() == KeyEvent.VK_ENTER)
-			{
-				for (InputBoxListener l : listeners)
-					l.OnEnter(passwordField.getPassword());
-				
-				dispatchEvent(new WindowEvent(this, WindowEvent.WINDOW_CLOSING));
-			}
-		}
-
-		@Override
-		public void keyTyped(KeyEvent e) {}
-	}
-
-	
 	@Override
 	public void printDescription() 
 	{
 		System.err.println("To decrypt the private key.");	
 	}
+
+	@Override
+	public void OnShiftEnter(char[] text) {}
+
+	@Override
+	public void OnCtrlEnter(char[] text) {}
 
 }

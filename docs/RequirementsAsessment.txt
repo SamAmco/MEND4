@@ -1,0 +1,29 @@
+
+
+
+REQUIREMENTS
+
+Entrys must be encrypted
+
+Entrys should be inserted in O(1)
+
+Entrys should be sorted by date/time
+
+Logs should be decrypted in O(n)
+
+Logs should be mergable
+
+It should never be necessary to read an entire log file into memory at once.
+
+
+
+THOUGHTS
+
+In order for entries to be inserted in O(1), most likely they will need to be appended to the end of the file. However, in order for logs to be decrypted in O(n), most likely the entries will need to have been added in a sorted order. So we need to pick one or the other really, unless sorting was done via a seperate process all together.
+
+It is probably only ever necessary to do any sorting after merging.
+
+
+
+CONCLUSIONS
+Use the current method for reading and writing logs, but replace the merging algorithm with an external merge sort.
