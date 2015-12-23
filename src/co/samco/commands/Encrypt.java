@@ -13,8 +13,13 @@ public class Encrypt extends Command implements InputBoxListener
 	@Override
 	public void execute(ArrayList<String> args) 
 	{
-		//TODO allow people to input the data to encrypt straight in the standard input stream (maybe using -d)
 		//TODO allow file encryption
+		
+		if (args.contains("-d"))
+		{
+			encryptTextToLog(args.get(args.indexOf("-d")+1).toCharArray());
+			return;
+		}
 		
 		if (args.size() > 0)
 		{
@@ -55,7 +60,7 @@ public class Encrypt extends Command implements InputBoxListener
 		inputBox.clear();
 	}
 	
-	private void encryptTextToLog()
+	private void encryptTextToLog(char[] text)
 	{
 		
 	}

@@ -7,6 +7,7 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 
 import co.samco.mend.Command;
+import co.samco.mend.Config;
 
 public class Lock extends Command
 {
@@ -16,14 +17,14 @@ public class Lock extends Command
 		try
 		{
 			//If there is already a prKey.dex file existent, just shred it and unlock again.
-			File privateKeyFile = new File(CONFIG_PATH + "prKey.dec");
+			File privateKeyFile = new File(Config.CONFIG_PATH + "prKey.dec");
 			if (!privateKeyFile.exists())
 			{
 				System.err.println("MEND did not appear to be unlocked.");
 			}
 			System.out.println("Shredding prKey.dec");
 			System.out.println();
-			Process tr = Runtime.getRuntime().exec(new String[]{"shred", "-u", CONFIG_PATH + "prKey.dec"});
+			Process tr = Runtime.getRuntime().exec(new String[]{"shred", "-u", Config.CONFIG_PATH + "prKey.dec"});
 			BufferedReader rd = new BufferedReader(new InputStreamReader(tr.getInputStream()));
 			String s = rd.readLine();
 			while (s != null)

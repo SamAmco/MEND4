@@ -17,20 +17,16 @@ import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.SecretKeySpec;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerConfigurationException;
 import javax.xml.transform.TransformerException;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
 
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
+import org.xml.sax.SAXException;
 
 import co.samco.mend.Command;
+import co.samco.mend.Config;
+import co.samco.mend.Settings;
+import co.samco.mend.Settings.CorruptSettingsException;
 
 import org.apache.commons.codec.binary.Base64;
 
@@ -53,8 +49,8 @@ public class SetupMend extends Command
 		try 
 		{
 			//Ensure the settings path exists
-			System.out.println("Creating Directory: " + CONFIG_PATH);
-			new File(CONFIG_PATH).mkdirs();
+			System.out.println("Creating Directory: " + Config.CONFIG_PATH);
+			new File(Config.CONFIG_PATH).mkdirs();
 			
 			//Generate an RSA key pair.
 			KeyPairGenerator keyGen;
@@ -76,47 +72,22 @@ public class SetupMend extends Command
 	        
 	        
 	        //Write the encrypted private key to a file
-	        File privateKeyFile = new File(CONFIG_PATH + PRIVATE_KEY_FILE_ENC);
+	        File privateKeyFile = new File(Config.CONFIG_PATH + Config.PRIVATE_KEY_FILE_ENC);
 	        System.out.println("Creating File: " + privateKeyFile.getAbsolutePath());
 	        FileOutputStream fos = new FileOutputStream(privateKeyFile);
 	        fos.write(encryptedPrivateKey);
 	        fos.flush();
 	        fos.close();
 	        
-			//Generate a settings file.
-	        DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
-			DocumentBuilder docBuilder = docFactory.newDocumentBuilder();
-	        
-			Document doc = docBuilder.newDocument();
-			Element rootElement = doc.createElement("settings");
-			doc.appendChild(rootElement);
-			
-			
 			//Add a passhash element to the options file containing the hash of the password.
 			MessageDigest md = MessageDigest.getInstance("MD5");
 			byte[] passwordMD5 = md.digest(password.getBytes());
 			String passwordMD5String = Base64.encodeBase64URLSafeString(passwordMD5);
+			Settings.instance().setValue("passhash", passwordMD5String);
 			
-			Element passHash = doc.createElement("passhash");
-			passHash.setAttribute("value", passwordMD5String);
-			rootElement.appendChild(passHash);
+			//Add a publickey element to the settings file containing the public key.
+			Settings.instance().setValue("publickey", Base64.encodeBase64URLSafeString(keyPair.getPublic().getEncoded()));
 			
-			
-			//Add a publickey element to the options file containing the public key.
-			Element publicKey = doc.createElement("publickey");
-			publicKey.setAttribute("value", Base64.encodeBase64URLSafeString(keyPair.getPublic().getEncoded()));
-			rootElement.appendChild(publicKey);
-			
-			
-			//Write the settings file to disk.
-			File settingsFile = new File(CONFIG_PATH + SETTINGS_FILE);
-	        System.out.println("Creating File: " + settingsFile.getAbsolutePath());
-			TransformerFactory transformerFactory = TransformerFactory.newInstance();
-			Transformer transformer = transformerFactory.newTransformer();
-			DOMSource source = new DOMSource(doc);
-			StreamResult result = new StreamResult(settingsFile);
-
-			transformer.transform(source, result);
 			System.out.println("MEND Successfully set up.");
 	        
 		} 
@@ -159,6 +130,14 @@ public class SetupMend extends Command
 		catch (TransformerException e) 
 		{
 			System.err.println(e.getMessage());
+		} 
+		catch (SAXException e) 
+		{
+			System.err.println(e.getMessage());
+		} 
+		catch (CorruptSettingsException e) 
+		{
+			System.err.println(e.getMessage());
 		}
 		
 	}
@@ -169,7 +148,6 @@ public class SetupMend extends Command
 		System.err.print("Usage: "); 
 		System.err.println("mend setup [password]");
 	}
-
 	
 	@Override
 	public void printDescription() 

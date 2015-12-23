@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import co.samco.commands.Encrypt;
+import co.samco.commands.GetProperty;
 import co.samco.commands.Lock;
 import co.samco.commands.SetProperty;
 import co.samco.commands.SetupMend;
@@ -22,6 +23,7 @@ public class Main
 		commands.put("lock", Lock.class);
 		commands.put("set", SetProperty.class);
 		commands.put("enc", Encrypt.class);
+		commands.put("get", GetProperty.class);
 	}
 	
 	public static void main(String[] args)

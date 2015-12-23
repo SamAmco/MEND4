@@ -15,21 +15,18 @@ import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.SecretKeySpec;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.io.IOUtils;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
-import org.w3c.dom.Node;
 
 import co.samco.mend.Command;
+import co.samco.mend.Config;
 import co.samco.mend.InputBox;
 import co.samco.mend.InputBoxListener;
+import co.samco.mend.Settings;
+import co.samco.mend.Settings.CorruptSettingsException;
 
 public class Unlock extends Command implements InputBoxListener
 {
@@ -56,47 +53,16 @@ public class Unlock extends Command implements InputBoxListener
 		try 
 		{
 			//If there is already a prKey.dec file existent, just shred it and unlock again.
-			if (new File(CONFIG_PATH + PRIVATE_KEY_FILE_DEC).exists())
+			if (new File(Config.CONFIG_PATH + Config.PRIVATE_KEY_FILE_DEC).exists())
 				new Lock().execute(new ArrayList<String>());
 			
-			//Check that the user has an options file.
-			File f = new File(CONFIG_PATH + SETTINGS_FILE);
-			if (!f.exists())
-			{
-				System.err.println("Could not find " + SETTINGS_FILE);
-				return;
-			}
-
-			//Check that the options file contains a password hash.
-			DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
-			DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
-			
-			Document doc = dBuilder.parse(f);
-			doc.getDocumentElement().normalize();
-
 			//Check that the user has an encrypted private key.
-			NodeList nList = doc.getElementsByTagName("passhash");
-			
-			if (nList.getLength() <= 0)
+			String hash = Settings.instance().getValue("passhash");
+			if (hash == null)
 			{
-				System.err.println("Could not find your passhash, please ensure your options file is configured correctly.");
+				System.err.println("Could not find the hash of your password (passhash) in your settings file.");
 				return;
 			}
-			if(nList.getLength() > 1)
-			{
-				System.err.println("Invalid Options file (contains multiple definitions for 'passhash').");
-				return;
-			}
-
-			Node node = nList.item(0);
-			if (node.getNodeType() != Node.ELEMENT_NODE)
-			{
-				System.err.println("Invalid Options file. passhash is not a valid element node.");
-				return;
-			}
-			
-			Element el = (Element)node;
-			String hash = el.getAttribute("value");
 			
 			//Check that the users entered password hash matches the stored hash.
 			byte[] bytesOfFileHash = Base64.decodeBase64(hash);
@@ -119,11 +85,11 @@ public class Unlock extends Command implements InputBoxListener
 	        Cipher cipher = Cipher.getInstance("AES");
 	        cipher.init(Cipher.DECRYPT_MODE, secretKeySpec);
 	        
-	        byte[] encryptedPrivateKey = IOUtils.toByteArray(new FileInputStream(new File(CONFIG_PATH + PRIVATE_KEY_FILE_ENC)));
+	        byte[] encryptedPrivateKey = IOUtils.toByteArray(new FileInputStream(new File(Config.CONFIG_PATH + Config.PRIVATE_KEY_FILE_ENC)));
 	        byte[] decryptedPrivateKey = cipher.doFinal(encryptedPrivateKey);
 	        
 	        //Write the decrypted private key to a file
-			File privateKeyFile = new File(CONFIG_PATH + PRIVATE_KEY_FILE_DEC);
+			File privateKeyFile = new File(Config.CONFIG_PATH + Config.PRIVATE_KEY_FILE_DEC);
 	        FileOutputStream fos = new FileOutputStream(privateKeyFile);
 	        fos.write(decryptedPrivateKey);
 	        fos.flush();
@@ -135,7 +101,8 @@ public class Unlock extends Command implements InputBoxListener
 		{
 			System.err.println(e.getMessage());
 		} 
-		catch (SAXException e) {
+		catch (SAXException e) 
+		{
 			System.err.println(e.getMessage());
 		} 
 		catch (IOException e) 
@@ -159,6 +126,10 @@ public class Unlock extends Command implements InputBoxListener
 			System.err.println(e.getMessage());
 		} 
 		catch (BadPaddingException e) 
+		{
+			System.err.println(e.getMessage());
+		} 
+		catch (CorruptSettingsException e) 
 		{
 			System.err.println(e.getMessage());
 		}
