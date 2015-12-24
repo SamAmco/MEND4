@@ -28,7 +28,7 @@ public class SetProperty extends Command
 		String propertyName = args.get(0);
 		String value = args.get(1);
 		
-		if (true || propertyName.equals("logDir") || propertyName.equals("encDir") 
+		if (propertyName.equals("logDir") || propertyName.equals("encDir") 
 				|| propertyName.equals("decDir"))
 		{
 			try

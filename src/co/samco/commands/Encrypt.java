@@ -17,14 +17,12 @@ public class Encrypt extends Command implements InputBoxListener
 		
 		if (args.contains("-d"))
 		{
+			int dPos = args.indexOf("-d");
+			
+			if (args.size() < dPos + 1)
+				System.err.println("You must provide the text you wish to encrypt after the -d option");
+			
 			encryptTextToLog(args.get(args.indexOf("-d")+1).toCharArray());
-			return;
-		}
-		
-		if (args.size() > 0)
-		{
-			System.out.println("MEND does not recognize the given input.");
-			printUsage();
 			return;
 		}
 		
