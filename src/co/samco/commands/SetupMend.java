@@ -2,7 +2,6 @@ package co.samco.commands;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
@@ -59,7 +58,6 @@ public class SetupMend extends Command
 	        
 	        KeyPair keyPair = keyGen.genKeyPair();
 	        
-	        
 			//Encrypt the private key with the password.
 	        MessageDigest sha = MessageDigest.getInstance("SHA-1");
 	        byte[] key = sha.digest(password.getBytes());
@@ -68,17 +66,10 @@ public class SetupMend extends Command
 	        Cipher cipher = Cipher.getInstance("AES");
 	        cipher.init(Cipher.ENCRYPT_MODE, secretKeySpec);
 	        
+	        //Write the encrypted private key to settings
 	        byte[] encryptedPrivateKey = cipher.doFinal(keyPair.getPrivate().getEncoded());
-	        
-	        
-	        //Write the encrypted private key to a file
-	        File privateKeyFile = new File(Config.CONFIG_PATH + Config.PRIVATE_KEY_FILE_ENC);
-	        System.out.println("Creating File: " + privateKeyFile.getAbsolutePath());
-	        FileOutputStream fos = new FileOutputStream(privateKeyFile);
-	        fos.write(encryptedPrivateKey);
-	        fos.flush();
-	        fos.close();
-	        
+	        Settings.instance().setValue("privatekey", Base64.encodeBase64URLSafeString(encryptedPrivateKey));
+
 			//Add a passhash element to the options file containing the hash of the password.
 			MessageDigest md = MessageDigest.getInstance("MD5");
 			byte[] passwordMD5 = md.digest(password.getBytes());

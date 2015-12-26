@@ -1,7 +1,6 @@
 package co.samco.commands;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.security.InvalidKeyException;
@@ -18,7 +17,6 @@ import javax.crypto.spec.SecretKeySpec;
 import javax.xml.parsers.ParserConfigurationException;
 
 import org.apache.commons.codec.binary.Base64;
-import org.apache.commons.io.IOUtils;
 import org.xml.sax.SAXException;
 
 import co.samco.mend.Command;
@@ -85,7 +83,7 @@ public class Unlock extends Command implements InputBoxListener
 	        Cipher cipher = Cipher.getInstance("AES");
 	        cipher.init(Cipher.DECRYPT_MODE, secretKeySpec);
 	        
-	        byte[] encryptedPrivateKey = IOUtils.toByteArray(new FileInputStream(new File(Config.CONFIG_PATH + Config.PRIVATE_KEY_FILE_ENC)));
+	        byte[] encryptedPrivateKey = Base64.decodeBase64(Settings.instance().getValue("privatekey"));
 	        byte[] decryptedPrivateKey = cipher.doFinal(encryptedPrivateKey);
 	        
 	        //Write the decrypted private key to a file
@@ -148,9 +146,6 @@ public class Unlock extends Command implements InputBoxListener
 	public void OnCtrlEnter(char[] text) {}
 
 	@Override
-	public void OnEscape() 
-	{
-		inputBox.close();
-	}
+	public void OnEscape() {}
 
 }
