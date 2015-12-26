@@ -1,5 +1,7 @@
 package co.samco.commands;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
@@ -15,11 +17,13 @@ import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.TransformerException;
 
 import org.apache.commons.codec.binary.Base64;
 import org.xml.sax.SAXException;
 
 import co.samco.mend.Command;
+import co.samco.mend.Config;
 import co.samco.mend.InputBox;
 import co.samco.mend.InputBoxListener;
 import co.samco.mend.Settings;
@@ -70,6 +74,8 @@ public class Encrypt extends Command implements InputBoxListener
 	@Override
 	public void OnShiftEnter(char[] text) 
 	{
+		inputBox.clear();
+		encryptTextToLog(text);
 		inputBox.close();
 	}
 
@@ -77,6 +83,7 @@ public class Encrypt extends Command implements InputBoxListener
 	public void OnCtrlEnter(char[] text) 
 	{
 		inputBox.clear();
+		encryptTextToLog(text);
 	}
 	
 	private void encryptTextToLog(char[] text)
@@ -118,7 +125,27 @@ public class Encrypt extends Command implements InputBoxListener
             //add the encrypted text to the byte block
            	output.put(cipherText);
            	
-           	//TODO append the byte block to the current log
+           	//append the byte block to the current log
+           	String currentLogName = Settings.instance().getValue("currentlog");
+           	
+           	if (currentLogName == null)
+           	{
+           		Settings.instance().setValue("currentlog", "Log.mend");
+           		currentLogName = "Log.mend";
+           	}
+           	
+           	File currentLogFile = new File(Config.CONFIG_PATH + currentLogName);
+       		currentLogFile.createNewFile();
+       		
+       		FileOutputStream outFile = new FileOutputStream(currentLogFile, true);
+       		try 
+       		{
+       			outFile.write(output.array());
+       		}
+       		finally 
+       		{
+       			outFile.close();
+       		}
 		} 
 		catch (NoSuchAlgorithmException e) 
 		{
@@ -157,6 +184,10 @@ public class Encrypt extends Command implements InputBoxListener
 			System.err.println(e.getMessage());
 		} 
 		catch (IOException e) 
+		{
+			System.err.println(e.getMessage());
+		} 
+		catch (TransformerException e) 
 		{
 			System.err.println(e.getMessage());
 		}
