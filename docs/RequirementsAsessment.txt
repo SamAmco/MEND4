@@ -1,4 +1,6 @@
-
+DEFINITIONS:
+Entry - A single entry in a log file composed of encrypted text and associated encrypted keys for that log.
+Log - A file containing a collection of entries.
 
 
 REQUIREMENTS
@@ -26,4 +28,22 @@ It is probably only ever necessary to do any sorting after merging.
 
 
 CONCLUSIONS
-Use the current method for reading and writing logs, but replace the merging algorithm with an external merge sort.
+The user has a generated public and private key. The private key is encrypted with the hash of the users password, but the public key is stored openly. The user also has a stored hash of their password, but this is generated using a seperate hash function to the one used to encrypt the private key. 
+
+When a user creates an entry, we generate a single use aes key, encrypt the entry with that key, and then encrypt the aes key with the public rsa key. We then append the following 4 byte arrays to the current log in order:
+	- The length of the encrypted aes key (used to encrypt this log) in bytes
+	- The encrypted aes key
+	- The length of the ciphertext in bytes
+	- The ciphertext
+
+Decryption is then simply the process of:
+	- Read the key bytes length
+	- Read the key 
+	- Decrypt the key with the private RSA key
+	- Read the cipher text length
+	- Read the cipher text
+	- Decrypt the cipher text
+	- Append the plain text to the output file
+	- Repeat from the next byte in the file
+
+Replace the merging algorithm with an external merge sort.
