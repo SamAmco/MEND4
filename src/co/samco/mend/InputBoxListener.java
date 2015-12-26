@@ -7,4 +7,6 @@ public interface InputBoxListener
 	public void OnShiftEnter(char[] text);
 	
 	public void OnCtrlEnter(char[] text);
+	
+	public void OnEscape();
 }

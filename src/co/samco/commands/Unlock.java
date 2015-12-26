@@ -147,4 +147,10 @@ public class Unlock extends Command implements InputBoxListener
 	@Override
 	public void OnCtrlEnter(char[] text) {}
 
+	@Override
+	public void OnEscape() 
+	{
+		inputBox.close();
+	}
+
 }

@@ -20,8 +20,10 @@ public class Encrypt extends Command implements InputBoxListener
 			int dPos = args.indexOf("-d");
 			
 			if (args.size() < dPos + 1)
+			{
 				System.err.println("You must provide the text you wish to encrypt after the -d option");
-			
+				return;
+			}
 			encryptTextToLog(args.get(args.indexOf("-d")+1).toCharArray());
 			return;
 		}
@@ -61,6 +63,12 @@ public class Encrypt extends Command implements InputBoxListener
 	private void encryptTextToLog(char[] text)
 	{
 		
+	}
+
+	@Override
+	public void OnEscape()
+	{
+		inputBox.close();
 	}
 	
 }
