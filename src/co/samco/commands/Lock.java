@@ -24,6 +24,8 @@ public class Lock extends Command
 			}
 			System.out.println("Shredding prKey.dec");
 			System.out.println();
+			//TODO this probably needs re-thinking, because it's not cross platform or even reliably installed..
+			//I would consider maybe just exposing the command to the user and default to shred. I don't fancy writing my own.
 			Process tr = Runtime.getRuntime().exec(new String[]{"shred", "-u", Config.CONFIG_PATH + "prKey.dec"});
 			BufferedReader rd = new BufferedReader(new InputStreamReader(tr.getInputStream()));
 			String s = rd.readLine();
