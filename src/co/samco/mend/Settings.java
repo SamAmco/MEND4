@@ -60,15 +60,17 @@ public class Settings
 		return instance;
 	}
 	
-	public void setValue(String name, String value) throws TransformerException, CorruptSettingsException
+	public void setValue(Config.Settings name, String value) 
+			throws TransformerException, CorruptSettingsException, InvalidSettingNameException
 	{
+		String strName = Config.SETTING_NAMES_MAP.get(name.ordinal());
+		if (strName == null)
+			throw new InvalidSettingNameException("Could not find the given Setting name while setting value");
 		if (rootElement == null)
-		{
 			throw new CorruptSettingsException("Could not find the root element of the document.");
-		}
 		
 		//Find all the nodes in the document with tag name name
-		NodeList nodes = doc.getElementsByTagName(name);
+		NodeList nodes = doc.getElementsByTagName(strName);
 		
 		//There should be only one or less
 		if (nodes.getLength() > 1)
@@ -80,7 +82,7 @@ public class Settings
 		
 		//If it doesn't exist create it
 		if (nodes.getLength() <= 0)
-			propertyElement = doc.createElement(name);
+			propertyElement = doc.createElement(strName);
 		//Otherwise use the one we found
 		else 
 			propertyElement = (Element)nodes.item(0);
@@ -130,6 +132,15 @@ public class Settings
 		private static final long serialVersionUID = -7872915002684524393L;
 
 		public CorruptSettingsException(String message)
+		{
+			super(message);
+		}
+	}
+	public static class InvalidSettingNameException extends Exception
+	{
+		private static final long serialVersionUID = -396660409805269958L;
+
+		public InvalidSettingNameException(String message)
 		{
 			super(message);
 		}

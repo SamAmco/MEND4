@@ -9,8 +9,10 @@ import javax.xml.transform.TransformerException;
 import org.xml.sax.SAXException;
 
 import co.samco.mend.Command;
+import co.samco.mend.Config;
 import co.samco.mend.Settings;
 import co.samco.mend.Settings.CorruptSettingsException;
+import co.samco.mend.Settings.InvalidSettingNameException;
 
 public class SetProperty extends Command
 {
@@ -28,15 +30,22 @@ public class SetProperty extends Command
 		String propertyName = args.get(0);
 		String value = args.get(1);
 		
-		if (propertyName.equals("logDir") || propertyName.equals("encDir") 
-				|| propertyName.equals("decDir"))
+		if (Config.SETTING_NAMES_MAP.values().contains(propertyName))
 		{
 			try
 			{
-				Settings.instance().setValue(propertyName, value);
-				System.out.println("Successfully set " + propertyName + " to " + value);
+				for (int i = 0; i < Config.SETTING_NAMES_MAP.size(); i++)
+				{
+					if (Config.SETTING_NAMES_MAP.get(i).equals(propertyName))
+					{
+						Settings.instance().setValue(Config.Settings.values()[i], value);
+						System.out.println("Successfully set " + propertyName + " to " + value);
+						break;
+					}
+				}
 			}
-			catch (ParserConfigurationException | SAXException | IOException | TransformerException | CorruptSettingsException e)
+			catch (ParserConfigurationException | SAXException | IOException 
+					| TransformerException | CorruptSettingsException | InvalidSettingNameException e)
 			{
 				System.err.println(e.getMessage());
 			}
@@ -57,9 +66,14 @@ public class SetProperty extends Command
 		System.err.println("mend set [property name] [value]");
 		System.err.println();
 		System.err.println("Recognized properties:");
-		System.err.println("\tlogDir\tThe directory where MEND will store and search for log files.");
-		System.err.println("\tencDir\tThe directory where MEND will store and search for encrypted files. (Not including logs)");
-		System.err.println("\tdecDir\tThe directory where MEND will store and search for decrypted files.");
+		
+		for (int i = 0; i < Config.Settings.values().length; i++)
+		{
+			System.err.print("\t");
+			System.err.print(Config.SETTING_NAMES_MAP.get(i));
+			System.err.print("\t\t");
+			System.err.println(Config.SETTINGS_DESCRIPTIONS_MAP.get(i));
+		}
 	}
 
 

@@ -1,7 +1,6 @@
 package co.samco.commands;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
@@ -17,7 +16,6 @@ import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.SecretKeySpec;
 import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.transform.TransformerConfigurationException;
 import javax.xml.transform.TransformerException;
 
 import org.xml.sax.SAXException;
@@ -26,6 +24,7 @@ import co.samco.mend.Command;
 import co.samco.mend.Config;
 import co.samco.mend.Settings;
 import co.samco.mend.Settings.CorruptSettingsException;
+import co.samco.mend.Settings.InvalidSettingNameException;
 
 import org.apache.commons.codec.binary.Base64;
 
@@ -68,69 +67,28 @@ public class SetupMend extends Command
 	        
 	        //Write the encrypted private key to settings
 	        byte[] encryptedPrivateKey = cipher.doFinal(keyPair.getPrivate().getEncoded());
-	        Settings.instance().setValue("privatekey", Base64.encodeBase64URLSafeString(encryptedPrivateKey));
+	        Settings.instance().setValue(Config.Settings.PRIVATEKEY, Base64.encodeBase64URLSafeString(encryptedPrivateKey));
 
 			//Add a passhash element to the options file containing the hash of the password.
 			MessageDigest md = MessageDigest.getInstance("MD5");
 			byte[] passwordMD5 = md.digest(password.getBytes());
 			String passwordMD5String = Base64.encodeBase64URLSafeString(passwordMD5);
-			Settings.instance().setValue("passhash", passwordMD5String);
+			Settings.instance().setValue(Config.Settings.PASSHASH, passwordMD5String);
 			
 			//Add a publickey element to the settings file containing the public key.
-			Settings.instance().setValue("publickey", Base64.encodeBase64URLSafeString(keyPair.getPublic().getEncoded()));
+			Settings.instance().setValue(Config.Settings.PUBLICKEY, Base64.encodeBase64URLSafeString(keyPair.getPublic().getEncoded()));
 			
 			System.out.println("MEND Successfully set up.");
 	        
 		} 
-		catch (NoSuchAlgorithmException e) 
+		catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException 
+				| IllegalBlockSizeException | TransformerException | CorruptSettingsException 
+				| InvalidSettingNameException | ParserConfigurationException 
+				| SAXException | IOException | BadPaddingException 
+				 e) 
 		{
 			System.err.println(e.getMessage());
 		} 
-		catch (NoSuchPaddingException e) 
-		{
-			System.err.println(e.getMessage());
-		} 
-		catch (InvalidKeyException e) 
-		{
-			System.err.println(e.getMessage());
-		} 
-		catch (IllegalBlockSizeException e) 
-		{
-			System.err.println(e.getMessage());
-		} 
-		catch (BadPaddingException e) 
-		{
-			System.err.println(e.getMessage());
-		}
-		catch (FileNotFoundException e) 
-		{
-			System.err.println(e.getMessage());
-		}
-		catch (IOException e) 
-		{
-			System.err.println(e.getMessage());
-		} 
-		catch (ParserConfigurationException e) 
-		{
-			System.err.println(e.getMessage());
-		} 
-		catch (TransformerConfigurationException e) 
-		{
-			System.err.println(e.getMessage());
-		} 
-		catch (TransformerException e) 
-		{
-			System.err.println(e.getMessage());
-		} 
-		catch (SAXException e) 
-		{
-			System.err.println(e.getMessage());
-		} 
-		catch (CorruptSettingsException e) 
-		{
-			System.err.println(e.getMessage());
-		}
-		
 	}
 	
 	@Override

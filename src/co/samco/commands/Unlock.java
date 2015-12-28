@@ -95,42 +95,12 @@ public class Unlock extends Command implements InputBoxListener
 			
 			System.out.println("MEND Unlocked.");
 		} 
-		catch (ParserConfigurationException e) 
+		catch (ParserConfigurationException | InvalidKeyException | IllegalBlockSizeException 
+				| BadPaddingException | CorruptSettingsException | SAXException 
+				| IOException | NoSuchAlgorithmException | NoSuchPaddingException e) 
 		{
 			System.err.println(e.getMessage());
 		} 
-		catch (SAXException e) 
-		{
-			System.err.println(e.getMessage());
-		} 
-		catch (IOException e) 
-		{	
-			System.err.println(e.getMessage());
-		} 
-		catch (NoSuchAlgorithmException e) 
-		{
-			System.err.println(e.getMessage());
-		} 
-		catch (NoSuchPaddingException e) 
-		{
-			System.err.println(e.getMessage());
-		} 
-		catch (InvalidKeyException e) 
-		{
-			System.err.println(e.getMessage());
-		} 
-		catch (IllegalBlockSizeException e) 
-		{			
-			System.err.println(e.getMessage());
-		} 
-		catch (BadPaddingException e) 
-		{
-			System.err.println(e.getMessage());
-		} 
-		catch (CorruptSettingsException e) 
-		{
-			System.err.println(e.getMessage());
-		}
 	}
 	
 	@Override

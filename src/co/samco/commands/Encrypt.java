@@ -3,10 +3,16 @@ package co.samco.commands;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.security.InvalidKeyException;
+import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.X509EncodedKeySpec;
+import java.util.Date;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 
 import javax.crypto.BadPaddingException;
@@ -15,7 +21,6 @@ import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.KeyGenerator;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
-import javax.crypto.spec.SecretKeySpec;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.TransformerException;
 
@@ -28,6 +33,7 @@ import co.samco.mend.InputBox;
 import co.samco.mend.InputBoxListener;
 import co.samco.mend.Settings;
 import co.samco.mend.Settings.CorruptSettingsException;
+import co.samco.mend.Settings.InvalidSettingNameException;
 
 public class Encrypt extends Command implements InputBoxListener
 {
@@ -90,6 +96,21 @@ public class Encrypt extends Command implements InputBoxListener
 	{
 		try 
 		{
+			//Lets just do some basic checks first
+			String userPublicKeyString = Settings.instance().getValue("publickey");
+            if (userPublicKeyString == null)
+            {
+            	System.err.println("Failed to find your public key. Please ensure you have run \"mend setup\" "
+            			+ "and that your Settings are not corrupt or in-accessable to mend");
+            	return;
+            }
+            String currentLogName = Settings.instance().getValue("currentlog");
+           	if (currentLogName == null)
+           	{
+           		Settings.instance().setValue(Config.Settings.CURRENTLOG, "Log.mend");
+           		currentLogName = "Log.mend";
+           	}
+            
 			//generate an aes key
 			KeyGenerator keyGen = KeyGenerator.getInstance("AES");
 			keyGen.init(256); // for example
@@ -102,7 +123,10 @@ public class Encrypt extends Command implements InputBoxListener
 
 			//encrypt the aes key with the public rsa key
             Cipher rsaCipher = Cipher.getInstance("RSA");
-            SecretKey publicRsaKey = new SecretKeySpec(Base64.decodeBase64(Settings.instance().getValue("publickey")), "RSA");
+            
+            X509EncodedKeySpec publicRsaKeySpec = new X509EncodedKeySpec(Base64.decodeBase64(userPublicKeyString));
+            KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+            PublicKey publicRsaKey = keyFactory.generatePublic(publicRsaKeySpec);
             rsaCipher.init(Cipher.ENCRYPT_MODE, publicRsaKey);
             byte[] encryptedAesKey = rsaCipher.doFinal(aesKey.getEncoded());
             
@@ -126,14 +150,6 @@ public class Encrypt extends Command implements InputBoxListener
            	output.put(cipherText);
            	
            	//append the byte block to the current log
-           	String currentLogName = Settings.instance().getValue("currentlog");
-           	
-           	if (currentLogName == null)
-           	{
-           		Settings.instance().setValue("currentlog", "Log.mend");
-           		currentLogName = "Log.mend";
-           	}
-           	
            	File currentLogFile = new File(Config.CONFIG_PATH + currentLogName);
        		currentLogFile.createNewFile();
        		
@@ -145,52 +161,19 @@ public class Encrypt extends Command implements InputBoxListener
        		finally 
        		{
        			outFile.close();
+       			DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+       			Date date = new Date();
+       			System.out.println("Successfully Logged entry at: " + dateFormat.format(date));
        		}
 		} 
-		catch (NoSuchAlgorithmException e) 
+		catch (NoSuchAlgorithmException | IOException | InvalidKeyException 
+				| IllegalBlockSizeException | BadPaddingException 
+				| InvalidKeySpecException | TransformerException | CorruptSettingsException 
+				| InvalidSettingNameException | ParserConfigurationException 
+				| SAXException | NoSuchPaddingException e) 
 		{
 			System.err.println(e.getMessage());
 		} 
-		catch (NoSuchPaddingException e) 
-		{
-			System.err.println(e.getMessage());
-		} 
-		catch (IllegalBlockSizeException e) 
-		{
-			System.err.println(e.getMessage());
-		} 
-		catch (BadPaddingException e) 
-		{
-			System.err.println(e.getMessage());
-		} 
-		catch (UnsupportedEncodingException e) 
-		{
-			System.err.println(e.getMessage());
-		} 
-		catch (InvalidKeyException e) 
-		{
-			System.err.println(e.getMessage());
-		} 
-		catch (CorruptSettingsException e) 
-		{
-			System.err.println(e.getMessage());
-		} 
-		catch (ParserConfigurationException e) 
-		{
-			System.err.println(e.getMessage());
-		} 
-		catch (SAXException e) 
-		{
-			System.err.println(e.getMessage());
-		} 
-		catch (IOException e) 
-		{
-			System.err.println(e.getMessage());
-		} 
-		catch (TransformerException e) 
-		{
-			System.err.println(e.getMessage());
-		}
 	}
 
 	@Override
