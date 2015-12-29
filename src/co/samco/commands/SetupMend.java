@@ -44,6 +44,7 @@ public class SetupMend extends Command
 		String password = args.get(0);
 		
 		//TODO What if they're already set up? Maybe the user should be warned.
+		//TODO its probably here that we'll want to warn the user if they don't have unlimited crypto policies installed
 		try 
 		{
 			//Ensure the settings path exists
@@ -53,7 +54,7 @@ public class SetupMend extends Command
 			//Generate an RSA key pair.
 			KeyPairGenerator keyGen;
 			keyGen = KeyPairGenerator.getInstance("RSA");
-	        keyGen.initialize(2048);
+	        keyGen.initialize(Config.RSA_KEY_SIZE);
 	        
 	        KeyPair keyPair = keyGen.genKeyPair();
 	        
@@ -62,12 +63,15 @@ public class SetupMend extends Command
 	        byte[] key = sha.digest(password.getBytes());
 	        
 	        SecretKeySpec secretKeySpec = new SecretKeySpec(Arrays.copyOf(key, 16), "AES");
-	        Cipher cipher = Cipher.getInstance("AES");
+	        Cipher cipher = Cipher.getInstance(Config.PREFERRED_AES_ALG);
 	        cipher.init(Cipher.ENCRYPT_MODE, secretKeySpec);
 	        
 	        //Write the encrypted private key to settings
 	        byte[] encryptedPrivateKey = cipher.doFinal(keyPair.getPrivate().getEncoded());
 	        Settings.instance().setValue(Config.Settings.PRIVATEKEY, Base64.encodeBase64URLSafeString(encryptedPrivateKey));
+	        //Once we've used the aes algorithm once, we need to make sure the same algorithm will be selected in future.
+	        Settings.instance().setValue(Config.Settings.PREFERREDAES, Config.PREFERRED_AES_ALG);
+	        Settings.instance().setValue(Config.Settings.PREFERREDRSA, Config.PREFERRED_RSA_ALG);
 
 			//Add a passhash element to the options file containing the hash of the password.
 			MessageDigest md = MessageDigest.getInstance("MD5");

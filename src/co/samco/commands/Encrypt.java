@@ -97,14 +97,14 @@ public class Encrypt extends Command implements InputBoxListener
 		try 
 		{
 			//Lets just do some basic checks first
-			String userPublicKeyString = Settings.instance().getValue("publickey");
+			String userPublicKeyString = Settings.instance().getValue(Config.Settings.PUBLICKEY);
             if (userPublicKeyString == null)
             {
             	System.err.println("Failed to find your public key. Please ensure you have run \"mend setup\" "
             			+ "and that your Settings are not corrupt or in-accessable to mend");
             	return;
             }
-            String currentLogName = Settings.instance().getValue("currentlog");
+            String currentLogName = Settings.instance().getValue(Config.Settings.CURRENTLOG);
            	if (currentLogName == null)
            	{
            		Settings.instance().setValue(Config.Settings.CURRENTLOG, "Log.mend");
@@ -113,16 +113,16 @@ public class Encrypt extends Command implements InputBoxListener
             
 			//generate an aes key
 			KeyGenerator keyGen = KeyGenerator.getInstance("AES");
-			keyGen.init(256); // for example
+			keyGen.init(Config.AES_KEY_SIZE);
 			SecretKey aesKey = keyGen.generateKey();
 			
 			//use it to encrypt the text
-			Cipher aesCipher = Cipher.getInstance("AES");
+			Cipher aesCipher = Cipher.getInstance(Config.PREFERRED_AES_ALG);
 			aesCipher.init(Cipher.ENCRYPT_MODE, aesKey);
             byte[] cipherText = aesCipher.doFinal(new String(text).getBytes("UTF-8"));
 
 			//encrypt the aes key with the public rsa key
-            Cipher rsaCipher = Cipher.getInstance("RSA");
+            Cipher rsaCipher = Cipher.getInstance(Config.PREFERRED_RSA_ALG);
             
             X509EncodedKeySpec publicRsaKeySpec = new X509EncodedKeySpec(Base64.decodeBase64(userPublicKeyString));
             KeyFactory keyFactory = KeyFactory.getInstance("RSA");

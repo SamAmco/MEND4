@@ -63,7 +63,7 @@ public class Settings
 	public void setValue(Config.Settings name, String value) 
 			throws TransformerException, CorruptSettingsException, InvalidSettingNameException
 	{
-		String strName = Config.SETTING_NAMES_MAP.get(name.ordinal());
+		String strName = Config.SETTINGS_NAMES_MAP.get(name.ordinal());
 		if (strName == null)
 			throw new InvalidSettingNameException("Could not find the given Setting name while setting value");
 		if (rootElement == null)
@@ -75,7 +75,7 @@ public class Settings
 		//There should be only one or less
 		if (nodes.getLength() > 1)
 		{
-			throw new CorruptSettingsException("Multiple instances of property: " + name + " were found.");
+			throw new CorruptSettingsException("Multiple instances of property: " + strName + " were found.");
 		}
 		
 		Element propertyElement;
@@ -98,10 +98,14 @@ public class Settings
 		transformer.transform(source, result);
 	}
 	
-	public String getValue(String name) throws CorruptSettingsException
+	public String getValue(Config.Settings name) throws CorruptSettingsException, InvalidSettingNameException
 	{
+		String strName = Config.SETTINGS_NAMES_MAP.get(name.ordinal());
+		if (strName == null)
+			throw new InvalidSettingNameException("Could not find the given Setting name while setting value");
+		
 		//Check that the user has the property we're looking for
-		NodeList nList = doc.getElementsByTagName(name);
+		NodeList nList = doc.getElementsByTagName(strName);
 		
 		if (nList.getLength() <= 0)
 		{
@@ -110,13 +114,13 @@ public class Settings
 		
 		if(nList.getLength() > 1)
 		{
-			throw new CorruptSettingsException("You have more than one element in your settings file with name " + name);
+			throw new CorruptSettingsException("You have more than one element in your settings file with name " + strName);
 		}
 		
 		Node node = nList.item(0);
 		if (node.getNodeType() != Node.ELEMENT_NODE)
 		{
-			throw new CorruptSettingsException("Node with name " + name + " is an invalid element node");
+			throw new CorruptSettingsException("Node with name " + strName + " is an invalid element node");
 		}
 		
 		Element el = (Element)node;

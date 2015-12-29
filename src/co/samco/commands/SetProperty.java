@@ -30,13 +30,13 @@ public class SetProperty extends Command
 		String propertyName = args.get(0);
 		String value = args.get(1);
 		
-		if (Config.SETTING_NAMES_MAP.values().contains(propertyName))
+		if (Config.SETTINGS_NAMES_MAP.values().contains(propertyName))
 		{
 			try
 			{
-				for (int i = 0; i < Config.SETTING_NAMES_MAP.size(); i++)
+				for (int i = 0; i < Config.SETTINGS_NAMES_MAP.size(); i++)
 				{
-					if (Config.SETTING_NAMES_MAP.get(i).equals(propertyName))
+					if (Config.SETTINGS_NAMES_MAP.get(i).equals(propertyName))
 					{
 						Settings.instance().setValue(Config.Settings.values()[i], value);
 						System.out.println("Successfully set " + propertyName + " to " + value);
@@ -70,7 +70,7 @@ public class SetProperty extends Command
 		for (int i = 0; i < Config.Settings.values().length; i++)
 		{
 			System.err.print("\t");
-			System.err.print(Config.SETTING_NAMES_MAP.get(i));
+			System.err.print(Config.SETTINGS_NAMES_MAP.get(i));
 			System.err.print("\t\t");
 			System.err.println(Config.SETTINGS_DESCRIPTIONS_MAP.get(i));
 		}

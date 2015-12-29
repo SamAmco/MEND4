@@ -25,6 +25,7 @@ import co.samco.mend.InputBox;
 import co.samco.mend.InputBoxListener;
 import co.samco.mend.Settings;
 import co.samco.mend.Settings.CorruptSettingsException;
+import co.samco.mend.Settings.InvalidSettingNameException;
 
 public class Unlock extends Command implements InputBoxListener
 {
@@ -55,7 +56,7 @@ public class Unlock extends Command implements InputBoxListener
 				new Lock().execute(new ArrayList<String>());
 			
 			//Check that the user has an encrypted private key.
-			String hash = Settings.instance().getValue("passhash");
+			String hash = Settings.instance().getValue(Config.Settings.PASSHASH);
 			if (hash == null)
 			{
 				System.err.println("Could not find the hash of your password (passhash) in your settings file.");
@@ -80,10 +81,10 @@ public class Unlock extends Command implements InputBoxListener
 	        byte[] key = sha.digest(passwordString.getBytes());
 	        
 	        SecretKeySpec secretKeySpec = new SecretKeySpec(Arrays.copyOf(key, 16), "AES");
-	        Cipher cipher = Cipher.getInstance("AES");
+	        Cipher cipher = Cipher.getInstance(Config.PREFERRED_AES_ALG);
 	        cipher.init(Cipher.DECRYPT_MODE, secretKeySpec);
 	        
-	        byte[] encryptedPrivateKey = Base64.decodeBase64(Settings.instance().getValue("privatekey"));
+	        byte[] encryptedPrivateKey = Base64.decodeBase64(Settings.instance().getValue(Config.Settings.PRIVATEKEY));
 	        byte[] decryptedPrivateKey = cipher.doFinal(encryptedPrivateKey);
 	        
 	        //Write the decrypted private key to a file
@@ -97,7 +98,8 @@ public class Unlock extends Command implements InputBoxListener
 		} 
 		catch (ParserConfigurationException | InvalidKeyException | IllegalBlockSizeException 
 				| BadPaddingException | CorruptSettingsException | SAXException 
-				| IOException | NoSuchAlgorithmException | NoSuchPaddingException e) 
+				| IOException | NoSuchAlgorithmException | NoSuchPaddingException 
+				| InvalidSettingNameException e) 
 		{
 			System.err.println(e.getMessage());
 		} 

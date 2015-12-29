@@ -8,8 +8,10 @@ import javax.xml.parsers.ParserConfigurationException;
 import org.xml.sax.SAXException;
 
 import co.samco.mend.Command;
+import co.samco.mend.Config;
 import co.samco.mend.Settings;
 import co.samco.mend.Settings.CorruptSettingsException;
+import co.samco.mend.Settings.InvalidSettingNameException;
 
 public class GetProperty extends Command
 {
@@ -26,13 +28,23 @@ public class GetProperty extends Command
 		
 		try 
 		{
-			String value = Settings.instance().getValue(args.get(0));
+			//Do something like this:
+			String value = null;
+			for (int i = 0; i < Config.SETTINGS_NAMES_MAP.size(); i++)
+			{
+				if (Config.SETTINGS_NAMES_MAP.get(i).equals(args.get(0)))
+				{
+					value = Settings.instance().getValue(Config.Settings.values()[i]);
+					break;
+				}
+			}
 			
 			if (value == null)
 				System.err.println("Value not found.");
 			else System.out.println(value);
 		} 
-		catch (CorruptSettingsException | ParserConfigurationException | SAXException | IOException e) 
+		catch (CorruptSettingsException | ParserConfigurationException 
+				| SAXException | IOException | InvalidSettingNameException e) 
 		{
 			System.err.println(e.getMessage());
 		}

@@ -87,6 +87,16 @@ public class Main
 	}
 }
 
+/*
+ * To get a list of enabled crypto algorithms:
+ * for (Provider p : Security.getProviders())
+		{
+			for (Service s : p.getServices())
+			{
+				System.out.println(s.getAlgorithm());
+			}
+		}
+ */
 
 
 
