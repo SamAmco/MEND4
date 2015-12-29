@@ -69,9 +69,13 @@ public class SetupMend extends Command
 	        //Write the encrypted private key to settings
 	        byte[] encryptedPrivateKey = cipher.doFinal(keyPair.getPrivate().getEncoded());
 	        Settings.instance().setValue(Config.Settings.PRIVATEKEY, Base64.encodeBase64URLSafeString(encryptedPrivateKey));
+	        
 	        //Once we've used the aes algorithm once, we need to make sure the same algorithm will be selected in future.
+	        //for simplicity i want to set all algorithms and key sizes in stone almost at this point
 	        Settings.instance().setValue(Config.Settings.PREFERREDAES, Config.PREFERRED_AES_ALG);
 	        Settings.instance().setValue(Config.Settings.PREFERREDRSA, Config.PREFERRED_RSA_ALG);
+	        Settings.instance().setValue(Config.Settings.AESKEYSIZE, Integer.toString(Config.AES_KEY_SIZE));
+	        Settings.instance().setValue(Config.Settings.RSAKEYSIZE, Integer.toString(Config.RSA_KEY_SIZE));
 
 			//Add a passhash element to the options file containing the hash of the password.
 			MessageDigest md = MessageDigest.getInstance("MD5");

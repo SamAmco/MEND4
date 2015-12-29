@@ -65,13 +65,14 @@ public class Encrypt extends Command implements InputBoxListener
 	@Override
 	public void printUsage() 
 	{
-		
+		System.out.print("Usage: "); 
+		System.out.println("mend enc [-d <text>]");
 	}
 
 	@Override
 	public void printDescription() 
 	{
-		
+		System.out.println("To encrypt text to your current log, or encrypt a file and recieve an id for it.");
 	}
 	
 	@Override
