@@ -6,6 +6,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import co.samco.commands.Decrypt;
 import co.samco.commands.Encrypt;
 import co.samco.commands.GetProperty;
 import co.samco.commands.Lock;
@@ -24,6 +25,7 @@ public class Main
 		commands.put("set", SetProperty.class);
 		commands.put("enc", Encrypt.class);
 		commands.put("get", GetProperty.class);
+		commands.put("dec", Decrypt.class);
 	}
 	
 	public static void main(String[] args)
