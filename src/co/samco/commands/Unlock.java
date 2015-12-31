@@ -41,8 +41,7 @@ public class Unlock extends Command implements InputBoxListener
 	@Override
 	public String getUsageText() 
 	{
-		return "Usage: " + 
-			"\nmend unlock";
+		return "Usage:\tmend unlock";
 	}
 
 	@Override

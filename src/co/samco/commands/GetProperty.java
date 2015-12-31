@@ -54,8 +54,7 @@ public class GetProperty extends Command
 	public String getUsageText() 
 	{
 		StringBuilder sb = new StringBuilder();
-		sb.append("Usage: ");
-		sb.append("\nmend get <property>");
+		sb.append("Usage:\tmend get <property>");
 		sb.append("\n");
 		sb.append("\nRecognized properties:");
 		

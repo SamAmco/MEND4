@@ -102,8 +102,7 @@ public class SetupMend extends Command
 	@Override
 	public String getUsageText()
 	{
-		return "Usage: " +  
-			"\nmend setup <password>";
+		return "Usage:\tmend setup <password>";
 	}
 	
 	@Override

@@ -65,8 +65,7 @@ public class Encrypt extends Command implements InputBoxListener
 	@Override
 	public String getUsageText() 
 	{
-		return "Usage: " + 
-			"\nmend enc [-d <text>]";
+		return "Usage:\tmend enc [-d <text>]";
 	}
 
 	@Override

@@ -76,7 +76,7 @@ public class Main
 	private static void printUsage() 
 			throws InstantiationException, IllegalAccessException
 	{
-		System.err.println("Usage: mend <command> [<args>]");
+		System.err.println("Usage:\tmend <command> [<args>]");
 		System.err.println();
 		System.err.println("Commands:");
 		Iterator<Entry<String, Class<?>>> it = commands.entrySet().iterator();

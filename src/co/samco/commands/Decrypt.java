@@ -13,15 +13,15 @@ public class Decrypt extends Command
 		
 		if (args.size() < 1)
 		{
-			System.err.println("");
+			System.err.println("Please provide the file to decrypt.");
+			System.err.println(getUsageText());
 		}
 	}
 
 	@Override
 	public String getUsageText() 
 	{
-		return "Usage: " +  
-			"\nmend dec <log_file>";
+		return "Usage:\tmend dec <log_file>";
 	}
 
 	@Override

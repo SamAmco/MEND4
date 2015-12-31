@@ -46,8 +46,7 @@ public class Lock extends Command
 	@Override
 	public String getUsageText() 
 	{
-		return "Usage: " +  
-			"\nmend lock";
+		return "Usage:\tmend lock";
 	}
 
 	@Override

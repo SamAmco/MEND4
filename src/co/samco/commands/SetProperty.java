@@ -63,8 +63,7 @@ public class SetProperty extends Command
 	public String getUsageText() 
 	{
 		StringBuilder sb = new StringBuilder();
-		sb.append("Usage: "); 
-		sb.append("\nmend set <property name> <value>");
+		sb.append("Usage:\tmend set <property name> <value>");
 		sb.append("\n");
 		sb.append("\nRecognized properties:");
 		
