@@ -37,7 +37,7 @@ public class SetupMend extends Command
 		if (args.size() != 1)
 		{
 			System.err.println("Please provide a password.");
-			printUsage();
+			getUsageText();
 			return;
 		}
 		
@@ -100,16 +100,16 @@ public class SetupMend extends Command
 	}
 	
 	@Override
-	public void printUsage()
+	public String getUsageText()
 	{
-		System.err.print("Usage: "); 
-		System.err.println("mend setup [password]");
+		return "Usage: " +  
+			"\nmend setup <password>";
 	}
 	
 	@Override
-	public void printDescription() 
+	public String getDescriptionText() 
 	{
-		System.err.println("Run this command first. It creates some basic config necessary.");	
+		return "Run this command first. It creates some basic config necessary.";	
 	}
 	
 }

@@ -44,15 +44,15 @@ public class Lock extends Command
 	}
 
 	@Override
-	public void printUsage() 
+	public String getUsageText() 
 	{
-		System.out.print("Usage: "); 
-		System.out.println("mend lock");
+		return "Usage: " +  
+			"\nmend lock";
 	}
 
 	@Override
-	public void printDescription() 
+	public String getDescriptionText() 
 	{
-		System.err.println("Shreds the decrypted private key. Requires shred to be installed.");	
+		return "Shreds the decrypted private key. Requires shred to be installed.";	
 	}
 }

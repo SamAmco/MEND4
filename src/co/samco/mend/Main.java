@@ -83,8 +83,12 @@ public class Main
 		while (it.hasNext())
 		{
 			Entry<String, Class<?>> entry = it.next();
-			System.err.print("\t" + entry.getKey() + "\t");
-			((Command)entry.getValue().newInstance()).printDescription();
+			StringBuilder sb = new StringBuilder();
+			sb.append("\t");
+			sb.append(entry.getKey());
+			sb.append("\t");
+			sb.append(((Command)entry.getValue().newInstance()).getDescriptionText());
+			System.err.println(sb.toString());
 		}
 	}
 }

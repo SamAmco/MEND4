@@ -39,10 +39,10 @@ public class Unlock extends Command implements InputBoxListener
 	}
 	
 	@Override
-	public void printUsage() 
+	public String getUsageText() 
 	{
-		System.out.print("Usage: "); 
-		System.out.println("mend unlock");
+		return "Usage: " + 
+			"\nmend unlock";
 	}
 
 	@Override
@@ -106,9 +106,9 @@ public class Unlock extends Command implements InputBoxListener
 	}
 	
 	@Override
-	public void printDescription() 
+	public String getDescriptionText() 
 	{
-		System.err.println("To decrypt the private key.");	
+		return "To decrypt the private key.";	
 	}
 
 	@Override

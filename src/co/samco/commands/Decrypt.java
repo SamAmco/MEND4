@@ -11,19 +11,22 @@ public class Decrypt extends Command
 	{
 		//TODO allow the decryption of files.
 		
-		
+		if (args.size() < 1)
+		{
+			System.err.println("");
+		}
 	}
 
 	@Override
-	public void printUsage() 
+	public String getUsageText() 
 	{
-		// TODO Auto-generated method stub
-		
+		return "Usage: " +  
+			"\nmend dec <log_file>";
 	}
 
 	@Override
-	public void printDescription() 
+	public String getDescriptionText() 
 	{
-		// TODO Auto-generated method stub
+		return "To decrypt an encrypted log or other mend encrypted file.";
 	}
 }

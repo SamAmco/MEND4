@@ -23,7 +23,7 @@ public class SetProperty extends Command
 		{
 			System.err.println("Wrong number of arguments:");
 			System.err.println();
-			printUsage();
+			getUsageText();
 			return;
 		}
 		
@@ -54,32 +54,34 @@ public class SetProperty extends Command
 		{
 			System.err.println(propertyName + " is not a recognised property name.");
 			System.err.println();
-			printUsage();
+			getUsageText();
 		}
 		
 	}
 	
 	@Override
-	public void printUsage() 
+	public String getUsageText() 
 	{
-		System.err.print("Usage: "); 
-		System.err.println("mend set [property name] [value]");
-		System.err.println();
-		System.err.println("Recognized properties:");
+		StringBuilder sb = new StringBuilder();
+		sb.append("Usage: "); 
+		sb.append("\nmend set <property name> <value>");
+		sb.append("\n");
+		sb.append("\nRecognized properties:");
 		
 		for (int i = 0; i < Config.Settings.values().length; i++)
 		{
-			System.err.print("\t");
-			System.err.print(Config.SETTINGS_NAMES_MAP.get(i));
-			System.err.print("\t\t");
-			System.err.println(Config.SETTINGS_DESCRIPTIONS_MAP.get(i));
+			sb.append("\n\t");
+			sb.append(Config.SETTINGS_NAMES_MAP.get(i));
+			sb.append("\t\t");
+			sb.append(Config.SETTINGS_DESCRIPTIONS_MAP.get(i));
 		}
+		return sb.toString();
 	}
 
 
 	@Override
-	public void printDescription()
+	public String getDescriptionText()
 	{
-		System.err.println("Configure the variables mend uses.");	
+		return "Configure the variables mend uses.";	
 	}
 }

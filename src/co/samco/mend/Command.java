@@ -6,7 +6,7 @@ public abstract class Command
 {
 	public abstract void execute(ArrayList<String> args);
 	
-	public abstract void printUsage();
+	public abstract String getUsageText();
 	
-	public abstract void printDescription();
+	public abstract String getDescriptionText();
 }

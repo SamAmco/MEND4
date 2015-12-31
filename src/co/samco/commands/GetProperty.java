@@ -22,7 +22,7 @@ public class GetProperty extends Command
 		if (args.size() < 1 || args.size() > 1)
 		{
 			System.err.println("Wrong number of arguments.");
-			printUsage();
+			getUsageText();
 			return;
 		}
 		
@@ -51,16 +51,28 @@ public class GetProperty extends Command
 	}
 
 	@Override
-	public void printUsage() 
+	public String getUsageText() 
 	{
-		System.err.print("Usage: "); 
-		System.err.println("mend get [property]");
+		StringBuilder sb = new StringBuilder();
+		sb.append("Usage: ");
+		sb.append("\nmend get <property>");
+		sb.append("\n");
+		sb.append("\nRecognized properties:");
+		
+		for (int i = 0; i < Config.Settings.values().length; i++)
+		{
+			sb.append("\n\t");
+			sb.append(Config.SETTINGS_NAMES_MAP.get(i));
+			sb.append("\t\t");
+			sb.append(Config.SETTINGS_DESCRIPTIONS_MAP.get(i));
+		}
+		return sb.toString();
 	}
 
 	@Override
-	public void printDescription() 
+	public String getDescriptionText() 
 	{
-		System.out.println("Get the value of a property in your settings file.");
+		return "Get the value of a property in your settings file.";
 	}
 
 }
