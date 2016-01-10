@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import javax.crypto.Cipher;
+import javax.crypto.spec.IvParameterSpec;
 import javax.xml.parsers.ParserConfigurationException;
 
 import org.xml.sax.SAXException;
@@ -19,6 +20,14 @@ public class Config
 	public static final String CONFIG_PATH = "";//System.getProperty("user.home") + "/.MEND4/";
 	public static final String SETTINGS_FILE = "Settings.xml";
 	public static final String PRIVATE_KEY_FILE_DEC = "prKey.dec";
+	
+	public static final IvParameterSpec STANDARD_IV;
+	
+	static
+	{
+		byte[] iv = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+		STANDARD_IV = new IvParameterSpec(iv);
+	}
 	
 	public static enum Settings
 	{

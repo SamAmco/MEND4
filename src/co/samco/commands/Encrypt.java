@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
@@ -14,6 +15,7 @@ import java.util.Date;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -118,12 +120,13 @@ public class Encrypt extends Command implements InputBoxListener
 			
 			//use it to encrypt the text
 			Cipher aesCipher = Cipher.getInstance(Config.PREFERRED_AES_ALG);
-			aesCipher.init(Cipher.ENCRYPT_MODE, aesKey);
+			aesCipher.init(Cipher.ENCRYPT_MODE, aesKey, Config.STANDARD_IV);
             byte[] cipherText = aesCipher.doFinal(new String(text).getBytes("UTF-8"));
 
 			//encrypt the aes key with the public rsa key
             Cipher rsaCipher = Cipher.getInstance(Config.PREFERRED_RSA_ALG);
             
+            //read in the public key
             X509EncodedKeySpec publicRsaKeySpec = new X509EncodedKeySpec(Base64.decodeBase64(userPublicKeyString));
             KeyFactory keyFactory = KeyFactory.getInstance("RSA");
             PublicKey publicRsaKey = keyFactory.generatePublic(publicRsaKeySpec);
@@ -170,7 +173,7 @@ public class Encrypt extends Command implements InputBoxListener
 				| IllegalBlockSizeException | BadPaddingException 
 				| InvalidKeySpecException | TransformerException | CorruptSettingsException 
 				| InvalidSettingNameException | ParserConfigurationException 
-				| SAXException | NoSuchPaddingException e) 
+				| SAXException | NoSuchPaddingException | InvalidAlgorithmParameterException e) 
 		{
 			System.err.println(e.getMessage());
 		} 

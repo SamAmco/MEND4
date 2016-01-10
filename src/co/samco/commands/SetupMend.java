@@ -2,6 +2,7 @@ package co.samco.commands;
 
 import java.io.File;
 import java.io.IOException;
+import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
@@ -64,7 +65,7 @@ public class SetupMend extends Command
 	        
 	        SecretKeySpec secretKeySpec = new SecretKeySpec(Arrays.copyOf(key, 16), "AES");
 	        Cipher cipher = Cipher.getInstance(Config.PREFERRED_AES_ALG);
-	        cipher.init(Cipher.ENCRYPT_MODE, secretKeySpec);
+	        cipher.init(Cipher.ENCRYPT_MODE, secretKeySpec, Config.STANDARD_IV);
 	        
 	        //Write the encrypted private key to settings
 	        byte[] encryptedPrivateKey = cipher.doFinal(keyPair.getPrivate().getEncoded());
@@ -92,7 +93,7 @@ public class SetupMend extends Command
 		catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException 
 				| IllegalBlockSizeException | TransformerException | CorruptSettingsException 
 				| InvalidSettingNameException | ParserConfigurationException 
-				| SAXException | IOException | BadPaddingException 
+				| SAXException | IOException | BadPaddingException | InvalidAlgorithmParameterException 
 				 e) 
 		{
 			System.err.println(e.getMessage());

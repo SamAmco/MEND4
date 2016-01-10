@@ -3,6 +3,7 @@ package co.samco.commands;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -76,12 +77,13 @@ public class Unlock extends Command implements InputBoxListener
 			}
 			
 			//Decrypt the private key with the password.
+			//TODO you should probably think about which hash functions to actually use.. maybe md5 and sha-1 aren't a good combo
 			MessageDigest sha = MessageDigest.getInstance("SHA-1");
 	        byte[] key = sha.digest(passwordString.getBytes());
 	        
 	        SecretKeySpec secretKeySpec = new SecretKeySpec(Arrays.copyOf(key, 16), "AES");
 	        Cipher cipher = Cipher.getInstance(Config.PREFERRED_AES_ALG);
-	        cipher.init(Cipher.DECRYPT_MODE, secretKeySpec);
+	        cipher.init(Cipher.DECRYPT_MODE, secretKeySpec, Config.STANDARD_IV);
 	        
 	        byte[] encryptedPrivateKey = Base64.decodeBase64(Settings.instance().getValue(Config.Settings.PRIVATEKEY));
 	        byte[] decryptedPrivateKey = cipher.doFinal(encryptedPrivateKey);
@@ -98,7 +100,7 @@ public class Unlock extends Command implements InputBoxListener
 		catch (ParserConfigurationException | InvalidKeyException | IllegalBlockSizeException 
 				| BadPaddingException | CorruptSettingsException | SAXException 
 				| IOException | NoSuchAlgorithmException | NoSuchPaddingException 
-				| InvalidSettingNameException e) 
+				| InvalidSettingNameException | InvalidAlgorithmParameterException e) 
 		{
 			System.err.println(e.getMessage());
 		} 
