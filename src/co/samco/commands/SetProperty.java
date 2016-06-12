@@ -19,6 +19,10 @@ public class SetProperty extends Command
 	@Override
 	public void execute(ArrayList<String> args) 
 	{
+		super.execute(args);
+		if(!continueExecution)
+			return;
+		
 		if (args.size() != 2)
 		{
 			System.err.println("Wrong number of arguments:");
@@ -81,6 +85,6 @@ public class SetProperty extends Command
 	@Override
 	public String getDescriptionText()
 	{
-		return "Configure the variables mend uses.";	
+		return "Set the value of a property in your settings file.";	
 	}
 }

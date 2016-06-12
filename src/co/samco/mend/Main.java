@@ -19,8 +19,8 @@ public class Main
 	private static Map<String, Class<?>> commands = new HashMap<String, Class<?>>();
 	static
 	{
-		commands.put("unlock", Unlock.class);
 		commands.put("setup", SetupMend.class);
+		commands.put("unlock", Unlock.class);
 		commands.put("lock", Lock.class);
 		commands.put("set", SetProperty.class);
 		commands.put("enc", Encrypt.class);
@@ -76,7 +76,7 @@ public class Main
 	private static void printUsage() 
 			throws InstantiationException, IllegalAccessException
 	{
-		System.err.println("Usage:\tmend <command> [<args>]");
+		System.err.println("Usage:\tmend <command> [-h|<args>]");
 		System.err.println();
 		System.err.println("Commands:");
 		Iterator<Entry<String, Class<?>>> it = commands.entrySet().iterator();

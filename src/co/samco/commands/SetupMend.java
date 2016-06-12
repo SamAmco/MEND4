@@ -35,6 +35,10 @@ public class SetupMend extends Command
 	@Override
 	public void execute(ArrayList<String> args) 
 	{
+		super.execute(args);
+		if(!continueExecution)
+			return;
+		
 		if (args.size() != 1)
 		{
 			System.err.println("Please provide a password.");

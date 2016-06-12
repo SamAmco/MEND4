@@ -19,6 +19,10 @@ public class GetProperty extends Command
 	@Override
 	public void execute(ArrayList<String> args) 
 	{
+		super.execute(args);
+		if(!continueExecution)
+			return;
+		
 		if (args.size() < 1 || args.size() > 1)
 		{
 			System.err.println("Wrong number of arguments.");

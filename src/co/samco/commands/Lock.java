@@ -14,6 +14,10 @@ public class Lock extends Command
 	@Override
 	public void execute(ArrayList<String> args) 
 	{
+		super.execute(args);
+		if(!continueExecution)
+			return;
+		
 		try
 		{
 			//If there is already a prKey.dex file existent, just shred it and unlock again.

@@ -28,6 +28,10 @@ public class Decrypt extends Command
 	@Override
 	public void execute(ArrayList<String> args) 
 	{
+		super.execute(args);
+		if(!continueExecution)
+			return;
+		
 		//TODO allow the decryption of files.
 		FileInputStream privateKeyFileInputStream = null;
 		try 

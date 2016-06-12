@@ -31,17 +31,26 @@ public class Config
 	
 	public static enum Settings
 	{
-		PUBLICKEY,
-		PRIVATEKEY,
-		CURRENTLOG,
-		LOGDIR,
-		ENCDIR,
-		DECDIR,
-		PASSHASH,
-		RSAKEYSIZE,
-		AESKEYSIZE,
-		PREFERREDRSA,
-		PREFERREDAES
+		PUBLICKEY(0),
+		PRIVATEKEY(1),
+		CURRENTLOG(2),
+		LOGDIR(3),
+		ENCDIR(4),
+		DECDIR(5),
+		PASSHASH(6),
+		RSAKEYSIZE(7),
+		AESKEYSIZE(8),
+		PREFERREDRSA(9),
+		PREFERREDAES(10);
+		
+		private final int value;
+	    private Settings(int value) {
+	        this.value = value;
+	    }
+
+	    public int getValue() {
+	        return value;
+	    }
 	}
 	
 	public static final Map<Integer, String> SETTINGS_NAMES_MAP;
