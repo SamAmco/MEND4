@@ -47,6 +47,8 @@
   			</manifest>
   			<zipgroupfileset dir="${libdir}" includes="**/*.jar" />
   		</jar>
+  		<copy file="jar/MEND4.jar" destfile="Unix/MEND4.jar" />
+  		<copy file="jar/MEND4.jar" destfile="Windows/MEND4.jar" />
   	</target>
               	
 </project>

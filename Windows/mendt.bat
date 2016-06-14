@@ -1,0 +1,1 @@
+java -jar MEND4.jar %*
