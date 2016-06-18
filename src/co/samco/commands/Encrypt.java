@@ -58,22 +58,27 @@ public class Encrypt extends Command implements InputBoxListener
 		}
 		else if (args.get(0).equals("-d"))
 		{
-			int dPos = args.indexOf("-d");
-			
-			if (args.size() < dPos + 1)
+			if (args.size() < 2)
 			{
 				System.err.println("You must provide the text you wish to encrypt after the -d option");
 				return;
 			}
-			encryptTextToLog(args.get(args.indexOf("-d")+1).toCharArray());
+			else if (args.size() > 2)
+			{
+				System.err.println("Please wrap the text in double quotes.");
+				return;
+			}
+			encryptTextToLog(args.get(1).toCharArray());
 			return;
 		}
 		else if (args.size() > 0)
 		{
-			//TODO allow file encryption
-			//Treat argument as a file path
 			if (args.size() > 2)
+			{
 				System.err.println("Invalid number of arguments. See \"mend enc -h\" for more information.");
+				for (String s : args)
+					System.err.println(s);
+			}
 
 			String name = null;
 			if (args.size() > 1)
@@ -144,7 +149,7 @@ public class Encrypt extends Command implements InputBoxListener
 			String encLocation = Settings.instance().getValue(Config.Settings.ENCDIR);
 			if (encLocation == null)
 			{
-				throw new IOException("You need to set the " + Config.SETTINGS_NAMES_MAP.get(Config.Settings.ENCDIR.getValue()) 
+				throw new IOException("You need to set the " + Config.SETTINGS_NAMES_MAP.get(Config.Settings.ENCDIR.ordinal()) 
 							+ " property in your settings file before you can encrypt files to it.");
 			}
 			File outputFile = new File(encLocation + File.separatorChar + name + ".enc");
@@ -235,6 +240,9 @@ public class Encrypt extends Command implements InputBoxListener
 	
 	protected void encryptTextToLog(char[] text)
 	{
+		if (text.length <= 0)
+			return;
+		
 		FileOutputStream outFile = null;
 		try 
 		{

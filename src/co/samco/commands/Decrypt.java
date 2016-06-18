@@ -2,6 +2,8 @@ package co.samco.commands;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.security.InvalidAlgorithmParameterException;
@@ -15,13 +17,21 @@ import java.util.ArrayList;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
+import javax.crypto.CipherOutputStream;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
+import javax.xml.parsers.ParserConfigurationException;
+
+import org.apache.commons.io.FilenameUtils;
+import org.xml.sax.SAXException;
 
 import co.samco.mend.Command;
 import co.samco.mend.Config;
+import co.samco.mend.Settings;
+import co.samco.mend.Settings.CorruptSettingsException;
+import co.samco.mend.Settings.InvalidSettingNameException;
 
 public class Decrypt extends Command
 {
@@ -32,7 +42,7 @@ public class Decrypt extends Command
 		if(!continueExecution)
 			return;
 		
-		//TODO allow the decryption of files.
+		//TODO allow them to specify an output file.. or specify that the file should be written to the dec directory
 		FileInputStream privateKeyFileInputStream = null;
 		try 
 		{
@@ -73,19 +83,13 @@ public class Decrypt extends Command
 			
 			//if it's a log file decrypt it as a log
 			if (filename.substring(filename.lastIndexOf(".") + 1, filename.length()).equals("mend"))
-			{
 				decryptLog(file, privateKey);
-			}
 			//if it's just an encrypted file decrypt it as that.
 			else if (filename.substring(filename.lastIndexOf(".") + 1, filename.length()).equals("enc"))
-			{
-				decryptFile(file);
-			}
+				decryptFile(file, privateKey);
 			//if the file extention was not recognized 
 			else 
-			{
 				System.err.println("MEND does not know how to decrypt this file as it does not recognize the file extention. Expecting either .mend or .enc");
-			}
 		} 
 		catch (NoSuchAlgorithmException | IOException | InvalidKeySpecException e) 
 		{
@@ -180,15 +184,93 @@ public class Decrypt extends Command
 	}
 	
 	
-	private void decryptFile(File file)
+	private void decryptFile(File file, RSAPrivateKey privateKey)
 	{
-		
+		FileInputStream fis = null;
+		FileOutputStream fos = null;
+		CipherOutputStream cos = null;
+		try
+		{
+			String decLocation = Settings.instance().getValue(Config.Settings.DECDIR);
+			if (decLocation == null)
+				throw new FileNotFoundException("You need to set the decdir property in your settings file before you can decrypt files to it.");
+			
+			File outputFile = new File(decLocation + FilenameUtils.removeExtension(file.getName()));
+			if (outputFile.getParentFile() == null || !outputFile.getParentFile().exists())
+				throw new FileNotFoundException("Could not write to the decrypt location.");
+			
+			if (outputFile.exists())
+			{
+				System.err.println("The output file already exists at: " + outputFile.getAbsolutePath());
+				return;
+			}
+			
+			fos = new FileOutputStream(outputFile);
+			
+			fis = new FileInputStream(file);
+			byte[] lcBytes = new byte[4];
+			//while there is an initial length code to be read in, read it in
+			if (fis.read(lcBytes) != lcBytes.length)
+				throw new MalformedLogFileException("This enc file is malformed");
+			
+			//then convert it to an integer
+			int lc = ByteBuffer.wrap(lcBytes).getInt(); //big-endian by default
+			
+			//and read in that many bytes as the encrypted aes key used to encrypt this enc file
+			byte[] encAesKey = new byte[lc];
+			if (fis.read(encAesKey) != encAesKey.length)
+				throw new MalformedLogFileException("This log file is malformed.");
+			
+			//now decrypt the aes key
+			Cipher rsaCipher = Cipher.getInstance(Config.PREFERRED_RSA_ALG);
+            rsaCipher.init(Cipher.DECRYPT_MODE, privateKey);
+            byte[] aesKeyBytes = rsaCipher.doFinal(encAesKey);
+            SecretKey aesKey = new SecretKeySpec(aesKeyBytes, 0, aesKeyBytes.length, "AES");
+			
+			//now decrypt the file
+			Cipher aesCipher = Cipher.getInstance(Config.PREFERRED_AES_ALG);
+			aesCipher.init(Cipher.DECRYPT_MODE, aesKey, Config.STANDARD_IV);
+			cos = new CipherOutputStream(fos, aesCipher);
+			
+			//now we can append all the decrypted file bytes
+           	System.err.println("Decrypting the file to: " + outputFile.getAbsolutePath());
+           	byte[] buffer = new byte[8192];
+           	int count;
+           	while ((count = fis.read(buffer)) > 0)
+           	{
+           	    cos.write(buffer, 0, count);
+           	}
+           	System.err.println("Decryption complete.");
+		}
+		catch(IOException | MalformedLogFileException | NoSuchAlgorithmException 
+				| NoSuchPaddingException | InvalidKeyException | IllegalBlockSizeException 
+				| BadPaddingException | InvalidAlgorithmParameterException | CorruptSettingsException 
+				| InvalidSettingNameException | ParserConfigurationException | SAXException e)
+		{
+			System.err.println(e.getMessage());
+		}
+		finally
+		{
+			try 
+			{
+				if (fis != null)
+					fis.close();
+				if (fos != null)
+					fos.close();
+				if (cos != null)
+					cos.close();
+			} 
+			catch (IOException e) 
+			{
+				System.err.println(e.getMessage());
+			}
+		}
 	}
 	
 	@Override
 	public String getUsageText() 
 	{
-		return "Usage:\tmend dec <log_file>";
+		return "Usage:\tmend dec [<log_file>|<enc_file]";
 	}
 
 	@Override
