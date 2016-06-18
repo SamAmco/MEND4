@@ -28,6 +28,8 @@
     <target name="clean">
         <delete dir="bin"/>
     	<delete dir="jar"/>
+    	<delete file="Unix/MEND4.jar"/>
+    	<delete file="Windows/MEND4.jar"/>
     	<delete file="Settings.xml"/>
     </target>
               	
@@ -47,8 +49,8 @@
   			</manifest>
   			<zipgroupfileset dir="${libdir}" includes="**/*.jar" />
   		</jar>
-  		<copy file="jar/MEND4.jar" destfile="Unix/MEND4.jar" />
-  		<copy file="jar/MEND4.jar" destfile="Windows/MEND4.jar" />
+  		<copy file="jar/MEND4.jar" todir="Unix" />
+  		<copy file="jar/MEND4.jar" todir="Windows" />
   	</target>
               	
 </project>

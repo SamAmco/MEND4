@@ -8,6 +8,7 @@ import java.util.Map.Entry;
 
 import co.samco.commands.Decrypt;
 import co.samco.commands.Encrypt;
+import co.samco.commands.EncryptFromStdIn;
 import co.samco.commands.GetProperty;
 import co.samco.commands.Lock;
 import co.samco.commands.SetProperty;
@@ -24,6 +25,7 @@ public class Main
 		commands.put("lock", Lock.class);
 		commands.put("set", SetProperty.class);
 		commands.put("enc", Encrypt.class);
+		commands.put("enci", EncryptFromStdIn.class);
 		commands.put("get", GetProperty.class);
 		commands.put("dec", Decrypt.class);
 	}
@@ -34,11 +36,13 @@ public class Main
 		{
 			if (args.length < 1)
 			{
-				System.err.println("mend requires at least one argument. ");
-				System.err.println();
-				printUsage();
+				Command c = (Command)commands.get("enci").newInstance();
+				c.execute(new ArrayList<String>());
 				return;
 			}
+			
+			if (args[0].equals("--help") || args[0].equals("-help"))
+				printUsage();
 			
 			Iterator<Entry<String, Class<?>>> it = commands.entrySet().iterator();
 			boolean found = false;

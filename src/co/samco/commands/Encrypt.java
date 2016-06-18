@@ -12,10 +12,11 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
-import java.util.Date;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.Scanner;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -49,8 +50,13 @@ public class Encrypt extends Command implements InputBoxListener
 		if(!continueExecution)
 			return;
 		
-		
-		if (args.get(0).equals("-d"))
+		if (args.size() <= 0)
+		{
+			inputBox = new InputBox(true, false, 800, 250);
+			inputBox.addListener(this);
+			inputBox.setVisible(true);
+		}
+		else if (args.get(0).equals("-d"))
 		{
 			int dPos = args.indexOf("-d");
 			
@@ -77,10 +83,6 @@ public class Encrypt extends Command implements InputBoxListener
 			
 			return;
 		}
-		
-		inputBox = new InputBox(true, false, 800, 250);
-		inputBox.addListener(this);
-		inputBox.setVisible(true);
 	}
 
 	@Override
@@ -231,13 +233,15 @@ public class Encrypt extends Command implements InputBoxListener
         return userPublicKeyString;
 	}
 	
-	private void encryptTextToLog(char[] text)
+	protected void encryptTextToLog(char[] text)
 	{
 		FileOutputStream outFile = null;
 		try 
 		{
 			//Lets just do some basic checks first
 			String userPublicKeyString = getUserPublicKeyString();
+			if (userPublicKeyString == null)
+				return;
             String currentLogName = Settings.instance().getValue(Config.Settings.CURRENTLOG);
            	if (currentLogName == null)
            	{
