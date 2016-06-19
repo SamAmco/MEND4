@@ -8,6 +8,11 @@ public class EncryptFromStdIn extends Encrypt
 	@Override
 	public void execute(ArrayList<String> args) 
 	{
+		if (printHelp(args))
+			return;
+		
+		readOptions(args);
+		
 		Scanner scanner = new Scanner(System.in);
 		StringBuilder sb = new StringBuilder();
 		
@@ -18,7 +23,7 @@ public class EncryptFromStdIn extends Encrypt
 		}
 		scanner.close();
 		
-		encryptTextToLog(sb.toString().toCharArray());
+		encryptTextToLog(sb.toString().toCharArray(), dropHeader);
 	}
 	
 	@Override

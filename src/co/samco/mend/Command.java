@@ -4,14 +4,16 @@ import java.util.ArrayList;
 
 public abstract class Command 
 {
-	protected boolean continueExecution = true;
-	public void execute(ArrayList<String> args)
+	public abstract void execute(ArrayList<String> args);
+	
+	protected boolean printHelp(ArrayList<String> args)
 	{
 		if (args.contains("-h"))
 		{
 			System.err.println(getUsageText());
-			continueExecution = false;
+			return true;
 		}
+		return false;
 	}
 	
 	public abstract String getUsageText();

@@ -34,8 +34,7 @@ public class Unlock extends Command implements InputBoxListener
 	@Override
 	public void execute(ArrayList<String> args) 
 	{
-		super.execute(args);
-		if(!continueExecution)
+		if (printHelp(args))
 			return;
 		
 		inputBox = new InputBox(false, true, 200, 25);

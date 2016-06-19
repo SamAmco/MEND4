@@ -15,7 +15,9 @@ import java.security.spec.X509EncodedKeySpec;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
+import java.util.Locale;
 import java.util.Scanner;
 
 import javax.crypto.BadPaddingException;
@@ -29,6 +31,7 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.TransformerException;
 
 import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.io.FilenameUtils;
 import org.xml.sax.SAXException;
 
 import co.samco.mend.Command;
@@ -41,14 +44,16 @@ import co.samco.mend.Settings.InvalidSettingNameException;
 
 public class Encrypt extends Command implements InputBoxListener
 {
-	InputBox inputBox;
+	private InputBox inputBox;
+	protected boolean dropHeader = false;
 
 	@Override
 	public void execute(ArrayList<String> args) 
 	{
-		super.execute(args);
-		if(!continueExecution)
+		if (printHelp(args))
 			return;
+		
+		readOptions(args);
 		
 		if (args.size() <= 0)
 		{
@@ -56,29 +61,22 @@ public class Encrypt extends Command implements InputBoxListener
 			inputBox.addListener(this);
 			inputBox.setVisible(true);
 		}
-		else if (args.get(0).equals("-d"))
-		{
-			if (args.size() < 2)
-			{
-				System.err.println("You must provide the text you wish to encrypt after the -d option");
-				return;
-			}
-			else if (args.size() > 2)
-			{
-				System.err.println("Please wrap the text in double quotes.");
-				return;
-			}
-			encryptTextToLog(args.get(1).toCharArray());
-			return;
-		}
 		else if (args.size() > 0)
 		{
-			if (args.size() > 2)
+			if (args.contains("-d"))
 			{
-				System.err.println("Invalid number of arguments. See \"mend enc -h\" for more information.");
-				for (String s : args)
-					System.err.println(s);
+				int index = args.indexOf("-d");
+				if (args.size() < index + 2)
+				{
+					System.err.println("You must provide the text you wish to encrypt after the -d option");
+					return;
+				}
+				encryptTextToLog(args.get(index + 1).toCharArray(), dropHeader);
+				return;
 			}
+			
+			if (args.size() > 2)
+				System.err.println("Invalid number of arguments. See \"mend enc -h\" for more information.");
 
 			String name = null;
 			if (args.size() > 1)
@@ -89,11 +87,20 @@ public class Encrypt extends Command implements InputBoxListener
 			return;
 		}
 	}
+	
+	protected void readOptions(ArrayList<String> args)
+	{
+		if (args.contains("-a"))
+		{
+			dropHeader = true;
+			args.remove("-a");
+		}
+	}
 
 	@Override
 	public String getUsageText() 
 	{
-		return "Usage:\tmend enc [-d <text>|<path to file> [<encrypted file name>]]";
+		return "Usage:\tmend enc [-a][-d <text>|<path to file> [<encrypted file name>]]";
 	}
 
 	@Override
@@ -109,7 +116,7 @@ public class Encrypt extends Command implements InputBoxListener
 	public void OnShiftEnter(char[] text) 
 	{
 		inputBox.clear();
-		encryptTextToLog(text);
+		encryptTextToLog(text, dropHeader);
 		inputBox.close();
 	}
 
@@ -117,7 +124,7 @@ public class Encrypt extends Command implements InputBoxListener
 	public void OnCtrlEnter(char[] text) 
 	{
 		inputBox.clear();
-		encryptTextToLog(text);
+		encryptTextToLog(text, dropHeader);
 	}
 	
 	@SuppressWarnings("resource")
@@ -195,6 +202,12 @@ public class Encrypt extends Command implements InputBoxListener
            	
            	//now we can append all the encrypted file bytes
            	System.err.println("Encrypting file to: " + outputFile.getAbsolutePath());
+           	
+           	String fileExtension = FilenameUtils.getExtension(fileToEncrypt.getAbsolutePath());
+           	byte[] fileExtensionBytes = rsaCipher.doFinal(fileExtension.getBytes());
+           	fos.write(ByteBuffer.allocate(4).putInt(fileExtensionBytes.length).array());
+           	fos.write(fileExtensionBytes);
+           	
            	byte[] buffer = new byte[8192];
            	int count;
            	while ((count = fis.read(buffer)) > 0)
@@ -238,7 +251,19 @@ public class Encrypt extends Command implements InputBoxListener
         return userPublicKeyString;
 	}
 	
-	protected void encryptTextToLog(char[] text)
+	private String addHeaderToLogText(char[] logText)
+	{
+		StringBuilder sb = new StringBuilder();
+		Calendar cal = Calendar.getInstance();
+	    SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss", Locale.ENGLISH);
+	   	sb.append(sdf.format(cal.getTime()));
+	   	sb.append("//MEND");
+	   	sb.append("//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////\n");
+	   	sb.append(logText);
+	    return sb.toString();
+	}
+	
+	protected void encryptTextToLog(char[] text, boolean dropHeader)
 	{
 		if (text.length <= 0)
 			return;
@@ -265,7 +290,12 @@ public class Encrypt extends Command implements InputBoxListener
 			//use it to encrypt the text
 			Cipher aesCipher = Cipher.getInstance(Config.PREFERRED_AES_ALG);
 			aesCipher.init(Cipher.ENCRYPT_MODE, aesKey, Config.STANDARD_IV);
-            byte[] cipherText = aesCipher.doFinal(new String(text).getBytes("UTF-8"));
+			String logText;
+			if (dropHeader)
+				logText = new String(text);
+			else 
+				logText = addHeaderToLogText(text);
+            byte[] cipherText = aesCipher.doFinal(logText.getBytes("UTF-8"));
 
 			//encrypt the aes key with the public rsa key
             Cipher rsaCipher = Cipher.getInstance(Config.PREFERRED_RSA_ALG);

@@ -14,8 +14,7 @@ public class Lock extends Command
 	@Override
 	public void execute(ArrayList<String> args) 
 	{
-		super.execute(args);
-		if(!continueExecution)
+		if (printHelp(args))
 			return;
 		
 		try

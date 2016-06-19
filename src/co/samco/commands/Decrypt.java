@@ -38,8 +38,7 @@ public class Decrypt extends Command
 	@Override
 	public void execute(ArrayList<String> args) 
 	{
-		super.execute(args);
-		if(!continueExecution)
+		if (printHelp(args))
 			return;
 		
 		//TODO allow them to specify an output file.. or specify that the file should be written to the dec directory
@@ -195,18 +194,6 @@ public class Decrypt extends Command
 			if (decLocation == null)
 				throw new FileNotFoundException("You need to set the decdir property in your settings file before you can decrypt files to it.");
 			
-			File outputFile = new File(decLocation + FilenameUtils.removeExtension(file.getName()));
-			if (outputFile.getParentFile() == null || !outputFile.getParentFile().exists())
-				throw new FileNotFoundException("Could not write to the decrypt location.");
-			
-			if (outputFile.exists())
-			{
-				System.err.println("The output file already exists at: " + outputFile.getAbsolutePath());
-				return;
-			}
-			
-			fos = new FileOutputStream(outputFile);
-			
 			fis = new FileInputStream(file);
 			byte[] lcBytes = new byte[4];
 			//while there is an initial length code to be read in, read it in
@@ -227,13 +214,39 @@ public class Decrypt extends Command
             byte[] aesKeyBytes = rsaCipher.doFinal(encAesKey);
             SecretKey aesKey = new SecretKeySpec(aesKeyBytes, 0, aesKeyBytes.length, "AES");
 			
+           	//first get the file extension
+           	byte[] lc2Bytes = new byte[4];
+           	
+           	if (fis.read(lc2Bytes) != lc2Bytes.length)
+           		throw new MalformedLogFileException("This enc file is malformed");
+           	
+           	int lc2 = ByteBuffer.wrap(lc2Bytes).getInt(); //big-endian by default
+           	byte[] encFileExtension = new byte[lc2];
+           	
+           	if (fis.read(encFileExtension) != encFileExtension.length)
+           		throw new MalformedLogFileException("This enc file is malformed");
+
+           	String fileExtension = new String(rsaCipher.doFinal(encFileExtension));
+           	
+           	File outputFile = new File(decLocation + FilenameUtils.removeExtension(file.getName()) + '.' + fileExtension);
+			if (outputFile.getParentFile() == null || !outputFile.getParentFile().exists())
+				throw new FileNotFoundException("Could not write to the decrypt location.");
+			
+			if (outputFile.exists())
+			{
+				System.err.println("The output file already exists at: " + outputFile.getAbsolutePath());
+				return;
+			}
+			
+			fos = new FileOutputStream(outputFile);
+			
 			//now decrypt the file
 			Cipher aesCipher = Cipher.getInstance(Config.PREFERRED_AES_ALG);
 			aesCipher.init(Cipher.DECRYPT_MODE, aesKey, Config.STANDARD_IV);
 			cos = new CipherOutputStream(fos, aesCipher);
-			
-			//now we can append all the decrypted file bytes
+           	
            	System.err.println("Decrypting the file to: " + outputFile.getAbsolutePath());
+           	//now we can append all the decrypted file bytes
            	byte[] buffer = new byte[8192];
            	int count;
            	while ((count = fis.read(buffer)) > 0)

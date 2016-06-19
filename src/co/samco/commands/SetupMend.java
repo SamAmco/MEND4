@@ -35,8 +35,7 @@ public class SetupMend extends Command
 	@Override
 	public void execute(ArrayList<String> args) 
 	{
-		super.execute(args);
-		if(!continueExecution)
+		if (printHelp(args))
 			return;
 		
 		if (args.size() != 1)
