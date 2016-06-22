@@ -276,6 +276,10 @@ public class Encrypt extends Command implements InputBoxListener
 			if (userPublicKeyString == null)
 				return;
             String currentLogName = Settings.instance().getValue(Config.Settings.CURRENTLOG);
+            String logDir = Settings.instance().getValue(Config.Settings.LOGDIR);
+            if (logDir == null)
+            	throw new IOException("You need to set the " + Config.SETTINGS_NAMES_MAP.get(Config.Settings.LOGDIR.ordinal()) 
+					+ " property in your settings file before you can encrypt logs to it.");
            	if (currentLogName == null)
            	{
            		Settings.instance().setValue(Config.Settings.CURRENTLOG, "Log.mend");
@@ -327,7 +331,7 @@ public class Encrypt extends Command implements InputBoxListener
            	output.put(cipherText);
            	
            	//append the byte block to the current log
-           	File currentLogFile = new File(Config.CONFIG_PATH + currentLogName);
+           	File currentLogFile = new File(logDir + File.separatorChar + currentLogName);
        		currentLogFile.createNewFile();
        		
        		outFile = new FileOutputStream(currentLogFile, true);
