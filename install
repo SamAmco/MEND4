@@ -4,4 +4,5 @@ trash /opt/sam/MEND/MEND4.jar
 cp Unix/MEND4.jar /opt/sam/MEND/
 trash ~/Dropbox/MEND4\ copy/MEND4.jar
 cp Unix/MEND4.jar ~/Dropbox/MEND4\ copy/
+echo "I hope you set the CONFIG_PATH"
 

@@ -26,7 +26,14 @@ public class Clean extends Command
 		
 		try 
 		{
-			File dir = new File(Settings.instance().getValue(Config.Settings.DECDIR));
+			String decDir = Settings.instance().getValue(Config.Settings.DECDIR);
+			if (decDir == null)
+			{
+				System.err.println("You need to set the " 
+						+ Config.SETTINGS_NAMES_MAP.get(Config.Settings.DECDIR.ordinal()) + " property before you can clean the files in it.");
+				return;
+			}
+			File dir = new File(decDir);
 			File[] directoryListing = dir.listFiles();
 			if (directoryListing == null)
 			{
