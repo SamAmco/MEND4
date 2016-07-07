@@ -6,6 +6,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import co.samco.commands.Clean;
 import co.samco.commands.Decrypt;
 import co.samco.commands.Encrypt;
 import co.samco.commands.EncryptFromStdIn;
@@ -28,6 +29,7 @@ public class Main
 		commands.put("enci", EncryptFromStdIn.class);
 		commands.put("get", GetProperty.class);
 		commands.put("dec", Decrypt.class);
+		commands.put("clean", Clean.class);
 	}
 	
 	public static void main(String[] args)
