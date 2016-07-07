@@ -41,7 +41,8 @@ public class Config
 		RSAKEYSIZE,
 		AESKEYSIZE,
 		PREFERREDRSA,
-		PREFERREDAES
+		PREFERREDAES,
+		SHREDCOMMAND
 	}
 	
 	public static final Map<Integer, String> SETTINGS_NAMES_MAP;
@@ -60,6 +61,7 @@ public class Config
         m.put(8, "aeskeysize");
         m.put(9, "preferredrsa");
         m.put(10, "preferredaes");
+        m.put(11, "shredcommand");
         
         SETTINGS_NAMES_MAP = Collections.unmodifiableMap(m);
     }
@@ -77,6 +79,7 @@ public class Config
         m.put(8, "The preferred key size to use for AES. You probably won't want to touch this.");
         m.put(9, "The preferred transform for RSA ciphers. You probably won't want to touch this. The full list of available transforms is specific to your jvm.");
         m.put(10, "The preferred transform for AES ciphers. You probably won't want to touch this. The full list of available transforms is specific to your jvm.");
+        m.put(11, "The command that will be run to shred a file, where <filename> is the file to be shredded.");
         
         SETTINGS_DESCRIPTIONS_MAP = Collections.unmodifiableMap(m);
 	}

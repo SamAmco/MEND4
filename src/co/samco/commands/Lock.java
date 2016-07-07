@@ -6,8 +6,15 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 
+import javax.xml.parsers.ParserConfigurationException;
+
+import org.xml.sax.SAXException;
+
 import co.samco.mend.Command;
 import co.samco.mend.Config;
+import co.samco.mend.Settings;
+import co.samco.mend.Settings.CorruptSettingsException;
+import co.samco.mend.Settings.InvalidSettingNameException;
 
 public class Lock extends Command
 {
@@ -25,11 +32,15 @@ public class Lock extends Command
 			{
 				System.err.println("MEND did not appear to be unlocked.");
 			}
-			System.out.println("Shredding prKey.dec");
-			System.out.println();
-			//TODO this probably needs re-thinking, because it's not cross platform or even reliably installed..
-			//I would consider maybe just exposing the command to the user and default to shred. I don't fancy writing my own.
-			Process tr = Runtime.getRuntime().exec(new String[]{"shred", "-u", Config.CONFIG_PATH + "prKey.dec"});
+			String shredCommand = Settings.instance().getValue(Config.Settings.SHREDCOMMAND);
+			if (shredCommand == null)
+			{
+				System.err.println("You need to set the " + Config.SETTINGS_NAMES_MAP.get(Config.Settings.SHREDCOMMAND.ordinal())
+					+ " property in your settings before you can shred files.");
+				return;
+			}
+			String[] shredCommandArgs = generateShredCommandArgs(Config.CONFIG_PATH + "prKey.dec", shredCommand);
+			Process tr = Runtime.getRuntime().exec(shredCommandArgs);
 			BufferedReader rd = new BufferedReader(new InputStreamReader(tr.getInputStream()));
 			String s = rd.readLine();
 			while (s != null)
@@ -40,7 +51,8 @@ public class Lock extends Command
 			if (!privateKeyFile.exists())
 				System.out.println("MEND Locked.");
 		}
-		catch(IOException e)
+		catch(IOException | CorruptSettingsException | InvalidSettingNameException 
+				| ParserConfigurationException | SAXException e)
 		{
 			System.err.println(e.getMessage());
 		}

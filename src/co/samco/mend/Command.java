@@ -19,4 +19,10 @@ public abstract class Command
 	public abstract String getUsageText();
 	
 	public abstract String getDescriptionText();
+	
+	protected String[] generateShredCommandArgs(String fileName, String commandString)
+	{
+		commandString = commandString.replaceAll("<filename>", fileName);
+		return commandString.split(" ");
+	}
 }
