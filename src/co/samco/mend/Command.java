@@ -22,7 +22,12 @@ public abstract class Command
 	
 	protected String[] generateShredCommandArgs(String fileName, String commandString)
 	{
-		commandString = commandString.replaceAll("<filename>", fileName);
-		return commandString.split(" ");
+		String[] commandStrings = commandString.split(" ");
+		for (int i = 0; i < commandStrings.length; ++i)
+		{
+			if (commandStrings[i].equals("<filename>"))
+				commandStrings[i] = fileName;
+		}
+		return commandStrings;
 	}
 }
