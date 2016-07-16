@@ -43,8 +43,17 @@ public class Main
 				return;
 			}
 			
-			if (args[0].equals("--help") || args[0].equals("-help"))
+			if (args[0].equals("-v") || args[0].equals("--version"))
+			{
+				System.out.println("MEND version " + Config.VERSION_NUMBER);
+				return;
+			}
+				
+			if (args[0].equals("-h") || args[0].equals("--help"))
+			{
 				printUsage();
+				return;
+			}
 			
 			Iterator<Entry<String, Class<?>>> it = commands.entrySet().iterator();
 			boolean found = false;
@@ -82,7 +91,7 @@ public class Main
 	private static void printUsage() 
 			throws InstantiationException, IllegalAccessException
 	{
-		System.err.println("Usage:\tmend <command> [-h|<args>]");
+		System.err.println("Usage:\tmend [-v | -h] | [<command> [-h|<args>]");
 		System.err.println();
 		System.err.println("Commands:");
 		Iterator<Entry<String, Class<?>>> it = commands.entrySet().iterator();

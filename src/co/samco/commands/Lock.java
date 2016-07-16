@@ -50,6 +50,7 @@ public class Lock extends Command
 			}
 			if (!privateKeyFile.exists())
 				System.out.println("MEND Locked.");
+			else System.out.println("Locking may have failed, your private key file still exists.");
 		}
 		catch(IOException | CorruptSettingsException | InvalidSettingNameException 
 				| ParserConfigurationException | SAXException e)

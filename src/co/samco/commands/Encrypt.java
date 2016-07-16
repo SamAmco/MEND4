@@ -214,7 +214,7 @@ public class Encrypt extends Command implements InputBoxListener
            	{
            	    cos.write(buffer, 0, count);
            	}
-           	System.err.println("Encryption complete.");
+           	System.err.println("Encryption complete. Key: " + name);
 		}
 		catch ( IOException | CorruptSettingsException 
 				| InvalidSettingNameException | ParserConfigurationException 
@@ -257,7 +257,7 @@ public class Encrypt extends Command implements InputBoxListener
 		Calendar cal = Calendar.getInstance();
 	    SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss", Locale.ENGLISH);
 	   	sb.append(sdf.format(cal.getTime()));
-	   	sb.append("//MEND");
+	   	sb.append("//MEND"+Config.VERSION_NUMBER);
 	   	sb.append("//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////\n");
 	   	sb.append(logText);
 	    return sb.toString();

@@ -62,11 +62,26 @@ public class Decrypt extends Command
 			}
 			
 			//Check the file they specified actually exists
-			File file = new File(args.get(0));
+			
+			//First check the special case that it's a 16 digit enc file id
+			String filePath = args.get(0);
+			if (filePath.matches("\\d{17}"))
+			{
+				String encDir = Settings.instance().getValue(Config.Settings.ENCDIR);
+				if (encDir == null)
+				{
+					System.out.println("You need to set the " + Config.SETTINGS_NAMES_MAP.get(Config.Settings.ENCDIR.ordinal())
+							+ " property in your settings file before you can decrypt files from it.");
+					return;
+				}
+				filePath = encDir + File.separatorChar + filePath + ".enc";
+			}
+			
+			File file = new File(filePath);
 			String filename = file.getName();
 			if (!file.exists())
 			{
-				System.err.println("Could not find specified file.");
+				System.err.println("Could not find specified file: " + file.getAbsolutePath());
 				return;
 			}
 			
@@ -90,7 +105,9 @@ public class Decrypt extends Command
 			else 
 				System.err.println("MEND does not know how to decrypt this file as it does not recognize the file extention. Expecting either .mend or .enc");
 		} 
-		catch (NoSuchAlgorithmException | IOException | InvalidKeySpecException e) 
+		catch (NoSuchAlgorithmException | IOException | InvalidKeySpecException 
+				| CorruptSettingsException | InvalidSettingNameException 
+				| ParserConfigurationException | SAXException e) 
 		{
 			System.err.println(e.getMessage());
 		} 
@@ -192,7 +209,10 @@ public class Decrypt extends Command
 		{
 			String decLocation = Settings.instance().getValue(Config.Settings.DECDIR);
 			if (decLocation == null)
-				throw new FileNotFoundException("You need to set the decdir property in your settings file before you can decrypt files to it.");
+				throw new FileNotFoundException("You need to set the " + Config.SETTINGS_NAMES_MAP.get(Config.Settings.DECDIR.ordinal())
+						+ " property in your settings file before you can decrypt files to it.");
+			
+			decLocation += File.separatorChar;
 			
 			fis = new FileInputStream(file);
 			byte[] lcBytes = new byte[4];
