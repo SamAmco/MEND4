@@ -70,20 +70,39 @@ public class Decrypt extends Command
 				String encDir = Settings.instance().getValue(Config.Settings.ENCDIR);
 				if (encDir == null)
 				{
-					System.out.println("You need to set the " + Config.SETTINGS_NAMES_MAP.get(Config.Settings.ENCDIR.ordinal())
+					System.err.println("You need to set the " + Config.SETTINGS_NAMES_MAP.get(Config.Settings.ENCDIR.ordinal())
 							+ " property in your settings file before you can decrypt files from it.");
 					return;
 				}
 				filePath = encDir + File.separatorChar + filePath + ".enc";
 			}
 			
+			
 			File file = new File(filePath);
-			String filename = file.getName();
-			if (!file.exists())
+			if (!file.exists() || !file.isFile())
 			{
-				System.err.println("Could not find specified file: " + file.getAbsolutePath());
-				return;
+				//Then check it's the special case where it's a logfile name
+				String extension = FilenameUtils.getExtension(filePath);
+				if (extension.equals(""))
+					filePath += ".mend";
+
+				String logDir = Settings.instance().getValue(Config.Settings.LOGDIR);
+				if (logDir == null)
+				{
+					System.err.println("Defaulted to searching " 
+							+ Config.SETTINGS_NAMES_MAP.get(Config.Settings.LOGDIR.ordinal()) 
+							+ " but the property is not set in your Settings file.");
+					return;
+				}
+
+				file = new File(logDir + File.separatorChar + filePath);
+				if (!file.exists() || !file.isFile())
+				{
+					System.err.println("Could not find specified file: " + file.getAbsolutePath());
+					return;
+				}
 			}
+			String filename = file.getName();
 			
 			//now read in the private rsa key.
 	        byte[] keyBytes = new byte[(int)privateKeyFile.length()];
@@ -96,14 +115,17 @@ public class Decrypt extends Command
 			//TODO you could make the file extentions configurable, what if people already have software installed that uses one or both of these file extentions?
 			
 			//if it's a log file decrypt it as a log
-			if (filename.substring(filename.lastIndexOf(".") + 1, filename.length()).equals("mend"))
+			if (FilenameUtils.getExtension(filename).equals("mend"))
 				decryptLog(file, privateKey);
 			//if it's just an encrypted file decrypt it as that.
-			else if (filename.substring(filename.lastIndexOf(".") + 1, filename.length()).equals("enc"))
+			else if (FilenameUtils.getExtension(filename).equals("enc"))
 				decryptFile(file, privateKey);
 			//if the file extention was not recognized 
 			else 
+			{
+				System.err.println("Failed attempting to decrypt: " + filename);
 				System.err.println("MEND does not know how to decrypt this file as it does not recognize the file extention. Expecting either .mend or .enc");
+			}
 		} 
 		catch (NoSuchAlgorithmException | IOException | InvalidKeySpecException 
 				| CorruptSettingsException | InvalidSettingNameException 

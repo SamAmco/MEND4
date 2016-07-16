@@ -31,7 +31,24 @@ public class GetProperty extends Command
 		
 		try 
 		{
-			//Do something like this:
+			if (args.get(0).equals("-a"))
+			{
+				for (int i = 0; i < Config.SETTINGS_NAMES_MAP.size(); i++)
+				{
+					String key = Config.SETTINGS_NAMES_MAP.get(i);
+					String value = Settings.instance().getValue(Config.Settings.values()[i]);
+					StringBuilder sb = new StringBuilder();
+					sb.append(key);
+					sb.append("\t");
+					if (value == null)
+						sb.append("NOT SET");
+					else sb.append(value);
+					System.err.println(sb.toString());
+					System.err.println();
+				}
+				return;
+			}
+			
 			String value = null;
 			for (int i = 0; i < Config.SETTINGS_NAMES_MAP.size(); i++)
 			{
@@ -57,7 +74,7 @@ public class GetProperty extends Command
 	public String getUsageText() 
 	{
 		StringBuilder sb = new StringBuilder();
-		sb.append("Usage:\tmend get <property>");
+		sb.append("Usage:\tmend get -a | <property>");
 		sb.append("\n");
 		sb.append("\nRecognized properties:");
 		
@@ -74,7 +91,7 @@ public class GetProperty extends Command
 	@Override
 	public String getDescriptionText() 
 	{
-		return "Get the value of a property in your settings file.";
+		return "Get the values of properties in your settings file.";
 	}
 
 }
