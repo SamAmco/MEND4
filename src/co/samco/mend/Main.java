@@ -10,7 +10,7 @@ import co.samco.commands.Clean;
 import co.samco.commands.Decrypt;
 import co.samco.commands.Encrypt;
 import co.samco.commands.EncryptFromStdIn;
-import co.samco.commands.GetProperty;
+import co.samco.commands.StatePrinter;
 import co.samco.commands.Lock;
 import co.samco.commands.SetProperty;
 import co.samco.commands.SetupMend;
@@ -27,7 +27,7 @@ public class Main
 		commands.put("set", SetProperty.class);
 		commands.put("enc", Encrypt.class);
 		commands.put("enci", EncryptFromStdIn.class);
-		commands.put("get", GetProperty.class);
+		commands.put("get", StatePrinter.class);
 		commands.put("dec", Decrypt.class);
 		commands.put("clean", Clean.class);
 	}
