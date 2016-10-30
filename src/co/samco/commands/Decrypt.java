@@ -63,9 +63,9 @@ public class Decrypt extends Command
 			
 			//Check the file they specified actually exists
 			
-			//First check the special case that it's a 16 digit enc file id
+			//First check the special case that it's a 17 or 14 digit enc file id
 			String filePath = args.get(0);
-			if (filePath.matches("\\d{17}"))
+			if (filePath.matches("\\d{17}") || filePath.matches("\\d{14}"))
 			{
 				String encDir = Settings.instance().getValue(Config.Settings.ENCDIR);
 				if (encDir == null)
@@ -81,7 +81,7 @@ public class Decrypt extends Command
 			File file = new File(filePath);
 			if (!file.exists() || !file.isFile())
 			{
-				//Then check it's the special case where it's a logfile name
+				//Then check it's the case where it's a logfile name
 				String extension = FilenameUtils.getExtension(filePath);
 				if (extension.equals(""))
 					filePath += ".mend";
@@ -325,7 +325,7 @@ public class Decrypt extends Command
 	@Override
 	public String getUsageText() 
 	{
-		return "Usage:\tmend dec [<log_file>|<enc_file]";
+		return "Usage:\tmend dec [<log_file>|<enc_file>]";
 	}
 
 	@Override

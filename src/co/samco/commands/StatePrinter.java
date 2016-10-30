@@ -141,7 +141,7 @@ public class StatePrinter extends Command
 		sb.append("\n");
 		sb.append("\n-a\tPrint all properties from your Setting file.");
 		sb.append("\n-l\tPrint the names of log files.");
-		sb.append("\n-e\tPring the names of enc files.");
+		sb.append("\n-e\tPrint the names of enc files.");
 		sb.append("\n");
 		sb.append("\nRecognized properties:");
 		
