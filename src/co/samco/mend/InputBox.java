@@ -10,6 +10,7 @@ import java.util.List;
 import javax.swing.BorderFactory;
 import javax.swing.JFrame;
 import javax.swing.JPasswordField;
+import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.text.JTextComponent;
 
@@ -34,17 +35,26 @@ public class InputBox extends JFrame implements KeyListener
 		this.setLocation(dim.width/2-this.getSize().width/2, dim.height/2-this.getSize().height/2);
 		
 		if (password)
+		{
 			textInput = new JPasswordField();
+			textInput.setPreferredSize(new Dimension(width, height));
+			this.add(textInput);
+		}
 		else
-			textInput = new JTextArea();
-		
-		textInput.setPreferredSize(new Dimension(width, height));
+		{
+			JTextArea textArea = new JTextArea();
+			textArea.setLineWrap(true);
+			textArea.setWrapStyleWord(true);
+			textInput = textArea;
+			JScrollPane sp = new JScrollPane(textArea);
+			sp.setPreferredSize(new Dimension(width, height));
+			this.add(sp);
+		}
+			
 		textInput.setBackground(ColorSchemeData.getColor2());
 		textInput.setFont(ColorSchemeData.getConsoleFont());
 		textInput.setBorder(BorderFactory.createLineBorder(ColorSchemeData.getColor1()));
 		textInput.addKeyListener(this);
-		this.add(textInput);
-		
 	}
 	
 	public void addListener(InputBoxListener l)
