@@ -29,7 +29,7 @@ public class EncryptFromStdIn extends Encrypt
 	@Override
 	public String getUsageText() 
 	{
-		return "Usage:\tmend enci";
+		return "Usage:\tmend enci [-a]";
 	}
 
 	@Override
