@@ -61,7 +61,7 @@ public class SetupMend extends Command
 		try 
 		{
 			//Ensure the settings path exists
-			System.out.println("Creating Directory: " + Config.CONFIG_PATH);
+			System.out.println("Creating Settings.xml in " + Config.CONFIG_PATH);
 			new File(Config.CONFIG_PATH).mkdirs();
 			
 			//Generate an RSA key pair.

@@ -282,8 +282,8 @@ public class Encrypt extends Command implements InputBoxListener
 					+ " property in your settings file before you can encrypt logs to it.");
            	if (currentLogName == null)
            	{
-           		Settings.instance().setValue(Config.Settings.CURRENTLOG, "Log.mend");
-           		currentLogName = "Log.mend";
+           		Settings.instance().setValue(Config.Settings.CURRENTLOG, "Log");
+           		currentLogName = "Log";
            	}
             
 			//generate an aes key
@@ -331,6 +331,10 @@ public class Encrypt extends Command implements InputBoxListener
            	output.put(cipherText);
            	
            	//append the byte block to the current log
+           	if (currentLogName.length() < 1)
+           		currentLogName = "Log";
+           	if (currentLogName.length() < 6 || !currentLogName.substring(currentLogName.length() - 5, currentLogName.length()).equals(".mend"))
+				currentLogName += ".mend";
            	File currentLogFile = new File(logDir + File.separatorChar + currentLogName);
        		currentLogFile.createNewFile();
        		
