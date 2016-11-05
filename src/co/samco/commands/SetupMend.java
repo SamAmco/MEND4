@@ -38,16 +38,25 @@ public class SetupMend extends Command
 		if (printHelp(args))
 			return;
 		
-		if (args.size() != 1)
+		if(new File(Config.CONFIG_PATH + Config.SETTINGS_FILE).exists())
 		{
-			System.err.println("Please provide a password.");
-			getUsageText();
+			System.err.println("MEND is already set up. You must manually remove the Settings file to continue.");
 			return;
 		}
 		
-		String password = args.get(0);
+		String password = null;
+		while (password == null)
+		{
+			char[] passArr1 = System.console().readPassword("Please enter a password: ");
+			String pass1 = new String (passArr1);
+			char[] passArr2 = System.console().readPassword("Please re-enter your password: ");
+			String pass2 = new String (passArr2);
+			if (pass1.equals(pass2))
+				password = pass1;
+			else 
+				System.err.println("Your passwords did not match. Please try again.");
+		}
 		
-		//TODO What if they're already set up? Maybe the user should be warned.
 		//TODO its probably here that we'll want to warn the user if they don't have unlimited crypto policies installed
 		try 
 		{
