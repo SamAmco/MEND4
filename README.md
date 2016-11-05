@@ -44,8 +44,8 @@ or (a less secure version):
 	mend set shredcommand "rm <filename>"
 	
 
-(This section is a work in progress)	
 ##USAGE:
+(This section is a work in progress)	
 
 In order to decrypt anything that has been encrypted by MEND, you will first need to unlock MEND using the command:
 
