@@ -23,12 +23,11 @@ import org.xml.sax.SAXException;
 import co.samco.mend.Command;
 import co.samco.mend.Config;
 import co.samco.mend.InputBox;
-import co.samco.mend.InputBoxListener;
 import co.samco.mend.Settings;
 import co.samco.mend.Settings.CorruptSettingsException;
 import co.samco.mend.Settings.InvalidSettingNameException;
 
-public class Unlock extends Command implements InputBoxListener
+public class Unlock extends Command
 {
 	InputBox inputBox;
 	@Override
@@ -37,21 +36,8 @@ public class Unlock extends Command implements InputBoxListener
 		if (printHelp(args))
 			return;
 		
-		inputBox = new InputBox(false, true, 200, 25);
-		inputBox.addListener(this);
-		inputBox.setVisible(true);
-	}
-	
-	@Override
-	public String getUsageText() 
-	{
-		return "Usage:\tmend unlock";
-	}
-
-	@Override
-	public void OnEnter(char[] password) 
-	{
-		inputBox.close();
+		char[] password = System.console().readPassword("Please enter your password: ");
+		
 		try 
 		{
 			//If there is already a prKey.dec file existent, just shred it and unlock again.
@@ -110,18 +96,15 @@ public class Unlock extends Command implements InputBoxListener
 	}
 	
 	@Override
+	public String getUsageText() 
+	{
+		return "Usage:\tmend unlock";
+	}
+	
+	@Override
 	public String getDescriptionText() 
 	{
 		return "To decrypt the private key.";	
 	}
-
-	@Override
-	public void OnShiftEnter(char[] text) {}
-
-	@Override
-	public void OnCtrlEnter(char[] text) {}
-
-	@Override
-	public void OnEscape() {}
 
 }
