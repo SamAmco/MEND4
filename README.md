@@ -1,11 +1,11 @@
-MEND (My ENcrypted Data) aims to provide a simple command line interface for encryption of sensitive data on your local machine.
+#MEND 
+(My ENcrypted Data) aims to provide a simple command line interface for encryption of sensitive data on your local machine.
 
 MEND makes a deliberate distinction between "logs" and "files". You can append text to an encrypted log (which is useful for: automating encrypted logging, storing passwords or keeping an encrypted diary.) If you use MEND to encrypt a file, it will store the file with a 17 digit date/time ID, which can then be used to select it for decryption.
 
 After a small amount of setup, you can use MEND to encrypt and decrypt logs and files with simple and short commands. You only need to remember one password to unlock MEND which will then allow you to decrypt your logs and files.
 
-
-SETUP:
+##SETUP:
 
 First build the code using "ant clean jar" and move the jar and batch/shell script to a location on your machine recognised by your system path. There is no difference between the jar file placed under /Windows or /Unix, this is just for convenience when copying the script and jar together.
 
@@ -45,7 +45,7 @@ or (a less secure version):
 	
 
 (This section is a work in progress)	
-USAGE:
+##USAGE:
 
 In order to decrypt anything that has been encrypted by MEND, you will first need to unlock MEND using the command:
 
