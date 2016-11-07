@@ -1,5 +1,6 @@
 package co.samco.commands;
 
+import java.awt.Desktop;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -53,6 +54,13 @@ public class Decrypt extends Command
 				return;
 			}
 			
+			boolean silent = false;
+			if (args.contains("-s"))
+			{
+				silent = true;
+				args.remove("-s");
+			}
+			
 			//make sure mend is unlocked
 			File privateKeyFile = new File(Config.CONFIG_PATH + Config.PRIVATE_KEY_FILE_DEC);
 			if (!privateKeyFile.exists())
@@ -65,7 +73,7 @@ public class Decrypt extends Command
 			
 			//First check the special case that it's a 17 or 14 digit enc file id
 			String filePath = args.get(0);
-			if (filePath.matches("\\d{17}") || filePath.matches("\\d{14}"))
+			if (filePath.matches("\\d{16}") || filePath.matches("\\d{14}"))
 			{
 				String encDir = Settings.instance().getValue(Config.Settings.ENCDIR);
 				if (encDir == null)
@@ -119,7 +127,7 @@ public class Decrypt extends Command
 				decryptLog(file, privateKey);
 			//if it's just an encrypted file decrypt it as that.
 			else if (FilenameUtils.getExtension(filename).equals("enc"))
-				decryptFile(file, privateKey);
+				decryptFile(file, privateKey, silent);
 			//if the file extention was not recognized 
 			else 
 			{
@@ -222,7 +230,7 @@ public class Decrypt extends Command
 	}
 	
 	
-	private void decryptFile(File file, RSAPrivateKey privateKey)
+	private void decryptFile(File file, RSAPrivateKey privateKey, boolean silent)
 	{
 		FileInputStream fis = null;
 		FileOutputStream fos = null;
@@ -296,6 +304,9 @@ public class Decrypt extends Command
            	    cos.write(buffer, 0, count);
            	}
            	System.err.println("Decryption complete.");
+           	
+           	if (!silent)
+           		Desktop.getDesktop().open(outputFile);
 		}
 		catch(IOException | MalformedLogFileException | NoSuchAlgorithmException 
 				| NoSuchPaddingException | InvalidKeyException | IllegalBlockSizeException 
@@ -325,7 +336,7 @@ public class Decrypt extends Command
 	@Override
 	public String getUsageText() 
 	{
-		return "Usage:\tmend dec [<log_file>|<enc_file>]";
+		return "Usage:\tmend dec [-s] <log_file>|<enc_file>";
 	}
 
 	@Override
