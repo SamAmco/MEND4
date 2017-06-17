@@ -2,19 +2,12 @@ package co.samco.commands;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
-
-import javax.xml.parsers.ParserConfigurationException;
-
-import org.xml.sax.SAXException;
 
 import co.samco.mend.Command;
 import co.samco.mend.Config;
 import co.samco.mend.Settings;
-import co.samco.mend.Settings.CorruptSettingsException;
-import co.samco.mend.Settings.InvalidSettingNameException;
 
 public class Lock extends Command
 {
