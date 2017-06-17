@@ -17,10 +17,16 @@ import co.samco.mend.Settings.InvalidSettingNameException;
 
 public class Config 
 {
-	public static final String VERSION_NUMBER = "4.0.4";
+	public static final String VERSION_NUMBER = "4.0.5";
 	public static final String CONFIG_PATH = System.getProperty("user.home") + "/.MEND4/";
 	public static final String SETTINGS_FILE = "Settings.xml";
-	public static final String PRIVATE_KEY_FILE_DEC = "prKey.dec";
+	public static final String PRIVATE_KEY_FILE_DEC = "prKey";
+	public static final String PUBLIC_KEY_FILE = "pubKey";
+	public static final String PASSCHECK_TEXT = "How much wood could a wood chuck chuck if a wood chuck could chuck wood?";
+	public static final byte[] PASSCHECK_SALT = new byte[] {
+		    (byte)0xd7, (byte)0x73, (byte)0x31, (byte)0x8a,
+		    (byte)0x2e, (byte)0xc8, (byte)0xef, (byte)0x99
+		};
 	
 	public static final IvParameterSpec STANDARD_IV;
 	
@@ -38,7 +44,7 @@ public class Config
 		LOGDIR,
 		ENCDIR,
 		DECDIR,
-		PASSHASH,
+		PASSCHECK,
 		RSAKEYSIZE,
 		AESKEYSIZE,
 		PREFERREDRSA,
@@ -51,40 +57,43 @@ public class Config
 	static 
 	{
         Map<Integer, String> m = new HashMap<Integer, String>();
-        m.put(0, "publickey");
-        m.put(1, "privatekey");
-        m.put(2, "currentlog");
-        m.put(3, "logdir");
-        m.put(4, "encdir");
-        m.put(5, "decdir");
-        m.put(6, "passhash");
-        m.put(7, "rsakeysize");
-        m.put(8, "aeskeysize");
-        m.put(9, "preferredrsa");
-        m.put(10, "preferredaes");
-        m.put(11, "shredcommand");
+        int i = 0;
+        m.put(i++, "publickey");
+        m.put(i++, "privatekey");
+        m.put(i++, "currentlog");
+        m.put(i++, "logdir");
+        m.put(i++, "encdir");
+        m.put(i++, "decdir");
+        m.put(i++, "passcheck");
+        m.put(i++, "rsakeysize");
+        m.put(i++, "aeskeysize");
+        m.put(i++, "preferredrsa");
+        m.put(i++, "preferredaes");
+        m.put(i++, "shredcommand");
         
         SETTINGS_NAMES_MAP = Collections.unmodifiableMap(m);
     }
 	static
 	{
 		Map<Integer, String> m = new HashMap<Integer, String>();
-        m.put(0, "The RSA key used to encrypt encoded in url safe base64.");
-        m.put(1, "The RSA key used to decrypt encoded in url safe base64, and encrypted with AES using the MD5 hash of your password.");
-        m.put(2, "The log file currently being used.");
-        m.put(3, "The directory where mend expects all your log files to exist by default.");
-        m.put(4, "The directory where mend will output encrypted files.");
-        m.put(5, "The directory where mend will temporarily store decrypted files.");
-        m.put(6, "A SHA hash of your password.");
-        m.put(7, "The preferred key size to use for RSA. You probably won't want to touch this.");
-        m.put(8, "The preferred key size to use for AES. You probably won't want to touch this.");
-        m.put(9, "The preferred transform for RSA ciphers. You probably won't want to touch this. The full list of available transforms is specific to your jvm.");
-        m.put(10, "The preferred transform for AES ciphers. You probably won't want to touch this. The full list of available transforms is specific to your jvm.");
-        m.put(11, "The command that will be run to shred a file, where <filename> is the file to be shredded.");
+        int i = 0;
+        m.put(i++, "The RSA key used to encrypt encoded in url safe base64.");
+        m.put(i++, "The RSA key used to decrypt encoded in url safe base64, and encrypted with AES using the MD5 hash of your password.");
+        m.put(i++, "The log file currently being used.");
+        m.put(i++, "The directory where mend expects all your log files to exist by default.");
+        m.put(i++, "The directory where mend will output encrypted files.");
+        m.put(i++, "The directory where mend will temporarily store decrypted files.");
+        m.put(i++, "A piece of encrypted data used to check the validity of your password");
+        m.put(i++, "The preferred key size to use for RSA. You probably won't want to touch this.");
+        m.put(i++, "The preferred key size to use for AES. You probably won't want to touch this.");
+        m.put(i++, "The preferred transform for RSA ciphers. You probably won't want to touch this. The full list of available transforms is specific to your jvm.");
+        m.put(i++, "The preferred transform for AES ciphers. You probably won't want to touch this. The full list of available transforms is specific to your jvm.");
+        m.put(i++, "The command that will be run to shred a file, where <filename> is the file to be shredded.");
         
         SETTINGS_DESCRIPTIONS_MAP = Collections.unmodifiableMap(m);
 	}
 	
+	public static int AES_KEY_GEN_ITERATIONS = 65536;
 	public static String PREFERRED_RSA_ALG;
 	public static String PREFERRED_AES_ALG;
 	public static int RSA_KEY_SIZE;

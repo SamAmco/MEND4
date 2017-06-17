@@ -24,14 +24,14 @@ public class Lock extends Command
 		if (printHelp(args))
 			return;
 		
+		File privateKeyFile = new File(Config.CONFIG_PATH + Config.PRIVATE_KEY_FILE_DEC);
+		if (!privateKeyFile.exists())
+		{
+			System.err.println("MEND did not appear to be unlocked.");
+		}
+		
 		try
 		{
-			//If there is already a prKey.dex file existent, just shred it and unlock again.
-			File privateKeyFile = new File(Config.CONFIG_PATH + "prKey.dec");
-			if (!privateKeyFile.exists())
-			{
-				System.err.println("MEND did not appear to be unlocked.");
-			}
 			String shredCommand = Settings.instance().getValue(Config.Settings.SHREDCOMMAND);
 			if (shredCommand == null)
 			{
@@ -39,23 +39,33 @@ public class Lock extends Command
 					+ " property in your settings before you can shred files.");
 				return;
 			}
-			String[] shredCommandArgs = generateShredCommandArgs(Config.CONFIG_PATH + "prKey.dec", shredCommand);
-			Process tr = Runtime.getRuntime().exec(shredCommandArgs);
-			BufferedReader rd = new BufferedReader(new InputStreamReader(tr.getInputStream()));
-			String s = rd.readLine();
-			while (s != null)
-			{
-				System.out.println(s);
-				s = rd.readLine();
-			}
+			
+			tryShredFile(Config.PRIVATE_KEY_FILE_DEC, shredCommand);
+			tryShredFile(Config.PUBLIC_KEY_FILE, shredCommand);
+			
 			if (!privateKeyFile.exists())
 				System.out.println("MEND Locked.");
 			else System.out.println("Locking may have failed, your private key file still exists.");
 		}
-		catch(IOException | CorruptSettingsException | InvalidSettingNameException 
-				| ParserConfigurationException | SAXException e)
+		catch(Exception e)
 		{
 			System.err.println(e.getMessage());
+		}
+	}
+	
+	private void tryShredFile(String name, String shredCommand) throws Exception
+	{
+		//If there is already a file existent, just shred it and unlock again.
+		File file = new File(Config.CONFIG_PATH + name);
+		
+		String[] shredCommandArgs = generateShredCommandArgs(Config.CONFIG_PATH + name, shredCommand);
+		Process tr = Runtime.getRuntime().exec(shredCommandArgs);
+		BufferedReader rd = new BufferedReader(new InputStreamReader(tr.getInputStream()));
+		String s = rd.readLine();
+		while (s != null)
+		{
+			System.out.println(s);
+			s = rd.readLine();
 		}
 	}
 

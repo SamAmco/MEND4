@@ -51,7 +51,7 @@ In order to decrypt anything that has been encrypted by MEND, you will first nee
 
 	mend unlock
 
-MEND will ask you for your password, before hashing it and using that hash to decrypt your private key and store it in a file called "prKey.dec" next to your "Settings.xml" file. It is important to run remember to run:
+MEND will ask you for your password, before hashing it and using that hash to decrypt your private key and store it in a file called "prKey" next to your "Settings.xml" file. It is important to run remember to run:
 
 	mend lock	
 

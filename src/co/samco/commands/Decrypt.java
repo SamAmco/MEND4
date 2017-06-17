@@ -69,8 +69,6 @@ public class Decrypt extends Command
 				return;
 			}
 			
-			//Check the file they specified actually exists
-			
 			//First check the special case that it's a 17 or 14 digit enc file id
 			String filePath = args.get(0);
 			if (filePath.matches("\\d{14}") || filePath.matches("\\d{16}") || filePath.matches("\\d{17}"))
