@@ -1,7 +1,9 @@
 .DEFAULT_GOAL := jar
 
 JAVA_SRC = ./src/co/samco/mend/* ./src/co/samco/commands/*
-JAVA_LIB = "lib/*"
+JAVA_LIB_ALL = "lib/*"
+JAVA_LIB_IO = ./lib/commons-io-2.4.jar
+JAVA_LIB_CODEC = ./lib/commons-codec-1.10.jar
 BIN_DIR = bin
 WIN_DIR = Windows
 UNIX_DIR = Unix
@@ -14,7 +16,10 @@ jar: javac
 
 javac: 
 	mkdir -p $(BIN_DIR)
-	javac -d $(BIN_DIR) -cp $(JAVA_LIB) $(JAVA_SRC)
+	javac -d $(BIN_DIR) -cp $(JAVA_LIB_ALL) $(JAVA_SRC)
+	cd $(BIN_DIR); jar xf ../$(JAVA_LIB_IO)
+	cd $(BIN_DIR); jar xf ../$(JAVA_LIB_CODEC)
+	
 
 clean: 
 	rm -rf $(BIN_DIR)
