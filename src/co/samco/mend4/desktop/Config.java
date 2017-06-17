@@ -1,4 +1,4 @@
-package co.samco.mend;
+package co.samco.mend4.desktop;
 
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
@@ -12,8 +12,8 @@ import javax.xml.parsers.ParserConfigurationException;
 
 import org.xml.sax.SAXException;
 
-import co.samco.mend.Settings.CorruptSettingsException;
-import co.samco.mend.Settings.InvalidSettingNameException;
+import co.samco.mend4.desktop.Settings.CorruptSettingsException;
+import co.samco.mend4.desktop.Settings.InvalidSettingNameException;
 
 public class Config 
 {
@@ -104,7 +104,7 @@ public class Config
 		{			
 			//Set the rsa key size
 			//If the user has a set preference for the size then use that
-			String storedRsaLimitStr = co.samco.mend.Settings.instance().getValue(Settings.RSAKEYSIZE);
+			String storedRsaLimitStr = co.samco.mend4.desktop.Settings.instance().getValue(Settings.RSAKEYSIZE);
 			if (storedRsaLimitStr != null)
 				RSA_KEY_SIZE = Integer.parseInt(storedRsaLimitStr);		
 			//otherwise use the max recommended available
@@ -114,7 +114,7 @@ public class Config
 			
 			//Set the aes key size
 			//If the user has a set preference for the size then use that
-			String storedAesLimitStr = co.samco.mend.Settings.instance().getValue(Settings.AESKEYSIZE);
+			String storedAesLimitStr = co.samco.mend4.desktop.Settings.instance().getValue(Settings.AESKEYSIZE);
 			if (storedRsaLimitStr != null)
 				AES_KEY_SIZE = Integer.parseInt(storedAesLimitStr);		
 			//otherwise use the max recommended available
@@ -124,7 +124,7 @@ public class Config
 			
 			//Set the rsa algorithm
 			//If the user has a set preference for the algo then use that
-			String storedRsaAlgStr = co.samco.mend.Settings.instance().getValue(Settings.PREFERREDRSA);
+			String storedRsaAlgStr = co.samco.mend4.desktop.Settings.instance().getValue(Settings.PREFERREDRSA);
 			if (storedRsaLimitStr != null)
 				PREFERRED_RSA_ALG = storedRsaAlgStr;
 			//otherwise use the max recommended available
@@ -134,7 +134,7 @@ public class Config
 			
 			//Set the aes algorithm
 			//If the user has a set preference for the algo then use that
-			String storedAesAlgStr = co.samco.mend.Settings.instance().getValue(Settings.PREFERREDAES);
+			String storedAesAlgStr = co.samco.mend4.desktop.Settings.instance().getValue(Settings.PREFERREDAES);
 			if (storedAesAlgStr != null)
 				PREFERRED_AES_ALG = storedAesAlgStr;
 			//otherwise use the max recommended available

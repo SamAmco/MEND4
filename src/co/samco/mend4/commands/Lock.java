@@ -1,13 +1,12 @@
-package co.samco.commands;
+package co.samco.mend4.commands;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 
-import co.samco.mend.Command;
-import co.samco.mend.Config;
-import co.samco.mend.Settings;
+import co.samco.mend4.desktop.Config;
+import co.samco.mend4.desktop.Settings;
 
 public class Lock extends Command
 {

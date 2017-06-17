@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := jar
 
-JAVA_SRC = ./src/co/samco/mend/* ./src/co/samco/commands/*
+JAVA_SRC = ./src/co/samco/mend4/desktop/* ./src/co/samco/mend4/commands/*
 JAVA_LIB_ALL = "lib/*"
 JAVA_LIB_IO = ./lib/commons-io-2.4.jar
 JAVA_LIB_CODEC = ./lib/commons-codec-1.10.jar
@@ -10,7 +10,7 @@ UNIX_DIR = Unix
 JAR_NAME = MEND4.jar
 
 jar: javac
-	cd $(BIN_DIR); jar cvfe $(JAR_NAME) co.samco.mend.Main ./*
+	cd $(BIN_DIR); jar cvfe $(JAR_NAME) co.samco.mend4.desktop.Main ./*
 	cp $(BIN_DIR)/$(JAR_NAME) $(WIN_DIR)
 	cp $(BIN_DIR)/$(JAR_NAME) $(UNIX_DIR)
 

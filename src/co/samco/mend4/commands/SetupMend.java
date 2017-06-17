@@ -1,4 +1,4 @@
-package co.samco.commands;
+package co.samco.mend4.commands;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -18,9 +18,8 @@ import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 
-import co.samco.mend.Command;
-import co.samco.mend.Config;
-import co.samco.mend.Settings;
+import co.samco.mend4.desktop.Config;
+import co.samco.mend4.desktop.Settings;
 
 import org.apache.commons.codec.binary.Base64;
 

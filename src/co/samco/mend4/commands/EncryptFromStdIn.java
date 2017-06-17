@@ -1,4 +1,4 @@
-package co.samco.commands;
+package co.samco.mend4.commands;
 
 import java.util.ArrayList;
 import java.util.Scanner;

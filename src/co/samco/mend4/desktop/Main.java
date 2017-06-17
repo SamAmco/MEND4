@@ -1,4 +1,4 @@
-package co.samco.mend;
+package co.samco.mend4.desktop;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -6,15 +6,16 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import co.samco.commands.Clean;
-import co.samco.commands.Decrypt;
-import co.samco.commands.Encrypt;
-import co.samco.commands.EncryptFromStdIn;
-import co.samco.commands.StatePrinter;
-import co.samco.commands.Lock;
-import co.samco.commands.SetProperty;
-import co.samco.commands.SetupMend;
-import co.samco.commands.Unlock;
+import co.samco.mend4.commands.Command;
+import co.samco.mend4.commands.Clean;
+import co.samco.mend4.commands.Decrypt;
+import co.samco.mend4.commands.Encrypt;
+import co.samco.mend4.commands.EncryptFromStdIn;
+import co.samco.mend4.commands.StatePrinter;
+import co.samco.mend4.commands.Lock;
+import co.samco.mend4.commands.SetProperty;
+import co.samco.mend4.commands.SetupMend;
+import co.samco.mend4.commands.Unlock;
 
 public class Main 
 {

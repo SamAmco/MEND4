@@ -1,4 +1,4 @@
-package co.samco.commands;
+package co.samco.mend4.commands;
 
 import java.io.File;
 import java.io.IOException;
@@ -9,11 +9,10 @@ import javax.xml.parsers.ParserConfigurationException;
 import org.apache.commons.io.FilenameUtils;
 import org.xml.sax.SAXException;
 
-import co.samco.mend.Command;
-import co.samco.mend.Config;
-import co.samco.mend.Settings;
-import co.samco.mend.Settings.CorruptSettingsException;
-import co.samco.mend.Settings.InvalidSettingNameException;
+import co.samco.mend4.desktop.Config;
+import co.samco.mend4.desktop.Settings;
+import co.samco.mend4.desktop.Settings.CorruptSettingsException;
+import co.samco.mend4.desktop.Settings.InvalidSettingNameException;
 
 public class StatePrinter extends Command
 {
