@@ -2,34 +2,21 @@ package co.samco.commands;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.IOException;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.security.spec.KeySpec;
 import java.util.ArrayList;
-import java.util.Arrays;
 
-import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
-import javax.xml.parsers.ParserConfigurationException;
 
 import org.apache.commons.codec.binary.Base64;
-import org.xml.sax.SAXException;
 
 import co.samco.mend.Command;
 import co.samco.mend.Config;
 import co.samco.mend.InputBox;
 import co.samco.mend.Settings;
-import co.samco.mend.Settings.CorruptSettingsException;
-import co.samco.mend.Settings.InvalidSettingNameException;
 
 public class Unlock extends Command
 {
