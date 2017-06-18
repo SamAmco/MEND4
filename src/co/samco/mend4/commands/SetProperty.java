@@ -1,17 +1,14 @@
 package co.samco.mend4.commands;
 
-import java.io.IOException;
 import java.util.ArrayList;
 
-import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.TransformerException;
 
-import org.xml.sax.SAXException;
-
-import co.samco.mend4.desktop.Config;
-import co.samco.mend4.desktop.Settings;
-import co.samco.mend4.desktop.Settings.CorruptSettingsException;
-import co.samco.mend4.desktop.Settings.InvalidSettingNameException;
+import co.samco.mend4.core.Config;
+import co.samco.mend4.core.Settings;
+import co.samco.mend4.core.Settings.CorruptSettingsException;
+import co.samco.mend4.core.Settings.InvalidSettingNameException;
+import co.samco.mend4.core.Settings.UnInitializedSettingsException;
 
 public class SetProperty extends Command
 {
@@ -46,8 +43,7 @@ public class SetProperty extends Command
 					}
 				}
 			}
-			catch (ParserConfigurationException | SAXException | IOException 
-					| TransformerException | CorruptSettingsException | InvalidSettingNameException e)
+			catch (TransformerException | CorruptSettingsException | InvalidSettingNameException | UnInitializedSettingsException e)
 			{
 				System.err.println(e.getMessage());
 			}

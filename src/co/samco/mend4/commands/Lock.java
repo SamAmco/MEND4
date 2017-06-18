@@ -5,8 +5,8 @@ import java.io.File;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 
-import co.samco.mend4.desktop.Config;
-import co.samco.mend4.desktop.Settings;
+import co.samco.mend4.core.Config;
+import co.samco.mend4.core.Settings;
 
 public class Lock extends Command
 {
@@ -48,8 +48,6 @@ public class Lock extends Command
 	private void tryShredFile(String name, String shredCommand) throws Exception
 	{
 		//If there is already a file existent, just shred it and unlock again.
-		File file = new File(Config.CONFIG_PATH + name);
-		
 		String[] shredCommandArgs = generateShredCommandArgs(Config.CONFIG_PATH + name, shredCommand);
 		Process tr = Runtime.getRuntime().exec(shredCommandArgs);
 		BufferedReader rd = new BufferedReader(new InputStreamReader(tr.getInputStream()));

@@ -18,20 +18,23 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
+import co.samco.mend4.core.Config;
+import co.samco.mend4.core.ISettings;
+import co.samco.mend4.core.Settings.CorruptSettingsException;
+import co.samco.mend4.core.Settings.InvalidSettingNameException;
+
 /**
  * A singleton for accessing the settings file
  * @author sam
  *
  */
-public class Settings 
+public class DesktopSettings implements ISettings
 {
-	private static Settings instance;
-	
 	Document doc;
 	Element rootElement;
 	File settingsFile;
 	
-	private Settings() throws ParserConfigurationException, SAXException, IOException
+	public DesktopSettings() throws ParserConfigurationException, SAXException, IOException
 	{
 		DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
 		DocumentBuilder docBuilder = docFactory.newDocumentBuilder();
@@ -50,14 +53,6 @@ public class Settings
 			rootElement.normalize();
 		}
 		
-	}
-	
-	public static Settings instance() throws ParserConfigurationException, SAXException, IOException
-	{
-		if (instance == null)
-			instance = new Settings();
-		
-		return instance;
 	}
 	
 	public void setValue(Config.Settings name, String value) 
@@ -131,24 +126,7 @@ public class Settings
 		else return r;
 	}
 	
-	public static class CorruptSettingsException extends Exception
-	{
-		private static final long serialVersionUID = -7872915002684524393L;
-
-		public CorruptSettingsException(String message)
-		{
-			super(message);
-		}
-	}
-	public static class InvalidSettingNameException extends Exception
-	{
-		private static final long serialVersionUID = -396660409805269958L;
-
-		public InvalidSettingNameException(String message)
-		{
-			super(message);
-		}
-	}
+	
 	
 }
 

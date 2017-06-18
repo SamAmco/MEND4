@@ -13,9 +13,9 @@ import javax.crypto.spec.SecretKeySpec;
 
 import org.apache.commons.codec.binary.Base64;
 
-import co.samco.mend4.desktop.Config;
+import co.samco.mend4.core.Config;
 import co.samco.mend4.desktop.InputBox;
-import co.samco.mend4.desktop.Settings;
+import co.samco.mend4.core.Settings;
 
 public class Unlock extends Command
 {
@@ -35,12 +35,12 @@ public class Unlock extends Command
 			
 			//generate an aes key from the password
 			SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
-			KeySpec spec = new PBEKeySpec(password, Config.PASSCHECK_SALT, Config.AES_KEY_GEN_ITERATIONS, Config.AES_KEY_SIZE);
+			KeySpec spec = new PBEKeySpec(password, Config.PASSCHECK_SALT, Config.AES_KEY_GEN_ITERATIONS, Config.AES_KEY_SIZE());
 			SecretKey tmp = factory.generateSecret(spec);
 			SecretKey aesKey = new SecretKeySpec(tmp.getEncoded(), "AES");
 			
 			//use it to decrypt the text
-			Cipher aesCipher = Cipher.getInstance(Config.PREFERRED_AES_ALG);
+			Cipher aesCipher = Cipher.getInstance(Config.PREFERRED_AES_ALG());
 			aesCipher.init(Cipher.DECRYPT_MODE, aesKey, Config.STANDARD_IV);
 			
 			byte[] plainText = aesCipher.doFinal(compCheck);

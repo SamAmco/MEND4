@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := jar
 
-JAVA_SRC = ./src/co/samco/mend4/desktop/* ./src/co/samco/mend4/commands/*
+JAVA_SRC = ./src/co/samco/mend4/desktop/* ./src/co/samco/mend4/commands/* ./src/co/samco/mend4/core/*
 JAVA_LIB_ALL = "lib/*"
 JAVA_LIB_IO = ./lib/commons-io-2.4.jar
 JAVA_LIB_CODEC = ./lib/commons-codec-1.10.jar

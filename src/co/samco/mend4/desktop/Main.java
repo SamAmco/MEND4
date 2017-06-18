@@ -1,10 +1,15 @@
 package co.samco.mend4.desktop;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
+
+import javax.xml.parsers.ParserConfigurationException;
+
+import org.xml.sax.SAXException;
 
 import co.samco.mend4.commands.Command;
 import co.samco.mend4.commands.Clean;
@@ -16,6 +21,8 @@ import co.samco.mend4.commands.Lock;
 import co.samco.mend4.commands.SetProperty;
 import co.samco.mend4.commands.SetupMend;
 import co.samco.mend4.commands.Unlock;
+import co.samco.mend4.core.Config;
+import co.samco.mend4.core.Settings;
 
 public class Main 
 {
@@ -37,6 +44,7 @@ public class Main
 	{
 		try
 		{
+			Settings.InitializeSettings(new DesktopSettings());
 			if (args.length < 1)
 			{
 				Command c = (Command)commands.get("enci").newInstance();
@@ -83,7 +91,7 @@ public class Main
 				printUsage();
 			}
 		}
-		catch (InstantiationException | IllegalAccessException e) 
+		catch (InstantiationException | IllegalAccessException | ParserConfigurationException | SAXException | IOException e) 
 		{
 			System.err.println(e.getMessage());
 		}
@@ -108,18 +116,6 @@ public class Main
 		}
 	}
 }
-
-/*
- * To get a list of enabled crypto algorithms:
- * for (Provider p : Security.getProviders())
-		{
-			for (Service s : p.getServices())
-			{
-				System.out.println(s.getAlgorithm());
-			}
-		}
- */
-
 
 
 

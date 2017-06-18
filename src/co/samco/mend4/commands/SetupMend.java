@@ -18,8 +18,8 @@ import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 
-import co.samco.mend4.desktop.Config;
-import co.samco.mend4.desktop.Settings;
+import co.samco.mend4.core.Config;
+import co.samco.mend4.core.Settings;
 
 import org.apache.commons.codec.binary.Base64;
 
@@ -75,10 +75,10 @@ public class SetupMend extends Command
 
 			if (!setupExists)
 			{
-				Settings.instance().setValue(Config.Settings.PREFERREDAES, Config.PREFERRED_AES_ALG);
-				Settings.instance().setValue(Config.Settings.PREFERREDRSA, Config.PREFERRED_RSA_ALG);
-				Settings.instance().setValue(Config.Settings.AESKEYSIZE, Integer.toString(Config.AES_KEY_SIZE));
-				Settings.instance().setValue(Config.Settings.RSAKEYSIZE, Integer.toString(Config.RSA_KEY_SIZE));
+				Settings.instance().setValue(Config.Settings.PREFERREDAES, Config.PREFERRED_AES_ALG());
+				Settings.instance().setValue(Config.Settings.PREFERREDRSA, Config.PREFERRED_RSA_ALG());
+				Settings.instance().setValue(Config.Settings.AESKEYSIZE, Integer.toString(Config.AES_KEY_SIZE()));
+				Settings.instance().setValue(Config.Settings.RSAKEYSIZE, Integer.toString(Config.RSA_KEY_SIZE()));
 
 			}
 			System.out.println("MEND Successfully set up.");
@@ -148,7 +148,7 @@ public class SetupMend extends Command
 		//Generate an RSA key pair.
 		KeyPairGenerator keyGen;
 		keyGen = KeyPairGenerator.getInstance("RSA");
-        keyGen.initialize(Config.RSA_KEY_SIZE);
+        keyGen.initialize(Config.RSA_KEY_SIZE());
         KeyPair keyPair = keyGen.genKeyPair();
 		setKeys(password, keyPair);
 	}
@@ -157,10 +157,10 @@ public class SetupMend extends Command
 	{
 		//generate an aes key from the password
 		SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
-		KeySpec spec = new PBEKeySpec(password.toCharArray(), Config.PASSCHECK_SALT, Config.AES_KEY_GEN_ITERATIONS, Config.AES_KEY_SIZE);
+		KeySpec spec = new PBEKeySpec(password.toCharArray(), Config.PASSCHECK_SALT, Config.AES_KEY_GEN_ITERATIONS, Config.AES_KEY_SIZE());
 		SecretKey tmp = factory.generateSecret(spec);
 		SecretKey aesKey = new SecretKeySpec(tmp.getEncoded(), "AES");
-		Cipher aesCipher = Cipher.getInstance(Config.PREFERRED_AES_ALG);
+		Cipher aesCipher = Cipher.getInstance(Config.PREFERRED_AES_ALG());
 		aesCipher.init(Cipher.ENCRYPT_MODE, aesKey, Config.STANDARD_IV);
 
 		//Encrypt the private key with the password.

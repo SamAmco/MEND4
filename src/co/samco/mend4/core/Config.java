@@ -1,6 +1,5 @@
-package co.samco.mend4.desktop;
+package co.samco.mend4.core;
 
-import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Collections;
 import java.util.HashMap;
@@ -8,16 +7,14 @@ import java.util.Map;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
-import javax.xml.parsers.ParserConfigurationException;
 
-import org.xml.sax.SAXException;
-
-import co.samco.mend4.desktop.Settings.CorruptSettingsException;
-import co.samco.mend4.desktop.Settings.InvalidSettingNameException;
+import co.samco.mend4.core.Settings.CorruptSettingsException;
+import co.samco.mend4.core.Settings.InvalidSettingNameException;
+import co.samco.mend4.core.Settings.UnInitializedSettingsException;
 
 public class Config 
 {
-	public static final String VERSION_NUMBER = "4.0.5";
+	public static final String VERSION_NUMBER = "4.0.6";
 	public static final String CONFIG_PATH = System.getProperty("user.home") + "/.MEND4/";
 	public static final String SETTINGS_FILE = "Settings.xml";
 	public static final String PRIVATE_KEY_FILE_DEC = "prKey";
@@ -94,59 +91,93 @@ public class Config
 	}
 	
 	public static int AES_KEY_GEN_ITERATIONS = 65536;
-	public static String PREFERRED_RSA_ALG;
-	public static String PREFERRED_AES_ALG;
-	public static int RSA_KEY_SIZE;
-	public static int AES_KEY_SIZE;
-	static
+	
+	private static String _PREFERRED_RSA_ALG = null;
+	public static String PREFERRED_RSA_ALG() throws CorruptSettingsException, InvalidSettingNameException, UnInitializedSettingsException
 	{
-		try
-		{			
-			//Set the rsa key size
-			//If the user has a set preference for the size then use that
-			String storedRsaLimitStr = co.samco.mend4.desktop.Settings.instance().getValue(Settings.RSAKEYSIZE);
-			if (storedRsaLimitStr != null)
-				RSA_KEY_SIZE = Integer.parseInt(storedRsaLimitStr);		
-			//otherwise use the max recommended available
-			else
-				RSA_KEY_SIZE = Cipher.getMaxAllowedKeyLength("RSA") < 4096 ? 2048 : 4096;
-			
-			
-			//Set the aes key size
-			//If the user has a set preference for the size then use that
-			String storedAesLimitStr = co.samco.mend4.desktop.Settings.instance().getValue(Settings.AESKEYSIZE);
-			if (storedRsaLimitStr != null)
-				AES_KEY_SIZE = Integer.parseInt(storedAesLimitStr);		
-			//otherwise use the max recommended available
-			else
-				AES_KEY_SIZE = Cipher.getMaxAllowedKeyLength("AES") < 256 ? 128 : 256;
-			
-			
-			//Set the rsa algorithm
-			//If the user has a set preference for the algo then use that
-			String storedRsaAlgStr = co.samco.mend4.desktop.Settings.instance().getValue(Settings.PREFERREDRSA);
-			if (storedRsaLimitStr != null)
-				PREFERRED_RSA_ALG = storedRsaAlgStr;
-			//otherwise use the max recommended available
-			else
-				PREFERRED_RSA_ALG = "RSA/ECB/PKCS1Padding";
-			
-			
-			//Set the aes algorithm
-			//If the user has a set preference for the algo then use that
-			String storedAesAlgStr = co.samco.mend4.desktop.Settings.instance().getValue(Settings.PREFERREDAES);
-			if (storedAesAlgStr != null)
-				PREFERRED_AES_ALG = storedAesAlgStr;
-			//otherwise use the max recommended available
-			else
-				PREFERRED_AES_ALG = "AES/CTR/NoPadding";
-			
-		}
-		catch (NoSuchAlgorithmException | NumberFormatException | CorruptSettingsException 
-				| InvalidSettingNameException | ParserConfigurationException | SAXException 
-				| IOException e)
-		{
-			System.err.println(e.getMessage());
-		}
+		if (_PREFERRED_RSA_ALG != null)
+			return _PREFERRED_RSA_ALG;
+		//Set the rsa algorithm
+		//If the user has a set preference for the algo then use that
+		String storedRsaAlgStr = co.samco.mend4.core.Settings.instance().getValue(Settings.PREFERREDRSA);
+		if (storedRsaAlgStr != null)
+			_PREFERRED_RSA_ALG = storedRsaAlgStr;
+		//otherwise use the max recommended available
+		else
+			_PREFERRED_RSA_ALG = "RSA/ECB/PKCS1Padding";
+		
+		return _PREFERRED_RSA_ALG;
+	}
+	
+	private static String _PREFERRED_AES_ALG;
+	public static String PREFERRED_AES_ALG() throws CorruptSettingsException, InvalidSettingNameException, UnInitializedSettingsException
+	{
+		if (_PREFERRED_AES_ALG != null)
+			return _PREFERRED_AES_ALG;
+		
+		//Set the aes algorithm
+		//If the user has a set preference for the algo then use that
+		String storedAesAlgStr = co.samco.mend4.core.Settings.instance().getValue(Settings.PREFERREDAES);
+		if (storedAesAlgStr != null)
+			_PREFERRED_AES_ALG = storedAesAlgStr;
+		//otherwise use the max recommended available
+		else
+			_PREFERRED_AES_ALG = "AES/CTR/NoPadding";
+		
+		return _PREFERRED_AES_ALG;
+	}
+	
+	private static int _RSA_KEY_SIZE = -1;
+	public static int RSA_KEY_SIZE() throws CorruptSettingsException, InvalidSettingNameException, UnInitializedSettingsException, NoSuchAlgorithmException
+	{
+		if (_RSA_KEY_SIZE != -1)
+			return _RSA_KEY_SIZE;
+		
+		//Set the rsa key size
+		//If the user has a set preference for the size then use that
+		String storedRsaLimitStr = co.samco.mend4.core.Settings.instance().getValue(Settings.RSAKEYSIZE);
+		if (storedRsaLimitStr != null)
+			_RSA_KEY_SIZE = Integer.parseInt(storedRsaLimitStr);		
+		//otherwise use the max recommended available
+		else
+			_RSA_KEY_SIZE = Cipher.getMaxAllowedKeyLength("RSA") < 4096 ? 2048 : 4096;
+		
+		return _RSA_KEY_SIZE;
+	}
+	
+	private static int _AES_KEY_SIZE = -1;
+	public static int AES_KEY_SIZE() throws NoSuchAlgorithmException, CorruptSettingsException, InvalidSettingNameException, UnInitializedSettingsException
+	{
+		if (_AES_KEY_SIZE != -1)
+			return _AES_KEY_SIZE;
+		
+		//Set the aes key size
+		//If the user has a set preference for the size then use that
+		String storedAesLimitStr = co.samco.mend4.core.Settings.instance().getValue(Settings.AESKEYSIZE);
+		if (storedAesLimitStr != null)
+			_AES_KEY_SIZE = Integer.parseInt(storedAesLimitStr);		
+		//otherwise use the max recommended available
+		else
+			_AES_KEY_SIZE = Cipher.getMaxAllowedKeyLength("AES") < 256 ? 128 : 256;
+		
+		return _AES_KEY_SIZE;
 	}
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

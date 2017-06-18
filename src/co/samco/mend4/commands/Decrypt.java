@@ -23,16 +23,16 @@ import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
-import javax.xml.parsers.ParserConfigurationException;
 
 import org.apache.commons.io.FilenameUtils;
-import org.xml.sax.SAXException;
 
-import co.samco.mend4.desktop.Config;
-import co.samco.mend4.desktop.Settings;
-import co.samco.mend4.desktop.Settings.CorruptSettingsException;
-import co.samco.mend4.desktop.Settings.InvalidSettingNameException;
+import co.samco.mend4.core.Config;
+import co.samco.mend4.core.Settings;
+import co.samco.mend4.core.Settings.CorruptSettingsException;
+import co.samco.mend4.core.Settings.InvalidSettingNameException;
+import co.samco.mend4.core.Settings.UnInitializedSettingsException;
 
+//TODO a lot of the functionality here should be out-sourced to the core package
 public class Decrypt extends Command
 {
 	@Override
@@ -134,7 +134,7 @@ public class Decrypt extends Command
 		} 
 		catch (NoSuchAlgorithmException | IOException | InvalidKeySpecException 
 				| CorruptSettingsException | InvalidSettingNameException 
-				| ParserConfigurationException | SAXException e) 
+			    | UnInitializedSettingsException e) 
 		{
 			System.err.println(e.getMessage());
 		} 
@@ -174,7 +174,7 @@ public class Decrypt extends Command
 				}
 				
 				//now decrypt the aes key
-				Cipher rsaCipher = Cipher.getInstance(Config.PREFERRED_RSA_ALG);
+				Cipher rsaCipher = Cipher.getInstance(Config.PREFERRED_RSA_ALG());
 	            rsaCipher.init(Cipher.DECRYPT_MODE, privateKey);
 	            byte[] aesKeyBytes = rsaCipher.doFinal(encAesKey);
 	            SecretKey aesKey = new SecretKeySpec(aesKeyBytes, 0, aesKeyBytes.length, "AES");
@@ -198,7 +198,7 @@ public class Decrypt extends Command
 				}
 	            
 				//now decrypt the entry
-				Cipher aesCipher = Cipher.getInstance(Config.PREFERRED_AES_ALG);
+				Cipher aesCipher = Cipher.getInstance(Config.PREFERRED_AES_ALG());
 				aesCipher.init(Cipher.DECRYPT_MODE, aesKey, Config.STANDARD_IV);
 	            byte[] entry = aesCipher.doFinal(encEntry);
 	            
@@ -208,7 +208,8 @@ public class Decrypt extends Command
 		}
 		catch(IOException | MalformedLogFileException | NoSuchAlgorithmException 
 				| NoSuchPaddingException | InvalidKeyException | IllegalBlockSizeException 
-				| BadPaddingException | InvalidAlgorithmParameterException e)
+				| BadPaddingException | InvalidAlgorithmParameterException | CorruptSettingsException 
+				| InvalidSettingNameException | UnInitializedSettingsException e)
 		{
 			System.err.println(e.getMessage());
 		}
@@ -256,7 +257,7 @@ public class Decrypt extends Command
 				throw new MalformedLogFileException("This log file is malformed.");
 			
 			//now decrypt the aes key
-			Cipher rsaCipher = Cipher.getInstance(Config.PREFERRED_RSA_ALG);
+			Cipher rsaCipher = Cipher.getInstance(Config.PREFERRED_RSA_ALG());
             rsaCipher.init(Cipher.DECRYPT_MODE, privateKey);
             byte[] aesKeyBytes = rsaCipher.doFinal(encAesKey);
             SecretKey aesKey = new SecretKeySpec(aesKeyBytes, 0, aesKeyBytes.length, "AES");
@@ -288,7 +289,7 @@ public class Decrypt extends Command
 			fos = new FileOutputStream(outputFile);
 			
 			//now decrypt the file
-			Cipher aesCipher = Cipher.getInstance(Config.PREFERRED_AES_ALG);
+			Cipher aesCipher = Cipher.getInstance(Config.PREFERRED_AES_ALG());
 			aesCipher.init(Cipher.DECRYPT_MODE, aesKey, Config.STANDARD_IV);
 			cos = new CipherOutputStream(fos, aesCipher);
            	
@@ -308,7 +309,7 @@ public class Decrypt extends Command
 		catch(IOException | MalformedLogFileException | NoSuchAlgorithmException 
 				| NoSuchPaddingException | InvalidKeyException | IllegalBlockSizeException 
 				| BadPaddingException | InvalidAlgorithmParameterException | CorruptSettingsException 
-				| InvalidSettingNameException | ParserConfigurationException | SAXException e)
+				| InvalidSettingNameException | UnInitializedSettingsException e)
 		{
 			System.err.println(e.getMessage());
 		}
@@ -333,7 +334,7 @@ public class Decrypt extends Command
 	@Override
 	public String getUsageText() 
 	{
-		return "Usage:\tmend dec [-s] <log_file>|<enc_file>";
+		return "Usage:\tmend dec [-s] <log_file_name>|<enc_file>";
 	}
 
 	@Override
