@@ -35,9 +35,9 @@ public abstract class Settings implements ISettings
 		Settings.instance = instance;
 	}
 
-	Document doc;
-	Element rootElement;
-	File settingsFile;
+	protected Document doc;
+	protected Element rootElement;
+	protected File settingsFile;
 	
 	protected Settings(File settingsFile) throws ParserConfigurationException, SAXException, IOException
 	{
@@ -81,13 +81,17 @@ public abstract class Settings implements ISettings
 		
 		//If it doesn't exist create it
 		if (nodes.getLength() <= 0)
+		{
 			propertyElement = doc.createElement(strName);
+			propertyElement.setAttribute("value", value);
+			rootElement.appendChild(propertyElement);
+		}
 		//Otherwise use the one we found
 		else 
+		{
 			propertyElement = (Element)nodes.item(0);
-		
-		propertyElement.setAttribute("value", value);
-		rootElement.appendChild(propertyElement);
+			propertyElement.setAttribute("value", value);
+		}
 		
 		// write the content into xml file
 		TransformerFactory transformerFactory = TransformerFactory.newInstance();

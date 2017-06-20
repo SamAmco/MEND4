@@ -11,6 +11,7 @@ UNIX_DIR = Unix
 DESKTOP_JAR_NAME = MEND4.jar
 CORE_JAR_NAME = MEND4Core.jar
 ANDROID_LIBS_DIR = ./AndroidProject/MEND4/app/libs/
+MEND_ICON = ./icon/mendicon.png
 
 jar: javac
 	cd $(BIN_DIR); jar cvfe $(DESKTOP_JAR_NAME) co.samco.mend4.desktop.Main ./*
@@ -33,6 +34,14 @@ core:
 droidlibs: core
 	mkdir -p $(ANDROID_LIBS_DIR)
 	cp $(BIN_DIR)/$(CORE_JAR_NAME) $(ANDROID_LIBS_DIR)
+
+#slightly hacky but whatever
+droidicos:
+	convert $(MEND_ICON) -resize 48x48\! ./AndroidProject/MEND4/app/src/main/res/mipmap-mdpi/ic_launcher.png
+	convert $(MEND_ICON) -resize 72x72\! ./AndroidProject/MEND4/app/src/main/res/mipmap-hdpi/ic_launcher.png
+	convert $(MEND_ICON) -resize 96x96\! ./AndroidProject/MEND4/app/src/main/res/mipmap-xhdpi/ic_launcher.png
+	convert $(MEND_ICON) -resize 144x144\! ./AndroidProject/MEND4/app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+	convert $(MEND_ICON) -resize 192x192\! ./AndroidProject/MEND4/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
 
 clean: 
 	rm -rf $(BIN_DIR)

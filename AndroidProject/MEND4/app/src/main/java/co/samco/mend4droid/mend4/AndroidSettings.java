@@ -16,7 +16,7 @@ import co.samco.mend4.core.Settings;
 
 public class AndroidSettings extends Settings
 {
-    public static final String ANDROID_VERSION = "0.0.1";
+    public static final String ANDROID_VERSION = "0.1";
     public AndroidSettings(String dir) throws ParserConfigurationException, IOException, SAXException
     {
         super(new File(dir, Config.SETTINGS_FILE));
