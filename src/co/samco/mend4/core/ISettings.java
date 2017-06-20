@@ -7,6 +7,7 @@ import co.samco.mend4.core.Settings.InvalidSettingNameException;
 
 public interface ISettings 
 {
+	public String getPlatformDependentHeader();
 	public void setValue(Config.Settings name, String value)throws TransformerException, CorruptSettingsException, InvalidSettingNameException;
 	public String getValue(Config.Settings name) throws CorruptSettingsException, InvalidSettingNameException;
 

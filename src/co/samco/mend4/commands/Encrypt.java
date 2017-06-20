@@ -23,6 +23,7 @@ import org.apache.commons.io.FilenameUtils;
 import co.samco.mend4.core.Config;
 import co.samco.mend4.core.EncryptionUtils;
 import co.samco.mend4.core.EncryptionUtils.MissingPublicKeyException;
+import co.samco.mend4.desktop.ApacheCommonsEncoder;
 import co.samco.mend4.desktop.InputBox;
 import co.samco.mend4.desktop.InputBoxListener;
 import co.samco.mend4.core.Settings;
@@ -154,7 +155,7 @@ public class Encrypt extends Command implements InputBoxListener
 				
 				//now we can append all the encrypted file bytes
 	           	System.err.println("Encrypting file to: " + outputFile.getAbsolutePath());
-	           	EncryptionUtils.encryptFileToStream(fis, fos, fileExtension);
+	           	EncryptionUtils.encryptFileToStream(new ApacheCommonsEncoder(), fis, fos, fileExtension);
 	           	System.err.println("Encryption complete. Key: " + name);
 	
 			}
@@ -219,7 +220,7 @@ public class Encrypt extends Command implements InputBoxListener
 			currentLogFile.createNewFile();
 			fos = new FileOutputStream(currentLogFile, true);
 			
-			EncryptionUtils.encryptLogToStream(fos, text, dropHeader);
+			EncryptionUtils.encryptLogToStream(new ApacheCommonsEncoder(), fos, text, dropHeader);
 			
 			DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
 			Date date = new Date();

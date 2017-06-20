@@ -23,8 +23,6 @@ import javax.crypto.KeyGenerator;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
 
-import org.apache.commons.codec.binary.Base64;
-
 import co.samco.mend4.core.Settings;
 import co.samco.mend4.core.Settings.CorruptSettingsException;
 import co.samco.mend4.core.Settings.InvalidSettingNameException;
@@ -32,22 +30,23 @@ import co.samco.mend4.core.Settings.UnInitializedSettingsException;
 
 public class EncryptionUtils 
 {
-	private static String addHeaderToLogText(char[] logText)
+	private static String addHeaderToLogText(char[] logText) throws UnInitializedSettingsException
 	{
 		StringBuilder sb = new StringBuilder();
 		Calendar cal = Calendar.getInstance();
 	    SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss", Locale.ENGLISH);
 	   	sb.append(sdf.format(cal.getTime()));
-	   	sb.append("//MEND"+Config.VERSION_NUMBER);
-	   	sb.append("//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////\n");
+	   	sb.append("//MEND"+Config.CORE_VERSION_NUMBER+"//");
+	   	sb.append(Settings.instance().getPlatformDependentHeader());
+	   	sb.append("//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////\n");
 	   	sb.append(logText);
 	    return sb.toString();
 	}
 	
-	public static void encryptFileToStream(FileInputStream fis, FileOutputStream fos, String fileExtension) throws CorruptSettingsException,
-		InvalidSettingNameException, UnInitializedSettingsException, MissingPublicKeyException, NoSuchAlgorithmException,
-		NoSuchPaddingException, InvalidKeyException, InvalidAlgorithmParameterException, InvalidKeySpecException, IllegalBlockSizeException,
-		BadPaddingException, IOException
+	public static void encryptFileToStream(IBase64EncodingProvider encoder, FileInputStream fis, FileOutputStream fos, String fileExtension) 
+			throws CorruptSettingsException, InvalidSettingNameException, UnInitializedSettingsException, MissingPublicKeyException, 
+			NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, InvalidAlgorithmParameterException, InvalidKeySpecException, 
+			IllegalBlockSizeException, BadPaddingException, IOException
 	{
 		CipherOutputStream cos = null;
 		try
@@ -69,7 +68,7 @@ public class EncryptionUtils
             Cipher rsaCipher = Cipher.getInstance(Config.PREFERRED_RSA_ALG());
             
             //read in the public key
-            X509EncodedKeySpec publicRsaKeySpec = new X509EncodedKeySpec(Base64.decodeBase64(userPublicKeyString));
+            X509EncodedKeySpec publicRsaKeySpec = new X509EncodedKeySpec(encoder.decodeBase64(userPublicKeyString));
             KeyFactory keyFactory = KeyFactory.getInstance("RSA");
             PublicKey publicRsaKey = keyFactory.generatePublic(publicRsaKeySpec);
             rsaCipher.init(Cipher.ENCRYPT_MODE, publicRsaKey);
@@ -108,8 +107,8 @@ public class EncryptionUtils
 		}
 	}
 	
-	public static void encryptLogToStream(FileOutputStream fos, char[] text, boolean dropHeader) throws 
-		CorruptSettingsException, InvalidSettingNameException, UnInitializedSettingsException,
+	public static void encryptLogToStream(IBase64EncodingProvider encoder, FileOutputStream fos, char[] text, boolean dropHeader) 
+			throws CorruptSettingsException, InvalidSettingNameException, UnInitializedSettingsException,
 		NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, InvalidAlgorithmParameterException,
 		IllegalBlockSizeException, BadPaddingException, InvalidKeySpecException, MissingPublicKeyException, IOException
 	{
@@ -137,7 +136,7 @@ public class EncryptionUtils
         Cipher rsaCipher = Cipher.getInstance(Config.PREFERRED_RSA_ALG());
         
         //read in the public key
-        X509EncodedKeySpec publicRsaKeySpec = new X509EncodedKeySpec(Base64.decodeBase64(userPublicKeyString));
+        X509EncodedKeySpec publicRsaKeySpec = new X509EncodedKeySpec(encoder.decodeBase64(userPublicKeyString));
         KeyFactory keyFactory = KeyFactory.getInstance("RSA");
         PublicKey publicRsaKey = keyFactory.generatePublic(publicRsaKeySpec);
         rsaCipher.init(Cipher.ENCRYPT_MODE, publicRsaKey);

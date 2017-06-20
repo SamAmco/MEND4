@@ -54,7 +54,7 @@ public class Main
 			
 			if (args[0].equals("-v") || args[0].equals("--version"))
 			{
-				System.out.println("MEND version " + Config.VERSION_NUMBER);
+				System.out.println("MEND version " + Config.CORE_VERSION_NUMBER);
 				return;
 			}
 				
