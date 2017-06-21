@@ -1,4 +1,4 @@
-The Android project is currently only experimental. Currently it can only encrypt text to logs.
+The Android project is currently only experimental. It can only encrypt text to logs.
 
 To use it, you will need to build the apk using android studio and install it on your phone. 
 
