@@ -1,6 +1,8 @@
 /bin
 /jar
 install
+.classpath
+.project
 
 ./AndroidProject/MEND4/app/libs/*
 
