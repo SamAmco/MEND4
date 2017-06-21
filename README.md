@@ -1,9 +1,7 @@
 # MEND 
-(My ENcrypted Data) aims to provide a simple command line interface for encryption of sensitive data.
+(My ENcrypted Data) provides a simple interface for encryption of sensitive data.
 
-MEND makes a deliberate distinction between "logs" and "files". You can append text to an encrypted log (which is useful for: automating encrypted logging, storing passwords or keeping an encrypted diary.) If you use MEND to encrypt a file, it will store the file with a 17 digit date/time ID, which can then be used to select it for decryption.
-
-After a small amount of setup, you can use MEND to encrypt and decrypt logs and files with simple and short commands. You only need to remember one password to unlock MEND which will then allow you to decrypt your logs and files.
+MEND makes a deliberate distinction between "logs" and "files". After a small amount of setup, you can use MEND to encrypt and decrypt logs and files with simple and short commands. You only need to remember one password to unlock MEND which will then allow you to decrypt your logs and files.
 
 ## SETUP:
 
