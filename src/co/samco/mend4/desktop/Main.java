@@ -23,6 +23,7 @@ import co.samco.mend4.commands.SetupMend;
 import co.samco.mend4.commands.Unlock;
 import co.samco.mend4.core.Config;
 import co.samco.mend4.core.Settings;
+import co.samco.mend4.core.Settings.UnInitializedSettingsException;
 
 public class Main 
 {
@@ -54,7 +55,8 @@ public class Main
 			
 			if (args[0].equals("-v") || args[0].equals("--version"))
 			{
-				System.out.println("MEND version " + Config.CORE_VERSION_NUMBER);
+				System.out.println("MEND core version " + Config.CORE_VERSION_NUMBER);
+				System.out.println("MEND desktop version " + Settings.instance().getPlatformDependentHeader());
 				return;
 			}
 				
@@ -91,7 +93,8 @@ public class Main
 				printUsage();
 			}
 		}
-		catch (InstantiationException | IllegalAccessException | ParserConfigurationException | SAXException | IOException e) 
+		catch (InstantiationException | IllegalAccessException | ParserConfigurationException
+				| SAXException | IOException | UnInitializedSettingsException e) 
 		{
 			System.err.println(e.getMessage());
 		}
