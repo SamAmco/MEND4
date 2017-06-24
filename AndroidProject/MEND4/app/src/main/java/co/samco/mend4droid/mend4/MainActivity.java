@@ -1,7 +1,10 @@
 package co.samco.mend4droid.mend4;
 
 import android.Manifest;
+import android.content.ContentResolver;
+import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.net.Uri;
 import android.os.Environment;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
@@ -12,14 +15,18 @@ import android.text.TextWatcher;
 import android.util.Base64;
 import android.util.Log;
 import android.view.View;
+import android.webkit.MimeTypeMap;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.EditText;
 import android.widget.Toast;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import co.samco.mend4.core.Config;
@@ -143,22 +150,98 @@ public class MainActivity extends AppCompatActivity implements TextWatcher
         tryInitializeSettings();
     }
 
-    //Submit button callback
-    public void onSubmit(View view)
+    //File button callback
+    public void onFileButton(View view)
+    {
+        if (!doubleCheckPermissions(view))
+            return;
+
+        final Intent fileIntent = new Intent(Intent.ACTION_GET_CONTENT);
+        //to get image and videos, I used a */"
+        fileIntent.setType("*/*");
+        fileIntent.putExtra(Intent.EXTRA_LOCAL_ONLY, true);
+        fileIntent.addCategory(Intent.CATEGORY_OPENABLE);
+        startActivityForResult(fileIntent, 1);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data)
+    {
+        //Encrypt selected file
+        if (requestCode == 1 && resultCode == RESULT_OK)
+        {
+            FileInputStream fis = null;
+            try
+            {
+                FileOutputStream fos = null;
+                try
+                {
+                    Uri uri = data.getData();
+                    ContentResolver cR = getContentResolver();
+                    MimeTypeMap mime = MimeTypeMap.getSingleton();
+                    String fileExtension = mime.getExtensionFromMimeType(cR.getType(uri));
+                    fis = (FileInputStream) cR.openInputStream(uri);
+                    String name = new SimpleDateFormat("yyyyMMddHHmmssSS").format(new Date());
+                    File file = new File(mendDir + "/Enc", name + ".enc");
+                    file.getParentFile().mkdirs();
+                    //TODO check if file exists (which probably needs doing when we enable encrypting multiple files at once)
+                    fos = new FileOutputStream(file);
+                    EncryptionUtils.encryptFileToStream(new AndroidEncodingProvider(), fis, fos, fileExtension);
+                    Toast toast = Toast.makeText(this.getApplicationContext(), "File encryption complete", Toast.LENGTH_SHORT);
+                    toast.show();
+                    editText.append(name);
+                }
+                catch (Exception e)
+                {
+                    Log.wtf("MainActivity", e.getMessage());
+                    Toast toast = Toast.makeText(this.getApplicationContext(), e.getMessage(), Toast.LENGTH_LONG);
+                    toast.show();
+                }
+                finally
+                {
+                    try
+                    {
+                        if (fos != null)
+                            fos.close();
+                    }
+                    catch (Exception e){}
+                }
+            }
+            finally
+            {
+                try
+                {
+                    if (fis != null)
+                        fis.close();
+                }
+                catch (Exception e){}
+            }
+        }
+    }
+
+    private boolean doubleCheckPermissions(View view)
     {
         if (!initialized)
         {
             Toast toast = Toast.makeText(view.getContext(), "Could not read from storage.", Toast.LENGTH_LONG);
             toast.show();
             tryInitializeSettings();
-            return;
+            return false;
         }
         if (!checkWritePermissions())
         {
             Toast toast = Toast.makeText(view.getContext(), "Could not write to storage.", Toast.LENGTH_LONG);
             toast.show();
-            return;
+            return false;
         }
+        return true;
+    }
+
+    //Submit button callback
+    public void onSubmitButton(View view)
+    {
+        if (!doubleCheckPermissions(view))
+            return;
 
         String logText = editText.getText().toString();
         if (logText == null || logText.length() == 0)
