@@ -3,6 +3,7 @@
 install
 .classpath
 .project
+.idea/
 
 ./AndroidProject/MEND4/app/libs/*
 

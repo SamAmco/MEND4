@@ -39,6 +39,7 @@ public class Main
 		commands.put("get", StatePrinter.class);
 		commands.put("dec", Decrypt.class);
 		commands.put("clean", Clean.class);
+		commands.put("merge", Merge.class);
 	}
 	
 	public static void main(String[] args)
