@@ -91,6 +91,8 @@ public class Merge extends Command
         {
             try
             {
+                StringBuilder sb = new StringBuilder();
+                Date firstDate = null;
                 boolean readNext = false;
                 do
                 {
