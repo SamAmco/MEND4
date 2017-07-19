@@ -1,10 +1,18 @@
 package co.samco.mend4.commands;
 
 import co.samco.mend4.core.Config;
+import co.samco.mend4.core.EncryptionUtils;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.security.KeyFactory;
+import java.security.interfaces.RSAPrivateCrtKey;
+import java.security.interfaces.RSAPrivateKey;
+import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class Merge extends Command
 {
@@ -14,53 +22,65 @@ public class Merge extends Command
         if (printHelp(args))
             return;
 
-        //first check if mend is unlocked
-        File privateKeyFile = new File(Config.CONFIG_PATH + Config.PRIVATE_KEY_FILE_DEC);
-        if (!privateKeyFile.exists())
+        try
         {
-            System.err.println("MEND is Locked. Please run mend unlock");
-            return;
-        }
+            //first check if mend is unlocked
+            File privateKeyFile = new File(Config.CONFIG_PATH + Config.PRIVATE_KEY_FILE_DEC);
+            if (!privateKeyFile.exists())
+            {
+                System.err.println("MEND is Locked. Please run mend unlock");
+                return;
+            }
+            RSAPrivateKey privateKey = EncryptionUtils.getPrivateKeyFromFile(privateKeyFile);
 
-        boolean deleteSecondLog = false;
-        if (args.get(0).equals("-d"))
-        {
-            deleteSecondLog = true;
-            args.remove(0);
-        }
+            boolean deleteSecondLog = false;
+            if (args.get(0).equals("-d"))
+            {
+                deleteSecondLog = true;
+                args.remove(0);
+            }
 
-        File firstLog = new File(args.get(0));
-        File secondLog = new File(args.get(1));
-        if (!firstLog.exists())
-        {
-            System.err.println("Could not find file:\t" + firstLog.getAbsolutePath());
-            return;
-        }
-        if (!secondLog.exists())
-        {
-            System.err.println("Could not find file:\t" + secondLog.getAbsolutePath());
-            return;
-        }
-        if (!firstLog.canRead())
-        {
-            System.err.println("You do not have permission to read:\t" + firstLog.getAbsolutePath());
-            return;
-        }
-        if (!secondLog.canRead())
-        {
-            System.err.println("You do not have permission to read:\t" + secondLog.getAbsolutePath());
-            return;
-        }
+            File firstLog = new File(args.get(0));
+            File secondLog = new File(args.get(1));
+            if (!firstLog.exists())
+            {
+                System.err.println("Could not find file:\t" + firstLog.getAbsolutePath());
+                return;
+            }
+            if (!secondLog.exists())
+            {
+                System.err.println("Could not find file:\t" + secondLog.getAbsolutePath());
+                return;
+            }
+            if (!firstLog.canRead())
+            {
+                System.err.println("You do not have permission to read:\t" + firstLog.getAbsolutePath());
+                return;
+            }
+            if (!secondLog.canRead())
+            {
+                System.err.println("You do not have permission to read:\t" + secondLog.getAbsolutePath());
+                return;
+            }
 
-        merge(firstLog, secondLog, deleteSecondLog);
+            merge(privateKey, firstLog, secondLog, deleteSecondLog);
+        }
+        catch (Exception e)
+        {
+            System.err.println(e.getMessage());
+        }
     }
 
-    private void merge(File firstLog, File secondLog, boolean deleteSecondLog)
+    private void merge(RSAPrivateKey privateKey, File firstLog, File secondLog,
+                       boolean deleteSecondLog)
     {
-       //while first has next
-            //while second has next && second < first
-                //write second
-            //write first
+        LogEntry.parseFromFile(firstLog);
+        //while first has next
+        //if first has no date
+        //write first
+        //while second has next && second < first || second has no date
+        //write second
+        //write first
     }
 
     @Override
@@ -78,29 +98,26 @@ public class Merge extends Command
 
     private static class LogEntry
     {
-        private StringBuilder entryText;
-        private Date dateTime;
+        private String entryText = "";
+        private Date dateTime = null;
 
         private LogEntry(StringBuilder entryText, Date dateTime)
         {
-           this.entryText = entryText;
-           this.dateTime = dateTime;
+            this.entryText = entryText;
+            this.dateTime = dateTime;
         }
 
-        public LogEntry parseFromFile(File logFile)
+        public static LogEntry parseFromFile(FileInputStream inputStream,
+                                      RSAPrivateKey privateKey, byte[] lc1Bytes)
         {
             try
             {
-                StringBuilder sb = new StringBuilder();
+                String logText = EncryptionUtils.getNextLogText(inputStream, privateKey, lc1Bytes);
                 Date firstDate = null;
-                boolean readNext = false;
-                do
-                {
-
-                }
-                while (readNext);
-            }
-            catch (Exception e)
+                Pattern pattern = Pattern.compile("\\\\d+\\\\/\\\\d+\\\\/\\\\d+ \\\\d+:\\\\d+:\\\\d+");
+                Matcher matcher = pattern.matcher(logText);
+                System.out.println(matcher.group());
+            } catch (Exception e)
             {
                 System.err.println(e.getMessage());
             }

@@ -1,15 +1,15 @@
 package co.samco.mend4.core;
 
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.nio.ByteBuffer;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
+import java.security.interfaces.RSAPrivateKey;
 import java.security.spec.InvalidKeySpecException;
+import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -22,6 +22,7 @@ import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.KeyGenerator;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
 
 import co.samco.mend4.core.Settings;
 import co.samco.mend4.core.Settings.CorruptSettingsException;
@@ -42,8 +43,103 @@ public class EncryptionUtils
 	   	sb.append(logText);
 	    return sb.toString();
 	}
-	
-	public static void encryptFileToStream(IBase64EncodingProvider encoder, FileInputStream fis, FileOutputStream fos, String fileExtension) 
+
+	public static RSAPrivateKey getPrivateKeyFromFile(File privateKeyFile)
+			throws NoSuchAlgorithmException, IOException, InvalidKeySpecException
+	{
+		FileInputStream privateKeyFileInputStream = null;
+	    try
+		{
+			//now read in the private rsa key.
+			byte[] keyBytes = new byte[(int) privateKeyFile.length()];
+			privateKeyFileInputStream = new FileInputStream(privateKeyFile);
+			privateKeyFileInputStream.read(keyBytes);
+			PKCS8EncodedKeySpec privateKeySpec = new PKCS8EncodedKeySpec(keyBytes);
+			KeyFactory kf = KeyFactory.getInstance("RSA");
+			return (RSAPrivateKey) kf.generatePrivate(privateKeySpec);
+		}
+		finally
+		{
+			if (privateKeyFileInputStream != null)
+				privateKeyFileInputStream.close();
+		}
+	}
+
+	public  static boolean logHasNext(FileInputStream logInputStream, byte[] lc1Bytes)
+			throws IOException, InvalidAlgorithmParameterException
+	{
+		if (lc1Bytes == null || lc1Bytes.length != 4)
+			throw new InvalidAlgorithmParameterException("Expected lc1Bytes to be initialized and have length 4");
+		return logInputStream.read(lc1Bytes) == 4;
+	}
+
+	public static String getNextLogText(FileInputStream inputStream, RSAPrivateKey privateKey,
+            byte[] lc1Bytes) throws IOException, MalformedLogFileException, InvalidSettingNameException,
+			CorruptSettingsException, UnInitializedSettingsException, NoSuchPaddingException,
+			NoSuchAlgorithmException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException,
+			InvalidAlgorithmParameterException
+	{
+		ByteBuffer lc1Buff = ByteBuffer.wrap(lc1Bytes); //big-endian by default
+		int lc1 = lc1Buff.getInt();
+
+		//and read in that many bytes as the encrypted aes key used to encrypt this log entry
+		byte[] encAesKey = new byte[lc1];
+		if (inputStream.read(encAesKey) != encAesKey.length)
+			throw new MalformedLogFileException("This log file is malformed.");
+
+		//now decrypt the aes key
+		Cipher rsaCipher = Cipher.getInstance(Config.PREFERRED_RSA_ALG());
+		rsaCipher.init(Cipher.DECRYPT_MODE, privateKey);
+		byte[] aesKeyBytes = rsaCipher.doFinal(encAesKey);
+		SecretKey aesKey = new SecretKeySpec(aesKeyBytes, 0, aesKeyBytes.length, "AES");
+
+		//read in the next length code
+		byte[] lc2Bytes = new byte[4];
+		if (inputStream.read(lc2Bytes) != 4)
+			throw new MalformedLogFileException("This log file is malformed.");
+
+		//convert that to an integer
+		ByteBuffer lc2Buff = ByteBuffer.wrap(lc2Bytes); //big-endian by default
+		int lc2 = lc2Buff.getInt();
+
+		//now we can read in that many bytes as the encrypted log data
+		byte[] encEntry = new byte[lc2];
+		if (inputStream.read(encEntry) != encEntry.length)
+			throw new MalformedLogFileException("This log file is malformed.");
+
+		//now decrypt the entry
+		Cipher aesCipher = Cipher.getInstance(Config.PREFERRED_AES_ALG());
+		aesCipher.init(Cipher.DECRYPT_MODE, aesKey, Config.STANDARD_IV);
+		byte[] entry = aesCipher.doFinal(encEntry);
+		return new String(entry, "UTF-8");
+	}
+
+	public static void decryptLog(File file, RSAPrivateKey privateKey, PrintStream outputStream)
+			throws IOException, MalformedLogFileException, InvalidSettingNameException,
+			CorruptSettingsException, UnInitializedSettingsException, InvalidKeyException,
+			BadPaddingException, IllegalBlockSizeException, NoSuchPaddingException,
+			NoSuchAlgorithmException, InvalidAlgorithmParameterException
+	{
+		FileInputStream inputStream = null;
+		try
+		{
+			inputStream = new FileInputStream(file);
+			byte[] lc1Bytes = new byte[4];
+			//while there is an initial length code to be read in, read it in
+			while (logHasNext(inputStream, lc1Bytes))
+			{
+				outputStream.println(getNextLogText(inputStream, privateKey, lc1Bytes));
+				outputStream.println();
+			}
+		}
+		finally
+		{
+			if (inputStream != null)
+				inputStream.close();
+		}
+	}
+
+	public static void encryptFileToStream(IBase64EncodingProvider encoder, FileInputStream fis, FileOutputStream fos, String fileExtension)
 			throws CorruptSettingsException, InvalidSettingNameException, UnInitializedSettingsException, MissingPublicKeyException, 
 			NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, InvalidAlgorithmParameterException, InvalidKeySpecException, 
 			IllegalBlockSizeException, BadPaddingException, IOException
@@ -154,7 +250,7 @@ public class EncryptionUtils
         
 		//add the encrypted aes key to the byte block
        	output.put(encryptedAesKey);
-       	
+
        	//add the second length code
        	output.put(lengthCode2);
        	
@@ -164,7 +260,17 @@ public class EncryptionUtils
        	//append the byte block to the current log
        	fos.write(output.array());
 	}
-	
+
+	public static class MalformedLogFileException extends Exception
+	{
+		private static final long serialVersionUID = 9219333934024822210L;
+
+		public MalformedLogFileException(String message)
+		{
+			super(message);
+		}
+	}
+
 	public static class MissingPublicKeyException extends Exception
 	{
 		private static final long serialVersionUID = 8041634883751009836L;

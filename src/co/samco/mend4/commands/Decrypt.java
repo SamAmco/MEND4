@@ -1,11 +1,7 @@
 package co.samco.mend4.commands;
 
 import java.awt.Desktop;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.nio.ByteBuffer;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
@@ -24,6 +20,7 @@ import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
+import co.samco.mend4.core.EncryptionUtils;
 import org.apache.commons.io.FilenameUtils;
 
 import co.samco.mend4.core.Config;
@@ -32,7 +29,6 @@ import co.samco.mend4.core.Settings.CorruptSettingsException;
 import co.samco.mend4.core.Settings.InvalidSettingNameException;
 import co.samco.mend4.core.Settings.UnInitializedSettingsException;
 
-//TODO a lot of the functionality here should be out-sourced to the core package
 public class Decrypt extends Command
 {
 	@Override
@@ -41,9 +37,7 @@ public class Decrypt extends Command
 		if (printHelp(args))
 			return;
 		
-		//TODO allow them to specify an output file.. or specify that the file should be written to the dec directory
-		FileInputStream privateKeyFileInputStream = null;
-		try 
+		try
 		{
 			//check they provided a file to decrypt
 			if (args.size() < 1)
@@ -109,19 +103,13 @@ public class Decrypt extends Command
 			}
 			String filename = file.getName();
 			
-			//now read in the private rsa key.
-	        byte[] keyBytes = new byte[(int)privateKeyFile.length()];
-	        privateKeyFileInputStream = new FileInputStream(privateKeyFile);
-	        privateKeyFileInputStream.read(keyBytes);
-			PKCS8EncodedKeySpec privateKeySpec = new PKCS8EncodedKeySpec(keyBytes);
-	        KeyFactory kf = KeyFactory.getInstance("RSA");
-	        RSAPrivateKey privateKey = (RSAPrivateKey)kf.generatePrivate(privateKeySpec);
+	        RSAPrivateKey privateKey = EncryptionUtils.getPrivateKeyFromFile(privateKeyFile);
 			
 			//TODO you could make the file extentions configurable, what if people already have software installed that uses one or both of these file extentions?
 			
 			//if it's a log file decrypt it as a log
 			if (FilenameUtils.getExtension(filename).equals("mend"))
-				decryptLog(file, privateKey);
+				EncryptionUtils.decryptLog(file, privateKey, System.out);
 			//if it's just an encrypted file decrypt it as that.
 			else if (FilenameUtils.getExtension(filename).equals("enc"))
 				decryptFile(file, privateKey, silent);
@@ -132,103 +120,19 @@ public class Decrypt extends Command
 				System.err.println("MEND does not know how to decrypt this file as it does not recognize the file extention. Expecting either .mend or .enc");
 			}
 		} 
-		catch (NoSuchAlgorithmException | IOException | InvalidKeySpecException 
-				| CorruptSettingsException | InvalidSettingNameException 
-			    | UnInitializedSettingsException e) 
+		catch (EncryptionUtils.MalformedLogFileException | BadPaddingException
+                | IllegalBlockSizeException | InvalidAlgorithmParameterException
+                | InvalidKeyException | NoSuchPaddingException | NoSuchAlgorithmException
+                | IOException | InvalidKeySpecException | CorruptSettingsException
+                | InvalidSettingNameException | UnInitializedSettingsException e)
 		{
 			System.err.println(e.getMessage());
-		} 
-		finally
-		{
-			try 
-			{
-				if (privateKeyFileInputStream != null)
-					privateKeyFileInputStream.close();
-			} 
-			catch (IOException e) 
-			{
-				System.err.println(e.getMessage());
-			}
-		}
+        }
 	}
-	
-	private void decryptLog(File file, RSAPrivateKey privateKey)
-	{
-		FileInputStream inputStream = null;
-		try
-		{
-			inputStream = new FileInputStream(file);
-			byte[] lc1Bytes = new byte[4];
-			//while there is an initial length code to be read in, read it in
-			while (inputStream.read(lc1Bytes) == 4)
-			{
-				//then convert it to an integer
-				ByteBuffer lc1Buff = ByteBuffer.wrap(lc1Bytes); //big-endian by default
-				int lc1 = lc1Buff.getInt();
-				
-				//and read in that many bytes as the encrypted aes key used to encrypt this log entry
-				byte[] encAesKey = new byte[lc1];
-				if (inputStream.read(encAesKey) != encAesKey.length)
-				{
-					throw new MalformedLogFileException("This log file is malformed.");
-				}
-				
-				//now decrypt the aes key
-				Cipher rsaCipher = Cipher.getInstance(Config.PREFERRED_RSA_ALG());
-	            rsaCipher.init(Cipher.DECRYPT_MODE, privateKey);
-	            byte[] aesKeyBytes = rsaCipher.doFinal(encAesKey);
-	            SecretKey aesKey = new SecretKeySpec(aesKeyBytes, 0, aesKeyBytes.length, "AES");
 
-	            //read in the next length code
-	            byte[] lc2Bytes = new byte[4];
-	            if (inputStream.read(lc2Bytes) != 4)
-	            {
-	            	throw new MalformedLogFileException("This log file is malformed.");
-	            }
-	            
-	            //convert that to an integer
-	            ByteBuffer lc2Buff = ByteBuffer.wrap(lc2Bytes); //big-endian by default
-				int lc2 = lc2Buff.getInt();
-				
-				//now we can read in that many bytes as the encrypted log data
-				byte[] encEntry = new byte[lc2];
-				if (inputStream.read(encEntry) != encEntry.length)
-				{
-					throw new MalformedLogFileException("This log file is malformed.");
-				}
-	            
-				//now decrypt the entry
-				Cipher aesCipher = Cipher.getInstance(Config.PREFERRED_AES_ALG());
-				aesCipher.init(Cipher.DECRYPT_MODE, aesKey, Config.STANDARD_IV);
-	            byte[] entry = aesCipher.doFinal(encEntry);
-	            
-	            System.out.println(new String(entry, "UTF-8"));
-	            System.out.println();
-			}
-		}
-		catch(IOException | MalformedLogFileException | NoSuchAlgorithmException 
-				| NoSuchPaddingException | InvalidKeyException | IllegalBlockSizeException 
-				| BadPaddingException | InvalidAlgorithmParameterException | CorruptSettingsException 
-				| InvalidSettingNameException | UnInitializedSettingsException e)
-		{
-			System.err.println(e.getMessage());
-		}
-		finally
-		{
-			try 
-			{
-				if (inputStream != null)
-					inputStream.close();
-			} 
-			catch (IOException e) 
-			{
-				System.err.println(e.getMessage());
-			}
-		}
-	}
-	
-	
-	private void decryptFile(File file, RSAPrivateKey privateKey, boolean silent)
+	//TODO this should probably be core functionality at heart, requires a little refactoring though
+    //and i'm lazy, so i'll wait till i need it
+	public void decryptFile(File file, RSAPrivateKey privateKey, boolean silent)
 	{
 		FileInputStream fis = null;
 		FileOutputStream fos = null;
@@ -246,7 +150,7 @@ public class Decrypt extends Command
 			byte[] lcBytes = new byte[4];
 			//while there is an initial length code to be read in, read it in
 			if (fis.read(lcBytes) != lcBytes.length)
-				throw new MalformedLogFileException("This enc file is malformed");
+				throw new EncryptionUtils.MalformedLogFileException("This enc file is malformed");
 			
 			//then convert it to an integer
 			int lc = ByteBuffer.wrap(lcBytes).getInt(); //big-endian by default
@@ -254,7 +158,7 @@ public class Decrypt extends Command
 			//and read in that many bytes as the encrypted aes key used to encrypt this enc file
 			byte[] encAesKey = new byte[lc];
 			if (fis.read(encAesKey) != encAesKey.length)
-				throw new MalformedLogFileException("This log file is malformed.");
+				throw new EncryptionUtils.MalformedLogFileException("This log file is malformed.");
 			
 			//now decrypt the aes key
 			Cipher rsaCipher = Cipher.getInstance(Config.PREFERRED_RSA_ALG());
@@ -266,13 +170,13 @@ public class Decrypt extends Command
            	byte[] lc2Bytes = new byte[4];
            	
            	if (fis.read(lc2Bytes) != lc2Bytes.length)
-           		throw new MalformedLogFileException("This enc file is malformed");
+           		throw new EncryptionUtils.MalformedLogFileException("This enc file is malformed");
            	
            	int lc2 = ByteBuffer.wrap(lc2Bytes).getInt(); //big-endian by default
            	byte[] encFileExtension = new byte[lc2];
            	
            	if (fis.read(encFileExtension) != encFileExtension.length)
-           		throw new MalformedLogFileException("This enc file is malformed");
+           		throw new EncryptionUtils.MalformedLogFileException("This enc file is malformed");
 
            	String fileExtension = new String(rsaCipher.doFinal(encFileExtension));
            	
@@ -306,7 +210,7 @@ public class Decrypt extends Command
            	if (!silent)
            		Desktop.getDesktop().open(outputFile);
 		}
-		catch(IOException | MalformedLogFileException | NoSuchAlgorithmException 
+		catch(IOException | EncryptionUtils.MalformedLogFileException | NoSuchAlgorithmException
 				| NoSuchPaddingException | InvalidKeyException | IllegalBlockSizeException 
 				| BadPaddingException | InvalidAlgorithmParameterException | CorruptSettingsException 
 				| InvalidSettingNameException | UnInitializedSettingsException e)
@@ -342,16 +246,4 @@ public class Decrypt extends Command
 	{
 		return "To decrypt an encrypted log or other mend encrypted file.";
 	}
-	
-	
-	private static class MalformedLogFileException extends Exception
-	{
-		private static final long serialVersionUID = 9219333934024822210L;
-
-		public MalformedLogFileException(String message)
-		{
-			super(message);
-		}
-	}
-	
 }
