@@ -9,18 +9,9 @@ import java.util.Map.Entry;
 
 import javax.xml.parsers.ParserConfigurationException;
 
+import co.samco.mend4.commands.*;
 import org.xml.sax.SAXException;
 
-import co.samco.mend4.commands.Command;
-import co.samco.mend4.commands.Clean;
-import co.samco.mend4.commands.Decrypt;
-import co.samco.mend4.commands.Encrypt;
-import co.samco.mend4.commands.EncryptFromStdIn;
-import co.samco.mend4.commands.StatePrinter;
-import co.samco.mend4.commands.Lock;
-import co.samco.mend4.commands.SetProperty;
-import co.samco.mend4.commands.SetupMend;
-import co.samco.mend4.commands.Unlock;
 import co.samco.mend4.core.Config;
 import co.samco.mend4.core.Settings;
 import co.samco.mend4.core.Settings.UnInitializedSettingsException;

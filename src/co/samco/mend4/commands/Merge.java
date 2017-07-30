@@ -2,13 +2,22 @@ package co.samco.mend4.commands;
 
 import co.samco.mend4.core.Config;
 import co.samco.mend4.core.EncryptionUtils;
+import co.samco.mend4.core.Settings;
 
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 import java.io.File;
 import java.io.FileInputStream;
-import java.security.KeyFactory;
-import java.security.interfaces.RSAPrivateCrtKey;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.security.interfaces.RSAPrivateKey;
-import java.security.spec.PKCS8EncodedKeySpec;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.regex.Matcher;
@@ -74,13 +83,44 @@ public class Merge extends Command
     private void merge(RSAPrivateKey privateKey, File firstLog, File secondLog,
                        boolean deleteSecondLog)
     {
-        LogEntry.parseFromFile(firstLog);
-        //while first has next
-        //if first has no date
-        //write first
-        //while second has next && second < first || second has no date
-        //write second
-        //write first
+        FileInputStream f1InputStream = null;
+        FileInputStream f2InputStream = null;
+
+        try
+        {
+            f1InputStream = new FileInputStream(firstLog);
+            f2InputStream = new FileInputStream(secondLog);
+            byte[] lc1Bytes = new byte[4];
+            f1InputStream.read(lc1Bytes);
+            LogEntry.parseNextLog(f1InputStream, privateKey, lc1Bytes);
+            //while first has next
+            //if first has no date
+            //write first
+            //while second has next && second < first || second has no date
+            //write second
+            //write first
+        }
+        catch (java.io.IOException | InvalidKeyException | InvalidAlgorithmParameterException | NoSuchAlgorithmException
+                | ParseException | NoSuchPaddingException | Settings.CorruptSettingsException | IllegalBlockSizeException
+                | Settings.InvalidSettingNameException | BadPaddingException | EncryptionUtils.MalformedLogFileException
+                | Settings.UnInitializedSettingsException e)
+        {
+            System.err.println(e.getMessage());
+        }
+        finally
+        {
+            try
+            {
+                if (f1InputStream != null)
+                    f1InputStream.close();
+                if (f2InputStream != null)
+                    f2InputStream.close();
+            }
+            catch (IOException e)
+            {
+                System.err.println(e.getMessage());
+            }
+        }
     }
 
     @Override
@@ -101,26 +141,31 @@ public class Merge extends Command
         private String entryText = "";
         private Date dateTime = null;
 
-        private LogEntry(StringBuilder entryText, Date dateTime)
+        private LogEntry(String entryText, Date dateTime)
         {
             this.entryText = entryText;
             this.dateTime = dateTime;
         }
 
-        public static LogEntry parseFromFile(FileInputStream inputStream,
-                                      RSAPrivateKey privateKey, byte[] lc1Bytes)
+        public static LogEntry parseNextLog(FileInputStream inputStream,
+                                            RSAPrivateKey privateKey, byte[] lc1Bytes) throws IOException, InvalidKeyException,
+                NoSuchAlgorithmException, Settings.InvalidSettingNameException, InvalidAlgorithmParameterException,
+                NoSuchPaddingException, Settings.CorruptSettingsException, BadPaddingException, EncryptionUtils.MalformedLogFileException,
+                IllegalBlockSizeException, Settings.UnInitializedSettingsException, ParseException
         {
-            try
+            String logText = EncryptionUtils.getNextLogText(inputStream, privateKey, lc1Bytes);
+            Date firstDate = null;
+            Pattern pattern = Pattern.compile("(\\d+)\\/(\\d+)\\/(\\d+) (\\d+):(\\d+):(\\d+)");
+            Matcher matcher = pattern.matcher(logText);
+            if (matcher.find())
             {
-                String logText = EncryptionUtils.getNextLogText(inputStream, privateKey, lc1Bytes);
-                Date firstDate = null;
-                Pattern pattern = Pattern.compile("\\\\d+\\\\/\\\\d+\\\\/\\\\d+ \\\\d+:\\\\d+:\\\\d+");
-                Matcher matcher = pattern.matcher(logText);
-                System.out.println(matcher.group());
-            } catch (Exception e)
-            {
-                System.err.println(e.getMessage());
+                //then the log has a date, so let's parse the text to a Date object
+                firstDate = (new SimpleDateFormat("dd/MM/yyyy HH:mm:ss")).parse(matcher.group());
+                //DateFormat df = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss");
+                //System.out.println(matcher.group());
+                //System.out.println(df.format(firstDate));
             }
+            return new LogEntry(logText, firstDate);
         }
     }
 }
