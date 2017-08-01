@@ -73,11 +73,45 @@ public class EncryptionUtils
 		return logInputStream.read(lc1Bytes) == 4;
 	}
 
-	public static String getNextLogText(FileInputStream inputStream, RSAPrivateKey privateKey,
-            byte[] lc1Bytes) throws IOException, MalformedLogFileException, InvalidSettingNameException,
-			CorruptSettingsException, UnInitializedSettingsException, NoSuchPaddingException,
-			NoSuchAlgorithmException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException,
-			InvalidAlgorithmParameterException
+	public static class LogDataBlocks
+	{
+		public byte[] encAesKey;
+		public byte[] lc2Bytes;
+		public byte[] encEntry;
+		public byte[] lc1Bytes;
+		public LogDataBlocks(byte[] lc1Bytes, byte[] encAesKey, byte[] lc2Bytes, byte[] encEntry)
+		{
+			this.lc1Bytes = lc1Bytes;
+			this.encAesKey = encAesKey;
+			this.lc2Bytes = lc2Bytes;
+			this.encEntry = encEntry;
+		}
+		public byte[] getAsOneBlock()
+		{
+			byte[] combined = new byte[encAesKey.length + lc2Bytes.length + encEntry.length + lc2Bytes.length];
+			byte[][] byteArrays = new byte[][]{lc1Bytes, encAesKey, lc2Bytes, encEntry};
+			int end = 0;
+			for (int i = 0; i < byteArrays.length; ++i)
+			{
+				System.arraycopy(byteArrays[i], 0, combined, end, byteArrays[i].length);
+				end += byteArrays[i].length;
+			}
+			return combined;
+		}
+	}
+
+	public static class LogDataBlocksAndText
+	{
+		public LogDataBlocks logDataBlocks;
+		public String entryText;
+		public LogDataBlocksAndText(LogDataBlocks logDataBlocks, String entryText)
+		{
+			this.logDataBlocks = logDataBlocks;
+			this.entryText = entryText;
+		}
+	}
+
+	public static LogDataBlocks getNextLogBytes(FileInputStream inputStream, byte[] lc1Bytes) throws IOException, MalformedLogFileException
 	{
 		ByteBuffer lc1Buff = ByteBuffer.wrap(lc1Bytes); //big-endian by default
 		int lc1 = lc1Buff.getInt();
@@ -86,12 +120,6 @@ public class EncryptionUtils
 		byte[] encAesKey = new byte[lc1];
 		if (inputStream.read(encAesKey) != encAesKey.length)
 			throw new MalformedLogFileException("This log file is malformed.");
-
-		//now decrypt the aes key
-		Cipher rsaCipher = Cipher.getInstance(Config.PREFERRED_RSA_ALG());
-		rsaCipher.init(Cipher.DECRYPT_MODE, privateKey);
-		byte[] aesKeyBytes = rsaCipher.doFinal(encAesKey);
-		SecretKey aesKey = new SecretKeySpec(aesKeyBytes, 0, aesKeyBytes.length, "AES");
 
 		//read in the next length code
 		byte[] lc2Bytes = new byte[4];
@@ -107,11 +135,37 @@ public class EncryptionUtils
 		if (inputStream.read(encEntry) != encEntry.length)
 			throw new MalformedLogFileException("This log file is malformed.");
 
+		return new LogDataBlocks(lc1Bytes, encAesKey, lc2Bytes, encEntry);
+	}
+
+	public static LogDataBlocksAndText getNextLogTextWithDataBlocks(FileInputStream inputStream, RSAPrivateKey privateKey,
+										byte[] lc1Bytes) throws IOException, MalformedLogFileException, InvalidSettingNameException,
+			CorruptSettingsException, UnInitializedSettingsException, NoSuchPaddingException,
+			NoSuchAlgorithmException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException,
+			InvalidAlgorithmParameterException
+	{
+		LogDataBlocks ldb = getNextLogBytes(inputStream, lc1Bytes);
+
+		//now decrypt the aes key
+		Cipher rsaCipher = Cipher.getInstance(Config.PREFERRED_RSA_ALG());
+		rsaCipher.init(Cipher.DECRYPT_MODE, privateKey);
+		byte[] aesKeyBytes = rsaCipher.doFinal(ldb.encAesKey);
+		SecretKey aesKey = new SecretKeySpec(aesKeyBytes, 0, aesKeyBytes.length, "AES");
+
 		//now decrypt the entry
 		Cipher aesCipher = Cipher.getInstance(Config.PREFERRED_AES_ALG());
 		aesCipher.init(Cipher.DECRYPT_MODE, aesKey, Config.STANDARD_IV);
-		byte[] entry = aesCipher.doFinal(encEntry);
-		return new String(entry, "UTF-8");
+		byte[] entry = aesCipher.doFinal(ldb.encEntry);
+		return new LogDataBlocksAndText(ldb, new String(entry, "UTF-8"));
+	}
+
+	public static String getNextLogText(FileInputStream inputStream, RSAPrivateKey privateKey,
+            byte[] lc1Bytes) throws IOException, MalformedLogFileException, InvalidSettingNameException,
+			CorruptSettingsException, UnInitializedSettingsException, NoSuchPaddingException,
+			NoSuchAlgorithmException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException,
+			InvalidAlgorithmParameterException
+	{
+	    return getNextLogTextWithDataBlocks(inputStream, privateKey, lc1Bytes).entryText;
 	}
 
 	public static void decryptLog(File file, RSAPrivateKey privateKey, PrintStream outputStream)
