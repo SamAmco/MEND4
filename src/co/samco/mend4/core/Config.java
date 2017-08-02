@@ -14,7 +14,7 @@ import co.samco.mend4.core.Settings.UnInitializedSettingsException;
 
 public class Config 
 {
-	public static final String CORE_VERSION_NUMBER = "4.0.7";
+	public static final String CORE_VERSION_NUMBER = "4.0.8";
 	public static final String CONFIG_PATH = System.getProperty("user.home") + "/.MEND4/";
 	public static final String SETTINGS_FILE = "Settings.xml";
 	public static final String PRIVATE_KEY_FILE_DEC = "prKey";
