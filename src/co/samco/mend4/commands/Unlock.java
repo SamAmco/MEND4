@@ -19,7 +19,6 @@ import co.samco.mend4.core.Settings;
 
 public class Unlock extends Command
 {
-	InputBox inputBox;
 	@Override
 	public void execute(ArrayList<String> args) 
 	{
@@ -98,7 +97,7 @@ public class Unlock extends Command
 		catch (Exception e) 
 		{
 			System.err.println(e.getMessage());
-		} 
+		}
 	}
 	
 	@Override

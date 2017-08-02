@@ -8,6 +8,8 @@ import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -31,13 +33,26 @@ public class Merge extends Command
 
         try
         {
-            //boolean deleteSecondLog = false;
-            //if (args.get(0).equals("-d"))
-            //{
-            //    deleteSecondLog = true;
-            //    args.remove(0);
-            //}
-            mergeFilesToNew(args.get(0), args.get(1), args.get(2));
+            if (args.size() != 3)
+            {
+                System.err.println("Incorrect number of arguments");
+                return;
+            }
+            if (args.get(0).equals("-2") || args.get(0).equals("-1"))
+            {
+                File firstLog = resolveLogFile(args.get(1));
+                File secondLog = resolveLogFile(args.get(2));
+                if (firstLog == null || secondLog == null)
+                    return;
+                mergeToFirstOrSecond(firstLog, secondLog, args.get(0));
+                return;
+            }
+
+            File firstLog = resolveLogFile(args.get(0));
+            File secondLog = resolveLogFile(args.get(1));
+            if (firstLog == null || secondLog == null)
+                return;
+            mergeFilesToNew(firstLog, secondLog, new File(args.get(2)));
         }
         catch (Exception e)
         {
@@ -55,32 +70,59 @@ public class Merge extends Command
        return EncryptionUtils.getPrivateKeyFromFile(privateKeyFile);
     }
 
-    private void mergeFilesToNew(String firstLogName, String secondLogName, String outputLogName)
+    private File resolveLogFile(String logName) throws Settings.UnInitializedSettingsException,
+            Settings.InvalidSettingNameException, Settings.CorruptSettingsException
     {
-        File firstLog = new File(firstLogName);
-        File secondLog = new File(secondLogName);
-        File outputLog = new File(outputLogName);
-        if (!firstLog.exists())
+        File logFile = new File(logName);
+        if (!logFile.exists())
         {
-            System.err.println("Could not find file:\t" + firstLog.getAbsolutePath());
-            return;
+            String logDir = Settings.instance().getValue(Config.Settings.LOGDIR);
+            if (logDir == null)
+                return null;
+            logFile = new File(logDir + File.separatorChar + logName);
+            if (logFile.exists())
+                return logFile;
+            logFile = new File(logDir + File.separatorChar + logName + ".mend");
+            if (logFile.exists())
+                return logFile;
+            System.err.println("Could not find log:\t" + logName);
+            return null;
         }
-        if (!secondLog.exists())
-        {
-            System.err.println("Could not find file:\t" + secondLog.getAbsolutePath());
-            return;
-        }
-        if (!firstLog.canRead())
-        {
-            System.err.println("You do not have permission to read:\t" + firstLog.getAbsolutePath());
-            return;
-        }
-        if (!secondLog.canRead())
-        {
-            System.err.println("You do not have permission to read:\t" + secondLog.getAbsolutePath());
-            return;
-        }
+        return logFile;
+    }
 
+    private void mergeToFirstOrSecond(File firstLog, File secondLog, String flag)
+    {
+        try
+        {
+            String logDir = Settings.instance().getValue(Config.Settings.LOGDIR);
+            if (logDir == null)
+                throw new IOException("You need to set the " + Config.SETTINGS_NAMES_MAP.get(Config.Settings.LOGDIR.ordinal())
+                        + " property in your settings file before you can encrypt logs to it.");
+
+            String tempName = "temp";
+            int tempSuffix = 0;
+            File currentOutFile = new File(logDir + File.separatorChar + tempName + tempSuffix + ".mend");
+            while (currentOutFile.exists())
+            {
+                tempSuffix++;
+                currentOutFile = new File(logDir + tempName + tempSuffix + ".mend");
+            }
+            mergeFilesToNew(firstLog, secondLog, currentOutFile);
+            if (flag.equals("-1"))
+                Files.move(currentOutFile.toPath(), firstLog.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            else
+                Files.move(currentOutFile.toPath(), secondLog.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        }
+        catch (IOException | Settings.UnInitializedSettingsException | Settings.InvalidSettingNameException
+                | Settings.CorruptSettingsException e)
+        {
+            System.err.println(e.getMessage());
+        }
+    }
+
+    private void mergeFilesToNew(File firstLog, File secondLog, File outputLog)
+    {
         FileInputStream f1InputStream = null;
         FileInputStream f2InputStream = null;
         FileOutputStream fOutputStream = null;
@@ -172,11 +214,11 @@ public class Merge extends Command
     @Override
     public String getUsageText()
     {
-        return "Usage:\tmend merge [-d] <first log> <second log>";
+        return "Usage:\tmend merge [-1 | -2] <first log> <second log> [<output log>]";
     }
 
     @Override
-    public String getDescriptionText() { return "Takes all the logs from <second log> and attempts to parse them and sort them into <first log> (optionally deleting the second log)"; }
+    public String getDescriptionText() { return "Merges all the logs from two different log files into one log file, sorted by date."; }
 
 
     private static class LogEntry
