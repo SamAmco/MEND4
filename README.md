@@ -119,6 +119,17 @@ When you are done viewing your encrypted logs/files, you can run:
 This will run your "shredcommand" on every file in your "decdir". Once again, don't put anything in this folder you wish to keep. 
 
 
+## MERGING
+
+You can merge two logs together into one log file using the merge subcommand. MEND needs to be unlocked to do this because it will reads the date/time at the top of each log and orders the output log by date. e.g.
+
+        mend merge in1.mend in2.mend out.mend
+
+Another way to use this command is with the -1 or -2 flag (instead of providing an output log file name.) This way the output log will replace the the first or second logs respectively. e.g.
+
+        mend merge -1 in1.mend in2.mend
+
+
 ## HELP
 
 If you need reminding of any of the basics written above, you can get help using:
