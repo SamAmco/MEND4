@@ -17,7 +17,7 @@ import co.samco.mend4.core.Settings;
  */
 public class DesktopSettings extends Settings
 {
-	public static final String DESKTOP_VERSION = "0.2";
+	public static final String DESKTOP_VERSION = "0.2.b";
 	public DesktopSettings() throws ParserConfigurationException, SAXException, IOException
 	{
 		super(new File(Config.CONFIG_PATH + Config.SETTINGS_FILE));
