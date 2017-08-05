@@ -73,13 +73,13 @@ public class InputBox extends JFrame implements KeyListener
 		{
 			ctrlDown = true;
 		}
-		if (e.getKeyCode() == KeyEvent.VK_ESCAPE)
-		{
-			for (InputBoxListener l : listeners)
-			{
-				l.OnEscape();
-			}
-		}
+		//if (e.getKeyCode() == KeyEvent.VK_ESCAPE)
+		//{
+		//	for (InputBoxListener l : listeners)
+		//	{
+		//		l.OnEscape();
+		//	}
+		//}
 	}
 
 	@Override
