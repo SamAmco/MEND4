@@ -121,7 +121,7 @@ This will run your "shredcommand" on every file in your "decdir". Once again, do
 
 ## MERGING
 
-You can merge two logs together into one log file using the merge subcommand. MEND needs to be unlocked to do this because it will reads the date/time at the top of each log and orders the output log by date. e.g.
+You can merge two logs together into one log file using the merge subcommand. MEND needs to be unlocked to do this because it will read the date/time at the top of each log and order the output log by date. e.g.
 
         mend merge in1.mend in2.mend out.mend
 
