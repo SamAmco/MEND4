@@ -223,11 +223,11 @@ public class Decrypt extends Command
 			{
 				if (fis != null)
 					fis.close();
-				if (fos != null)
-					fos.close();
 				if (cos != null)
 					cos.close();
-			} 
+				if (fos != null)
+					fos.close();
+			}
 			catch (IOException e) 
 			{
 				System.err.println(e.getMessage());
