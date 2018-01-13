@@ -1,4 +1,4 @@
-package co.samco.mend4.commands;
+package co.samco.mend4.desktop.commands;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -14,7 +14,6 @@ import javax.crypto.spec.SecretKeySpec;
 import org.apache.commons.codec.binary.Base64;
 
 import co.samco.mend4.core.Config;
-import co.samco.mend4.desktop.InputBox;
 import co.samco.mend4.core.Settings;
 
 public class Unlock extends Command

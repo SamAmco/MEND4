@@ -1,15 +1,13 @@
-package co.samco.mend4.commands;
+package co.samco.mend4.desktop.commands;
 
 import java.awt.Desktop;
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
-import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.spec.InvalidKeySpecException;
-import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.ArrayList;
 
 import javax.crypto.BadPaddingException;

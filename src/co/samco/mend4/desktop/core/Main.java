@@ -1,4 +1,4 @@
-package co.samco.mend4.desktop;
+package co.samco.mend4.desktop.core;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -9,7 +9,7 @@ import java.util.Map.Entry;
 
 import javax.xml.parsers.ParserConfigurationException;
 
-import co.samco.mend4.commands.*;
+import co.samco.mend4.desktop.commands.*;
 import org.xml.sax.SAXException;
 
 import co.samco.mend4.core.Config;

@@ -1,4 +1,4 @@
-package co.samco.mend4.desktop;
+package co.samco.mend4.desktop.core;
 
 import java.awt.Dimension;
 import java.awt.Toolkit;

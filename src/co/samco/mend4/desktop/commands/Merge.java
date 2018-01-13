@@ -1,4 +1,4 @@
-package co.samco.mend4.commands;
+package co.samco.mend4.desktop.commands;
 
 import co.samco.mend4.core.Config;
 import co.samco.mend4.core.EncryptionUtils;
@@ -15,7 +15,6 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.spec.InvalidKeySpecException;
-import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;

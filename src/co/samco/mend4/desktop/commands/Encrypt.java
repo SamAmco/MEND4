@@ -1,4 +1,4 @@
-package co.samco.mend4.commands;
+package co.samco.mend4.desktop.commands;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -23,9 +23,9 @@ import org.apache.commons.io.FilenameUtils;
 import co.samco.mend4.core.Config;
 import co.samco.mend4.core.EncryptionUtils;
 import co.samco.mend4.core.EncryptionUtils.MissingPublicKeyException;
-import co.samco.mend4.desktop.ApacheCommonsEncoder;
-import co.samco.mend4.desktop.InputBox;
-import co.samco.mend4.desktop.InputBoxListener;
+import co.samco.mend4.desktop.core.ApacheCommonsEncoder;
+import co.samco.mend4.desktop.core.InputBox;
+import co.samco.mend4.desktop.core.InputBoxListener;
 import co.samco.mend4.core.Settings;
 import co.samco.mend4.core.Settings.CorruptSettingsException;
 import co.samco.mend4.core.Settings.InvalidSettingNameException;
