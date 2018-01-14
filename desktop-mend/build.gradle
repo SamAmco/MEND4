@@ -1,0 +1,15 @@
+dependencies {
+    compile group: 'commons-io', name: 'commons-io', version: '2.4'
+    compile group: 'commons-codec', name: 'commons-codec', version: '1.10'
+    compile project(':core-mend')
+
+    testCompile 'junit:junit:4.12'
+}
+
+jar {
+    manifest {
+        attributes 'Implementation-Title': 'MEND4',
+                   'Implementation-Version': '1.0.0',
+                   'Main-Class': 'co.samco.mend4.desktop.core.Main'
+    }
+}

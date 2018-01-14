@@ -1,0 +1,4 @@
+rootProject.name = 'MEND4'
+
+include 'core-mend'
+include 'desktop-mend'
