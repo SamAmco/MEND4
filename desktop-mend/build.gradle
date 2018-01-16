@@ -12,4 +12,5 @@ jar {
                    'Implementation-Version': '1.0.0',
                    'Main-Class': 'co.samco.mend4.desktop.core.Main'
     }
+    archiveName 'MEND4.jar'
 }

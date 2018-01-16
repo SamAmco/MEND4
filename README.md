@@ -5,7 +5,7 @@ MEND makes a deliberate distinction between "logs" and "files". After a small am
 
 ## SETUP:
 
-First build the code using make and move the jar and batch/shell script to a location on your machine recognised by your system path. There is no difference between the jar file placed under /Windows or /Unix, this is just for convenience when copying the script and jar together.
+First build the code using the gradle wrapper. There is currently no automatic installation process, but there are some useful scripts you can add to your system path under desktop-mend/scripts. You will need to change the path to MEND4.jar in the script though. 
 
 Next open a terminal and run:
 

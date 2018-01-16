@@ -1,0 +1,12 @@
+build.doLast {
+	println "copying core-mend.jar to android project"
+	copy {
+		from 'build/libs/core-mend.jar'
+		into '../android-mend/app/libs/'
+	}
+}
+
+clean.doFirst {
+	println "deleting core-mend.jar from android project libs"
+	delete '../android-mend/app/libs/core-mend.jar'
+}
