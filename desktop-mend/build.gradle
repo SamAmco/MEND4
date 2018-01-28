@@ -9,8 +9,8 @@ dependencies {
 jar {
     manifest {
         attributes 'Implementation-Title': 'MEND4',
-                   'Implementation-Version': '1.0.0',
-                   'Main-Class': 'co.samco.mend4.desktop.core.Main'
+                'Implementation-Version': '1.0.0',
+                'Main-Class': 'co.samco.mend4.desktop.core.Main'
     }
     archiveName 'MEND4.jar'
 }

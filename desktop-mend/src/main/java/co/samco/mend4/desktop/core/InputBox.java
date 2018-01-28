@@ -14,113 +14,98 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.text.JTextComponent;
 
-public class InputBox extends JFrame implements KeyListener
-{
-	private static final long serialVersionUID = -7214084221385969252L;
-	
-	JTextComponent textInput;
-	List<InputBoxListener> listeners = new ArrayList<InputBoxListener>();
-	
-	boolean shiftDown = false;
-	boolean ctrlDown = false;
-	
-	public InputBox(boolean decorated, boolean password, int width, int height)
-	{
-		setSize(width,height);
-		setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );
-		if (!decorated)
-			setUndecorated(true);
-		
-		Dimension dim = Toolkit.getDefaultToolkit().getScreenSize();
-		this.setLocation(dim.width/2-this.getSize().width/2, dim.height/2-this.getSize().height/2);
-		
-		if (password)
-		{
-			textInput = new JPasswordField();
-			textInput.setPreferredSize(new Dimension(width, height));
-			this.add(textInput);
-		}
-		else
-		{
-			JTextArea textArea = new JTextArea();
-			textArea.setLineWrap(true);
-			textArea.setWrapStyleWord(true);
-			textInput = textArea;
-			JScrollPane sp = new JScrollPane(textArea);
-			sp.setPreferredSize(new Dimension(width, height));
-			this.add(sp);
-		}
-			
-		textInput.setBackground(ColorSchemeData.getColor2());
-		textInput.setFont(ColorSchemeData.getConsoleFont());
-		textInput.setBorder(BorderFactory.createLineBorder(ColorSchemeData.getColor1()));
-		textInput.addKeyListener(this);
-	}
-	
-	public void addListener(InputBoxListener l)
-	{
-		listeners.add(l);
-	}
+public class InputBox extends JFrame implements KeyListener {
+    private static final long serialVersionUID = -7214084221385969252L;
 
-	@Override
-	public void keyPressed(KeyEvent e) 
-	{
-		if (e.getKeyCode() == KeyEvent.VK_SHIFT)
-		{
-			shiftDown = true;
-		}
-		if (e.getKeyCode() == KeyEvent.VK_CONTROL)
-		{
-			ctrlDown = true;
-		}
-		//if (e.getKeyCode() == KeyEvent.VK_ESCAPE)
-		//{
-		//	for (InputBoxListener l : listeners)
-		//	{
-		//		l.OnEscape();
-		//	}
-		//}
-	}
+    JTextComponent textInput;
+    List<InputBoxListener> listeners = new ArrayList<InputBoxListener>();
 
-	@Override
-	public void keyReleased(KeyEvent e) 
-	{
-		if (e.getKeyCode() == KeyEvent.VK_SHIFT)
-		{
-			shiftDown = false;
-		}
-		if (e.getKeyCode() == KeyEvent.VK_CONTROL)
-		{
-			ctrlDown = false;
-		}
-		if (e.getKeyCode() == KeyEvent.VK_ENTER)
-		{
-			char[] text = (textInput instanceof JPasswordField) 
-					? ((JPasswordField)textInput).getPassword() 
-					: textInput.getText().toCharArray();
-					
-			for (InputBoxListener l : listeners)
-			{
-				l.OnEnter(text);
-				if (shiftDown)
-					l.OnShiftEnter(text);
-				if (ctrlDown)
-					l.OnCtrlEnter(text);
-			}
-		}
-	}
+    boolean shiftDown = false;
+    boolean ctrlDown = false;
 
-	@Override
-	public void keyTyped(KeyEvent e) {}
-	
-	public void clear()
-	{
-		textInput.setText("");
-	}
-	
-	public void close()
-	{
-		setVisible(false);
-		dispose();
-	}
+    public InputBox(boolean decorated, boolean password, int width, int height) {
+        setSize(width, height);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        if (!decorated)
+            setUndecorated(true);
+
+        Dimension dim = Toolkit.getDefaultToolkit().getScreenSize();
+        this.setLocation(dim.width / 2 - this.getSize().width / 2, dim.height / 2 - this.getSize().height / 2);
+
+        if (password) {
+            textInput = new JPasswordField();
+            textInput.setPreferredSize(new Dimension(width, height));
+            this.add(textInput);
+        } else {
+            JTextArea textArea = new JTextArea();
+            textArea.setLineWrap(true);
+            textArea.setWrapStyleWord(true);
+            textInput = textArea;
+            JScrollPane sp = new JScrollPane(textArea);
+            sp.setPreferredSize(new Dimension(width, height));
+            this.add(sp);
+        }
+
+        textInput.setBackground(ColorSchemeData.getColor2());
+        textInput.setFont(ColorSchemeData.getConsoleFont());
+        textInput.setBorder(BorderFactory.createLineBorder(ColorSchemeData.getColor1()));
+        textInput.addKeyListener(this);
+    }
+
+    public void addListener(InputBoxListener l) {
+        listeners.add(l);
+    }
+
+    @Override
+    public void keyPressed(KeyEvent e) {
+        if (e.getKeyCode() == KeyEvent.VK_SHIFT) {
+            shiftDown = true;
+        }
+        if (e.getKeyCode() == KeyEvent.VK_CONTROL) {
+            ctrlDown = true;
+        }
+        //if (e.getKeyCode() == KeyEvent.VK_ESCAPE)
+        //{
+        //	for (InputBoxListener l : listeners)
+        //	{
+        //		l.OnEscape();
+        //	}
+        //}
+    }
+
+    @Override
+    public void keyReleased(KeyEvent e) {
+        if (e.getKeyCode() == KeyEvent.VK_SHIFT) {
+            shiftDown = false;
+        }
+        if (e.getKeyCode() == KeyEvent.VK_CONTROL) {
+            ctrlDown = false;
+        }
+        if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+            char[] text = (textInput instanceof JPasswordField)
+                    ? ((JPasswordField) textInput).getPassword()
+                    : textInput.getText().toCharArray();
+
+            for (InputBoxListener l : listeners) {
+                l.OnEnter(text);
+                if (shiftDown)
+                    l.OnShiftEnter(text);
+                if (ctrlDown)
+                    l.OnCtrlEnter(text);
+            }
+        }
+    }
+
+    @Override
+    public void keyTyped(KeyEvent e) {
+    }
+
+    public void clear() {
+        textInput.setText("");
+    }
+
+    public void close() {
+        setVisible(false);
+        dispose();
+    }
 }
