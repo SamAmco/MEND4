@@ -10,14 +10,16 @@ import java.util.Map.Entry;
 import javax.xml.parsers.ParserConfigurationException;
 
 import co.samco.mend4.desktop.commands.*;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.SpringApplication;
 import org.xml.sax.SAXException;
 
 import co.samco.mend4.core.Config;
 import co.samco.mend4.core.Settings;
 import co.samco.mend4.core.Settings.UnInitializedSettingsException;
 
-public class Main {
-    private static Map<String, Class<?>> commands = new HashMap<String, Class<?>>();
+public class Main implements CommandLineRunner {
+    private static Map<String, Class<?>> commands = new HashMap<>();
 
     static {
         commands.put("setup", SetupMend.class);
@@ -33,6 +35,28 @@ public class Main {
     }
 
     public static void main(String[] args) {
+        SpringApplication.run(Main.class, args);
+    }
+
+    private static void printUsage()
+            throws InstantiationException, IllegalAccessException {
+        System.err.println("Usage:\tmend [-v | -h] | [<command> [-h|<args>]]");
+        System.err.println();
+        System.err.println("Commands:");
+        Iterator<Entry<String, Class<?>>> it = commands.entrySet().iterator();
+        while (it.hasNext()) {
+            Entry<String, Class<?>> entry = it.next();
+            StringBuilder sb = new StringBuilder();
+            sb.append("\t");
+            sb.append(entry.getKey());
+            sb.append("\t");
+            sb.append(((Command) entry.getValue().newInstance()).getDescriptionText());
+            System.err.println(sb.toString());
+        }
+    }
+
+    @Override
+    public void run(String... args) throws Exception {
         try {
             Settings.InitializeSettings(new DesktopSettings());
             if (args.length < 1) {
@@ -77,23 +101,6 @@ public class Main {
         } catch (InstantiationException | IllegalAccessException | ParserConfigurationException
                 | SAXException | IOException | UnInitializedSettingsException e) {
             System.err.println(e.getMessage());
-        }
-    }
-
-    private static void printUsage()
-            throws InstantiationException, IllegalAccessException {
-        System.err.println("Usage:\tmend [-v | -h] | [<command> [-h|<args>]]");
-        System.err.println();
-        System.err.println("Commands:");
-        Iterator<Entry<String, Class<?>>> it = commands.entrySet().iterator();
-        while (it.hasNext()) {
-            Entry<String, Class<?>> entry = it.next();
-            StringBuilder sb = new StringBuilder();
-            sb.append("\t");
-            sb.append(entry.getKey());
-            sb.append("\t");
-            sb.append(((Command) entry.getValue().newInstance()).getDescriptionText());
-            System.err.println(sb.toString());
         }
     }
 }
