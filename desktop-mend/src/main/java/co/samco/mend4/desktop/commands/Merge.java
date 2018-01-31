@@ -17,14 +17,14 @@ import java.security.interfaces.RSAPrivateKey;
 import java.security.spec.InvalidKeySpecException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class Merge extends Command {
     @Override
-    public void execute(ArrayList<String> args) {
+    public void execute(List<String> args) {
         if (printHelp(args))
             return;
 

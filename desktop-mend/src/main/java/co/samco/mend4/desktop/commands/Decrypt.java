@@ -8,7 +8,7 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.spec.InvalidKeySpecException;
-import java.util.ArrayList;
+import java.util.List;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -29,7 +29,7 @@ import co.samco.mend4.core.Settings.UnInitializedSettingsException;
 
 public class Decrypt extends Command {
     @Override
-    public void execute(ArrayList<String> args) {
+    public void execute(List<String> args) {
         if (printHelp(args))
             return;
 

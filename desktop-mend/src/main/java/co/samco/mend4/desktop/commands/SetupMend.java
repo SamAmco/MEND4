@@ -10,7 +10,7 @@ import java.security.interfaces.RSAPublicKey;
 import java.security.spec.KeySpec;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
-import java.util.ArrayList;
+import java.util.List;
 
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
@@ -25,7 +25,7 @@ import org.apache.commons.codec.binary.Base64;
 
 public class SetupMend extends Command {
     @Override
-    public void execute(ArrayList<String> args) {
+    public void execute(List<String> args) {
         if (printHelp(args))
             return;
 

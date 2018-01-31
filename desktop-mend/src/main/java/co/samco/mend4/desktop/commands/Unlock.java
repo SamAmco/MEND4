@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.security.spec.KeySpec;
 import java.util.ArrayList;
+import java.util.List;
 
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
@@ -18,7 +19,7 @@ import co.samco.mend4.core.Settings;
 
 public class Unlock extends Command {
     @Override
-    public void execute(ArrayList<String> args) {
+    public void execute(List<String> args) {
         if (printHelp(args))
             return;
 
@@ -49,7 +50,7 @@ public class Unlock extends Command {
             //If there is already a prKey file existent, just shred it and unlock again.
             if (new File(Config.CONFIG_PATH + Config.PRIVATE_KEY_FILE_DEC).exists() || new File(Config.CONFIG_PATH +
                     Config.PUBLIC_KEY_FILE).exists())
-                new Lock().execute(new ArrayList<String>());
+                new Lock().execute(new ArrayList<>());
 
             //Decrypt the private key with the password.
             byte[] encryptedPrivateKey = Base64.decodeBase64(Settings.instance().getValue(Config.Settings.PRIVATEKEY));

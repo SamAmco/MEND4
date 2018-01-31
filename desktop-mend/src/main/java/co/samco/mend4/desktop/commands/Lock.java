@@ -3,14 +3,14 @@ package co.samco.mend4.desktop.commands;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
+import java.util.List;
 
 import co.samco.mend4.core.Config;
 import co.samco.mend4.core.Settings;
 
 public class Lock extends Command {
     @Override
-    public void execute(ArrayList<String> args) {
+    public void execute(List<String> args) {
         if (printHelp(args))
             return;
 

@@ -1,7 +1,7 @@
 package co.samco.mend4.desktop.commands;
 
 import java.io.File;
-import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.commons.io.FilenameUtils;
 
@@ -14,7 +14,7 @@ import co.samco.mend4.core.Settings.UnInitializedSettingsException;
 public class StatePrinter extends Command {
 
     @Override
-    public void execute(ArrayList<String> args) {
+    public void execute(List<String> args) {
         if (printHelp(args))
             return;
 

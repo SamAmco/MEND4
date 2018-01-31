@@ -1,6 +1,6 @@
 package co.samco.mend4.desktop.commands;
 
-import java.util.ArrayList;
+import java.util.List;
 
 import javax.xml.transform.TransformerException;
 
@@ -12,7 +12,7 @@ import co.samco.mend4.core.Settings.UnInitializedSettingsException;
 
 public class SetProperty extends Command {
     @Override
-    public void execute(ArrayList<String> args) {
+    public void execute(List<String> args) {
         if (printHelp(args))
             return;
 

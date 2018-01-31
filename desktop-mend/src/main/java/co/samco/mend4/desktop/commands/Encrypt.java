@@ -10,8 +10,8 @@ import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
@@ -36,7 +36,7 @@ public class Encrypt extends Command implements InputBoxListener {
     protected boolean dropHeader = false;
 
     @Override
-    public void execute(ArrayList<String> args) {
+    public void execute(List<String> args) {
         if (printHelp(args))
             return;
 
@@ -70,7 +70,7 @@ public class Encrypt extends Command implements InputBoxListener {
         }
     }
 
-    protected void readOptions(ArrayList<String> args) {
+    protected void readOptions(List<String> args) {
         if (args.contains("-a")) {
             dropHeader = true;
             args.remove("-a");

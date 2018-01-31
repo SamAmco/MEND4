@@ -1,11 +1,11 @@
 package co.samco.mend4.desktop.commands;
 
-import java.util.ArrayList;
+import java.util.List;
 
 public abstract class Command {
-    public abstract void execute(ArrayList<String> args);
+    public abstract void execute(List<String> args);
 
-    protected boolean printHelp(ArrayList<String> args) {
+    protected boolean printHelp(List<String> args) {
         if (args.contains("-h")) {
             System.err.println(getUsageText());
             return true;
