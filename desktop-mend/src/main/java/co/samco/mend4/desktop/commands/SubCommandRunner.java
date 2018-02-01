@@ -5,15 +5,18 @@ import co.samco.mend4.core.Settings;
 import co.samco.mend4.desktop.core.DesktopSettings;
 import org.xml.sax.SAXException;
 
+import javax.inject.Inject;
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.IOException;
 import java.util.*;
 
 public class SubCommandRunner extends Command {
 
-    private static Map<String, Class<?>> commands = new HashMap<>();
+    private final Map<String, Class<?>> commands;
 
-    static {
+    @Inject
+    public SubCommandRunner() {
+        commands = new HashMap<>();
         commands.put("setup", SetupMend.class);
         commands.put("unlock", Unlock.class);
         commands.put("lock", Lock.class);
