@@ -10,13 +10,20 @@ import co.samco.mend4.core.Settings.CorruptSettingsException;
 import co.samco.mend4.core.Settings.InvalidSettingNameException;
 import co.samco.mend4.core.Settings.UnInitializedSettingsException;
 
+import javax.inject.Inject;
+
 public class Clean extends Command {
+
+    private final String COMMAND_NAME = "clean";
+
+    @Inject
+    public Clean() {}
 
     @Override
     public void execute(List<String> args) {
-        if (printHelp(args))
+        System.err.println("YOYOYO2");
+        /*if (printHelp(args))
             return;
-
 
         try {
             String decDir = Settings.instance().getValue(Config.Settings.DECDIR);
@@ -49,7 +56,12 @@ public class Clean extends Command {
         } catch (CorruptSettingsException | InvalidSettingNameException | IOException | InterruptedException |
                 UnInitializedSettingsException e) {
             System.err.println(e.getMessage());
-        }
+        }*/
+    }
+
+    @Override
+    public boolean isCommandForString(String name) {
+        return name.equals(COMMAND_NAME);
     }
 
     @Override
@@ -59,8 +71,24 @@ public class Clean extends Command {
 
     @Override
     public String getDescriptionText() {
-        return "Runs the " + Config.SETTINGS_NAMES_MAP.get(Config.Settings.SHREDCOMMAND.ordinal()) + " on every file " +
-                "in your decrypt directory.";
+        //return "Runs the " + Config.SETTINGS_NAMES_MAP.get(Config.Settings.SHREDCOMMAND.ordinal()) + " on every file " +
+                //"in your decrypt directory.";
+        return null;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        return obj == this;
+    }
+
+    @Override
+    public int hashCode() {
+        return Integer.valueOf(COMMAND_NAME);
+    }
+
+    @Override
+    public String toString() {
+        return COMMAND_NAME;
     }
 
 

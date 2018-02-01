@@ -13,6 +13,8 @@ public abstract class Command {
         return false;
     }
 
+    public abstract boolean isCommandForString(String name);
+
     public abstract String getUsageText();
 
     public abstract String getDescriptionText();
@@ -25,4 +27,13 @@ public abstract class Command {
         }
         return commandStrings;
     }
+
+    @Override
+    public abstract boolean equals(Object obj);
+
+    @Override
+    public abstract int hashCode();
+
+    @Override
+    public abstract String toString();
 }
