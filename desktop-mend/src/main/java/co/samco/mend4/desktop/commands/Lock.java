@@ -7,7 +7,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import co.samco.mend4.core.Config;
-import co.samco.mend4.core.Settings;
+import co.samco.mend4.core.impl.SettingsImpl;
 
 import javax.inject.Inject;
 
@@ -25,7 +25,7 @@ public class Lock extends Command {
         }
 
         try {
-            String shredCommand = Settings.instance().getValue(Config.Settings.SHREDCOMMAND);
+            String shredCommand = SettingsImpl.instance().getValue(Config.Settings.SHREDCOMMAND);
             if (shredCommand == null) {
                 System.err.println("You need to set the " + Config.SETTINGS_NAMES_MAP.get(Config.Settings
                         .SHREDCOMMAND.ordinal())

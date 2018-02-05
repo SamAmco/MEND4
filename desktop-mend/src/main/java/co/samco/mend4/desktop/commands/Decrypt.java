@@ -2,7 +2,6 @@ package co.samco.mend4.desktop.commands;
 
 import java.awt.Desktop;
 import java.io.*;
-import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
@@ -25,10 +24,10 @@ import co.samco.mend4.core.EncryptionUtils;
 import org.apache.commons.io.FilenameUtils;
 
 import co.samco.mend4.core.Config;
-import co.samco.mend4.core.Settings;
-import co.samco.mend4.core.Settings.CorruptSettingsException;
-import co.samco.mend4.core.Settings.InvalidSettingNameException;
-import co.samco.mend4.core.Settings.UnInitializedSettingsException;
+import co.samco.mend4.core.impl.SettingsImpl;
+import co.samco.mend4.core.impl.SettingsImpl.CorruptSettingsException;
+import co.samco.mend4.core.impl.SettingsImpl.InvalidSettingNameException;
+import co.samco.mend4.core.impl.SettingsImpl.UnInitializedSettingsException;
 
 public class Decrypt extends Command {
     private final String COMMAND_NAME = "dec";
@@ -62,7 +61,7 @@ public class Decrypt extends Command {
             //First check the special case that it's a 17 or 14 digit enc file id
             String filePath = args.get(0);
             if (filePath.matches("\\d{14}") || filePath.matches("\\d{16}") || filePath.matches("\\d{17}")) {
-                String encDir = Settings.instance().getValue(Config.Settings.ENCDIR);
+                String encDir = SettingsImpl.instance().getValue(Config.Settings.ENCDIR);
                 if (encDir == null) {
                     System.err.println("You need to set the " + Config.SETTINGS_NAMES_MAP.get(Config.Settings.ENCDIR
                             .ordinal())
@@ -80,7 +79,7 @@ public class Decrypt extends Command {
                 if (extension.equals(""))
                     filePath += ".mend";
 
-                String logDir = Settings.instance().getValue(Config.Settings.LOGDIR);
+                String logDir = SettingsImpl.instance().getValue(Config.Settings.LOGDIR);
                 if (logDir == null) {
                     System.err.println("Defaulted to searching "
                             + Config.SETTINGS_NAMES_MAP.get(Config.Settings.LOGDIR.ordinal())
@@ -129,7 +128,7 @@ public class Decrypt extends Command {
         FileOutputStream fos = null;
         CipherOutputStream cos = null;
         try {
-            String decLocation = Settings.instance().getValue(Config.Settings.DECDIR);
+            String decLocation = SettingsImpl.instance().getValue(Config.Settings.DECDIR);
             if (decLocation == null)
                 throw new FileNotFoundException("You need to set the " + Config.SETTINGS_NAMES_MAP.get(Config
                         .Settings.DECDIR.ordinal())

@@ -7,23 +7,30 @@ import java.util.List;
 
 import co.samco.mend4.core.Config;
 import co.samco.mend4.core.Settings;
-import co.samco.mend4.core.Settings.CorruptSettingsException;
-import co.samco.mend4.core.Settings.InvalidSettingNameException;
-import co.samco.mend4.core.Settings.UnInitializedSettingsException;
+import co.samco.mend4.core.impl.SettingsImpl;
+import co.samco.mend4.core.impl.SettingsImpl.CorruptSettingsException;
+import co.samco.mend4.core.impl.SettingsImpl.InvalidSettingNameException;
+import co.samco.mend4.core.impl.SettingsImpl.UnInitializedSettingsException;
+import dagger.Lazy;
 
 import javax.inject.Inject;
 
 public class Clean extends Command {
 
     private final String COMMAND_NAME = "clean";
+    private final Lazy<Settings> settings;
 
     @Inject
-    public Clean() {}
+    public Clean(Lazy<Settings> settings) {
+        this.settings = settings;
+    }
 
     @Override
     public void execute(List<String> args) {
         try {
-            String decDir = Settings.instance().getValue(Config.Settings.DECDIR);
+            String decDir = settings.get().getValue(Config.Settings.DECDIR);
+            System.err.println(decDir);
+
             if (decDir == null) {
                 System.err.println("You need to set the "
                         + Config.SETTINGS_NAMES_MAP.get(Config.Settings.DECDIR.ordinal()) + " property before you can" +
@@ -38,7 +45,7 @@ public class Clean extends Command {
             }
             for (File child : directoryListing) {
                 System.err.println("Cleaning: " + child.getAbsolutePath());
-                String shredCommand = Settings.instance().getValue(Config.Settings.SHREDCOMMAND);
+                String shredCommand = settings.get().getValue(Config.Settings.SHREDCOMMAND);
                 if (shredCommand == null) {
                     System.err.println("You need to set the " + Config.SETTINGS_NAMES_MAP.get(Config.Settings
                             .SHREDCOMMAND.ordinal())
@@ -50,8 +57,7 @@ public class Clean extends Command {
                 tr.waitFor();
             }
             System.err.println("Cleaning Complete");
-        } catch (CorruptSettingsException | InvalidSettingNameException | IOException | InterruptedException |
-                UnInitializedSettingsException e) {
+        } catch (CorruptSettingsException | InvalidSettingNameException | IOException | InterruptedException e) {
             System.err.println(e.getMessage());
         }
     }

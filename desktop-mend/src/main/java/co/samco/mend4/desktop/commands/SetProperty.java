@@ -7,10 +7,10 @@ import javax.inject.Inject;
 import javax.xml.transform.TransformerException;
 
 import co.samco.mend4.core.Config;
-import co.samco.mend4.core.Settings;
-import co.samco.mend4.core.Settings.CorruptSettingsException;
-import co.samco.mend4.core.Settings.InvalidSettingNameException;
-import co.samco.mend4.core.Settings.UnInitializedSettingsException;
+import co.samco.mend4.core.impl.SettingsImpl;
+import co.samco.mend4.core.impl.SettingsImpl.CorruptSettingsException;
+import co.samco.mend4.core.impl.SettingsImpl.InvalidSettingNameException;
+import co.samco.mend4.core.impl.SettingsImpl.UnInitializedSettingsException;
 
 public class SetProperty extends Command {
     private final String COMMAND_NAME = "set";
@@ -34,7 +34,7 @@ public class SetProperty extends Command {
             try {
                 for (int i = 0; i < Config.SETTINGS_NAMES_MAP.size(); i++) {
                     if (Config.SETTINGS_NAMES_MAP.get(i).equals(propertyName)) {
-                        Settings.instance().setValue(Config.Settings.values()[i], value);
+                        SettingsImpl.instance().setValue(Config.Settings.values()[i], value);
                         System.out.println("Successfully set " + propertyName + " to " + value);
                         break;
                     }

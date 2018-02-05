@@ -2,14 +2,17 @@ package co.samco.mend4.desktop;
 
 import co.samco.mend4.desktop.commands.Command;
 import co.samco.mend4.desktop.config.CommandsModule;
+import co.samco.mend4.desktop.config.DesktopModule;
 import dagger.Component;
 
+import javax.inject.Singleton;
 import java.util.Arrays;
 import java.util.Set;
 
 public class Main {
 
-    @Component (modules = { CommandsModule.class })
+    @Singleton
+    @Component (modules = {DesktopModule.class, CommandsModule.class })
     interface Runner {
         Set<Command> commands();
     }

@@ -24,10 +24,10 @@ import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
-import co.samco.mend4.core.Settings;
-import co.samco.mend4.core.Settings.CorruptSettingsException;
-import co.samco.mend4.core.Settings.InvalidSettingNameException;
-import co.samco.mend4.core.Settings.UnInitializedSettingsException;
+import co.samco.mend4.core.impl.SettingsImpl;
+import co.samco.mend4.core.impl.SettingsImpl.CorruptSettingsException;
+import co.samco.mend4.core.impl.SettingsImpl.InvalidSettingNameException;
+import co.samco.mend4.core.impl.SettingsImpl.UnInitializedSettingsException;
 
 public class EncryptionUtils {
     private static String addHeaderToLogText(char[] logText) throws UnInitializedSettingsException {
@@ -36,7 +36,7 @@ public class EncryptionUtils {
         SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss", Locale.ENGLISH);
         sb.append(sdf.format(cal.getTime()));
         sb.append("//MEND" + Config.CORE_VERSION_NUMBER + "//");
-        sb.append(Settings.instance().getPlatformDependentHeader());
+        sb.append(SettingsImpl.instance().getPlatformDependentHeader());
         sb.append
                 ("////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////\n");
         sb.append(logText);
@@ -189,7 +189,7 @@ public class EncryptionUtils {
             IllegalBlockSizeException, BadPaddingException, IOException {
         CipherOutputStream cos = null;
         try {
-            String userPublicKeyString = Settings.instance().getValue(Config.Settings.PUBLICKEY);
+            String userPublicKeyString = SettingsImpl.instance().getValue(Config.Settings.PUBLICKEY);
             if (userPublicKeyString == null)
                 throw new MissingPublicKeyException();
 
@@ -249,7 +249,7 @@ public class EncryptionUtils {
             IllegalBlockSizeException, BadPaddingException, InvalidKeySpecException, MissingPublicKeyException,
             IOException {
         //Lets just do some basic checks first
-        String userPublicKeyString = Settings.instance().getValue(Config.Settings.PUBLICKEY);
+        String userPublicKeyString = SettingsImpl.instance().getValue(Config.Settings.PUBLICKEY);
         if (userPublicKeyString == null)
             throw new MissingPublicKeyException();
 

@@ -7,10 +7,10 @@ import java.util.List;
 import org.apache.commons.io.FilenameUtils;
 
 import co.samco.mend4.core.Config;
-import co.samco.mend4.core.Settings;
-import co.samco.mend4.core.Settings.CorruptSettingsException;
-import co.samco.mend4.core.Settings.InvalidSettingNameException;
-import co.samco.mend4.core.Settings.UnInitializedSettingsException;
+import co.samco.mend4.core.impl.SettingsImpl;
+import co.samco.mend4.core.impl.SettingsImpl.CorruptSettingsException;
+import co.samco.mend4.core.impl.SettingsImpl.InvalidSettingNameException;
+import co.samco.mend4.core.impl.SettingsImpl.UnInitializedSettingsException;
 
 import javax.inject.Inject;
 
@@ -32,7 +32,7 @@ public class StatePrinter extends Command {
             if (args.get(0).equals("-a")) {
                 for (int i = 0; i < Config.SETTINGS_NAMES_MAP.size(); i++) {
                     String key = Config.SETTINGS_NAMES_MAP.get(i);
-                    String value = Settings.instance().getValue(Config.Settings.values()[i]);
+                    String value = SettingsImpl.instance().getValue(Config.Settings.values()[i]);
                     StringBuilder sb = new StringBuilder();
                     sb.append(key);
                     sb.append("\t");
@@ -43,7 +43,7 @@ public class StatePrinter extends Command {
                     System.err.println();
                 }
             } else if (args.get(0).equals("-l")) {
-                String logDir = Settings.instance().getValue(Config.Settings.LOGDIR);
+                String logDir = SettingsImpl.instance().getValue(Config.Settings.LOGDIR);
                 if (logDir == null) {
                     System.err.println("You need to set the "
                             + Config.SETTINGS_NAMES_MAP.get(Config.Settings.LOGDIR.ordinal())
@@ -67,7 +67,7 @@ public class StatePrinter extends Command {
                     }
                 }
             } else if (args.get(0).equals("-e")) {
-                String encDir = Settings.instance().getValue(Config.Settings.ENCDIR);
+                String encDir = SettingsImpl.instance().getValue(Config.Settings.ENCDIR);
                 if (encDir == null) {
                     System.err.println("You need to set the "
                             + Config.SETTINGS_NAMES_MAP.get(Config.Settings.ENCDIR.ordinal())
@@ -94,7 +94,7 @@ public class StatePrinter extends Command {
                 String value = null;
                 for (int i = 0; i < Config.SETTINGS_NAMES_MAP.size(); i++) {
                     if (Config.SETTINGS_NAMES_MAP.get(i).equals(args.get(0))) {
-                        value = Settings.instance().getValue(Config.Settings.values()[i]);
+                        value = SettingsImpl.instance().getValue(Config.Settings.values()[i]);
                         break;
                     }
                 }

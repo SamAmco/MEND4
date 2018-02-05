@@ -8,9 +8,10 @@ import java.util.Map;
 import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
 
-import co.samco.mend4.core.Settings.CorruptSettingsException;
-import co.samco.mend4.core.Settings.InvalidSettingNameException;
-import co.samco.mend4.core.Settings.UnInitializedSettingsException;
+import co.samco.mend4.core.impl.SettingsImpl;
+import co.samco.mend4.core.impl.SettingsImpl.CorruptSettingsException;
+import co.samco.mend4.core.impl.SettingsImpl.InvalidSettingNameException;
+import co.samco.mend4.core.impl.SettingsImpl.UnInitializedSettingsException;
 
 public class Config {
     public static final String CORE_VERSION_NUMBER = "4.0.8";
@@ -101,7 +102,7 @@ public class Config {
             return _PREFERRED_RSA_ALG;
         //Set the rsa algorithm
         //If the user has a set preference for the algo then use that
-        String storedRsaAlgStr = co.samco.mend4.core.Settings.instance().getValue(Settings.PREFERREDRSA);
+        String storedRsaAlgStr = SettingsImpl.instance().getValue(Settings.PREFERREDRSA);
         if (storedRsaAlgStr != null)
             _PREFERRED_RSA_ALG = storedRsaAlgStr;
             //otherwise use the max recommended available
@@ -120,7 +121,7 @@ public class Config {
 
         //Set the aes algorithm
         //If the user has a set preference for the algo then use that
-        String storedAesAlgStr = co.samco.mend4.core.Settings.instance().getValue(Settings.PREFERREDAES);
+        String storedAesAlgStr = SettingsImpl.instance().getValue(Settings.PREFERREDAES);
         if (storedAesAlgStr != null)
             _PREFERRED_AES_ALG = storedAesAlgStr;
             //otherwise use the max recommended available
@@ -139,7 +140,7 @@ public class Config {
 
         //Set the rsa key size
         //If the user has a set preference for the size then use that
-        String storedRsaLimitStr = co.samco.mend4.core.Settings.instance().getValue(Settings.RSAKEYSIZE);
+        String storedRsaLimitStr = SettingsImpl.instance().getValue(Settings.RSAKEYSIZE);
         if (storedRsaLimitStr != null)
             _RSA_KEY_SIZE = Integer.parseInt(storedRsaLimitStr);
             //otherwise use the max recommended available
@@ -158,7 +159,7 @@ public class Config {
 
         //Set the aes key size
         //If the user has a set preference for the size then use that
-        String storedAesLimitStr = co.samco.mend4.core.Settings.instance().getValue(Settings.AESKEYSIZE);
+        String storedAesLimitStr = SettingsImpl.instance().getValue(Settings.AESKEYSIZE);
         if (storedAesLimitStr != null)
             _AES_KEY_SIZE = Integer.parseInt(storedAesLimitStr);
             //otherwise use the max recommended available

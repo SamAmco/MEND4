@@ -28,10 +28,10 @@ import co.samco.mend4.core.EncryptionUtils.MissingPublicKeyException;
 import co.samco.mend4.desktop.core.ApacheCommonsEncoder;
 import co.samco.mend4.desktop.core.InputBox;
 import co.samco.mend4.desktop.core.InputBoxListener;
-import co.samco.mend4.core.Settings;
-import co.samco.mend4.core.Settings.CorruptSettingsException;
-import co.samco.mend4.core.Settings.InvalidSettingNameException;
-import co.samco.mend4.core.Settings.UnInitializedSettingsException;
+import co.samco.mend4.core.impl.SettingsImpl;
+import co.samco.mend4.core.impl.SettingsImpl.CorruptSettingsException;
+import co.samco.mend4.core.impl.SettingsImpl.InvalidSettingNameException;
+import co.samco.mend4.core.impl.SettingsImpl.UnInitializedSettingsException;
 
 public class Encrypt extends Command implements InputBoxListener {
     private final String COMMAND_NAME = "enc";
@@ -130,7 +130,7 @@ public class Encrypt extends Command implements InputBoxListener {
                 //Make sure you're able to set up a file input stream
                 fis = new FileInputStream(fileToEncrypt);
                 //Check that you're able to set up an output stream
-                String encLocation = Settings.instance().getValue(Config.Settings.ENCDIR);
+                String encLocation = SettingsImpl.instance().getValue(Config.Settings.ENCDIR);
                 if (encLocation == null) {
                     throw new IOException("You need to set the " + Config.SETTINGS_NAMES_MAP.get(Config.Settings
                             .ENCDIR.ordinal())
@@ -178,14 +178,14 @@ public class Encrypt extends Command implements InputBoxListener {
 
         FileOutputStream fos = null;
         try {
-            String logDir = Settings.instance().getValue(Config.Settings.LOGDIR);
-            String currentLogName = Settings.instance().getValue(Config.Settings.CURRENTLOG);
+            String logDir = SettingsImpl.instance().getValue(Config.Settings.LOGDIR);
+            String currentLogName = SettingsImpl.instance().getValue(Config.Settings.CURRENTLOG);
             if (logDir == null)
                 throw new IOException("You need to set the " + Config.SETTINGS_NAMES_MAP.get(Config.Settings.LOGDIR
                         .ordinal())
                         + " property in your settings file before you can encrypt logs to it.");
             if (currentLogName == null) {
-                Settings.instance().setValue(Config.Settings.CURRENTLOG, "Log");
+                SettingsImpl.instance().setValue(Config.Settings.CURRENTLOG, "Log");
                 currentLogName = "Log";
             }
 

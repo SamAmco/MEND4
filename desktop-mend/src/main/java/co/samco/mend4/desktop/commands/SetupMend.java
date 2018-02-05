@@ -21,7 +21,7 @@ import javax.crypto.spec.SecretKeySpec;
 import javax.inject.Inject;
 
 import co.samco.mend4.core.Config;
-import co.samco.mend4.core.Settings;
+import co.samco.mend4.core.impl.SettingsImpl;
 
 import org.apache.commons.codec.binary.Base64;
 
@@ -72,10 +72,10 @@ public class SetupMend extends Command {
                 setKeysGenerated(password);
 
             if (!setupExists) {
-                Settings.instance().setValue(Config.Settings.PREFERREDAES, Config.PREFERRED_AES_ALG());
-                Settings.instance().setValue(Config.Settings.PREFERREDRSA, Config.PREFERRED_RSA_ALG());
-                Settings.instance().setValue(Config.Settings.AESKEYSIZE, Integer.toString(Config.AES_KEY_SIZE()));
-                Settings.instance().setValue(Config.Settings.RSAKEYSIZE, Integer.toString(Config.RSA_KEY_SIZE()));
+                SettingsImpl.instance().setValue(Config.Settings.PREFERREDAES, Config.PREFERRED_AES_ALG());
+                SettingsImpl.instance().setValue(Config.Settings.PREFERREDRSA, Config.PREFERRED_RSA_ALG());
+                SettingsImpl.instance().setValue(Config.Settings.AESKEYSIZE, Integer.toString(Config.AES_KEY_SIZE()));
+                SettingsImpl.instance().setValue(Config.Settings.RSAKEYSIZE, Integer.toString(Config.RSA_KEY_SIZE()));
 
             }
             System.out.println("MEND Successfully set up.");
@@ -155,12 +155,12 @@ public class SetupMend extends Command {
         byte[] cipherText = aesCipher.doFinal(Config.PASSCHECK_TEXT.getBytes("UTF-8"));
 
         //Write the encrypted private key to settings
-        Settings.instance().setValue(Config.Settings.PRIVATEKEY, Base64.encodeBase64URLSafeString(encryptedPrivateKey));
+        SettingsImpl.instance().setValue(Config.Settings.PRIVATEKEY, Base64.encodeBase64URLSafeString(encryptedPrivateKey));
         //Add a public key element to the settings file containing the public key.
-        Settings.instance().setValue(Config.Settings.PUBLICKEY, Base64.encodeBase64URLSafeString(keyPair.getPublic()
+        SettingsImpl.instance().setValue(Config.Settings.PUBLICKEY, Base64.encodeBase64URLSafeString(keyPair.getPublic()
                 .getEncoded()));
         //Add the encrypted pass check text to the Settings
-        Settings.instance().setValue(Config.Settings.PASSCHECK, Base64.encodeBase64URLSafeString(cipherText));
+        SettingsImpl.instance().setValue(Config.Settings.PASSCHECK, Base64.encodeBase64URLSafeString(cipherText));
     }
 
     @Override

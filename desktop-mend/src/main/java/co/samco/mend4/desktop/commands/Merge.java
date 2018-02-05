@@ -2,7 +2,7 @@ package co.samco.mend4.desktop.commands;
 
 import co.samco.mend4.core.Config;
 import co.samco.mend4.core.EncryptionUtils;
-import co.samco.mend4.core.Settings;
+import co.samco.mend4.core.impl.SettingsImpl;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
@@ -65,11 +65,11 @@ public class Merge extends Command {
         return EncryptionUtils.getPrivateKeyFromFile(privateKeyFile);
     }
 
-    private File resolveLogFile(String logName) throws Settings.UnInitializedSettingsException,
-            Settings.InvalidSettingNameException, Settings.CorruptSettingsException {
+    private File resolveLogFile(String logName) throws SettingsImpl.UnInitializedSettingsException,
+            SettingsImpl.InvalidSettingNameException, SettingsImpl.CorruptSettingsException {
         File logFile = new File(logName);
         if (!logFile.exists()) {
-            String logDir = Settings.instance().getValue(Config.Settings.LOGDIR);
+            String logDir = SettingsImpl.instance().getValue(Config.Settings.LOGDIR);
             if (logDir == null)
                 return null;
             logFile = new File(logDir + File.separatorChar + logName);
@@ -86,7 +86,7 @@ public class Merge extends Command {
 
     private void mergeToFirstOrSecond(File firstLog, File secondLog, String flag) {
         try {
-            String logDir = Settings.instance().getValue(Config.Settings.LOGDIR);
+            String logDir = SettingsImpl.instance().getValue(Config.Settings.LOGDIR);
             if (logDir == null)
                 throw new IOException("You need to set the " + Config.SETTINGS_NAMES_MAP.get(Config.Settings.LOGDIR
                         .ordinal())
@@ -104,8 +104,8 @@ public class Merge extends Command {
                 Files.move(currentOutFile.toPath(), firstLog.toPath(), StandardCopyOption.REPLACE_EXISTING);
             else
                 Files.move(currentOutFile.toPath(), secondLog.toPath(), StandardCopyOption.REPLACE_EXISTING);
-        } catch (IOException | Settings.UnInitializedSettingsException | Settings.InvalidSettingNameException
-                | Settings.CorruptSettingsException e) {
+        } catch (IOException | SettingsImpl.UnInitializedSettingsException | SettingsImpl.InvalidSettingNameException
+                | SettingsImpl.CorruptSettingsException e) {
             System.err.println(e.getMessage());
         }
     }
@@ -128,10 +128,10 @@ public class Merge extends Command {
             mergeToOutputFile(privateKey, f1InputStream, f2InputStream, fOutputStream);
         } catch (java.io.IOException | InvalidKeyException | InvalidAlgorithmParameterException |
                 NoSuchAlgorithmException
-                | ParseException | NoSuchPaddingException | Settings.CorruptSettingsException |
+                | ParseException | NoSuchPaddingException | SettingsImpl.CorruptSettingsException |
                 IllegalBlockSizeException
-                | Settings.InvalidSettingNameException | BadPaddingException | EncryptionUtils.MalformedLogFileException
-                | Settings.UnInitializedSettingsException | InvalidKeySpecException e) {
+                | SettingsImpl.InvalidSettingNameException | BadPaddingException | EncryptionUtils.MalformedLogFileException
+                | SettingsImpl.UnInitializedSettingsException | InvalidKeySpecException e) {
             System.err.println(e.getMessage());
             e.printStackTrace();
         } finally {
@@ -153,9 +153,9 @@ public class Merge extends Command {
             NoSuchAlgorithmException,
             EncryptionUtils.MalformedLogFileException, InvalidKeyException, InvalidAlgorithmParameterException,
             NoSuchPaddingException,
-            BadPaddingException, Settings.InvalidSettingNameException, Settings.CorruptSettingsException,
+            BadPaddingException, SettingsImpl.InvalidSettingNameException, SettingsImpl.CorruptSettingsException,
             IllegalBlockSizeException,
-            Settings.UnInitializedSettingsException {
+            SettingsImpl.UnInitializedSettingsException {
         byte[] lc1Bytes = new byte[4];
         byte[] lc2Bytes = new byte[4];
         LogEntry secondLogEntry = null;
@@ -219,10 +219,10 @@ public class Merge extends Command {
         public static LogEntry parseNextLog(FileInputStream inputStream,
                                             RSAPrivateKey privateKey, byte[] lc1Bytes) throws IOException,
                 InvalidKeyException,
-                NoSuchAlgorithmException, Settings.InvalidSettingNameException, InvalidAlgorithmParameterException,
-                NoSuchPaddingException, Settings.CorruptSettingsException, BadPaddingException, EncryptionUtils
+                NoSuchAlgorithmException, SettingsImpl.InvalidSettingNameException, InvalidAlgorithmParameterException,
+                NoSuchPaddingException, SettingsImpl.CorruptSettingsException, BadPaddingException, EncryptionUtils
                         .MalformedLogFileException,
-                IllegalBlockSizeException, Settings.UnInitializedSettingsException, ParseException {
+                IllegalBlockSizeException, SettingsImpl.UnInitializedSettingsException, ParseException {
             EncryptionUtils.LogDataBlocksAndText nextLog = EncryptionUtils.getNextLogTextWithDataBlocks(inputStream,
                     privateKey, lc1Bytes);
             String logText = nextLog.entryText;

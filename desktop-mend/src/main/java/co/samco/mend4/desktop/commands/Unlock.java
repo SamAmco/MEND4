@@ -17,7 +17,7 @@ import javax.inject.Inject;
 import org.apache.commons.codec.binary.Base64;
 
 import co.samco.mend4.core.Config;
-import co.samco.mend4.core.Settings;
+import co.samco.mend4.core.impl.SettingsImpl;
 
 public class Unlock extends Command {
     private final String COMMAND_NAME = "unlock";
@@ -30,7 +30,7 @@ public class Unlock extends Command {
         char[] password = System.console().readPassword("Please enter your password: ");
 
         try {
-            String passCheck = Settings.instance().getValue(Config.Settings.PASSCHECK);
+            String passCheck = SettingsImpl.instance().getValue(Config.Settings.PASSCHECK);
             byte[] compCheck = Base64.decodeBase64(passCheck);
 
             //generate an aes key from the password
@@ -57,9 +57,9 @@ public class Unlock extends Command {
                 new Lock().execute(new ArrayList<>());
 
             //Decrypt the private key with the password.
-            byte[] encryptedPrivateKey = Base64.decodeBase64(Settings.instance().getValue(Config.Settings.PRIVATEKEY));
+            byte[] encryptedPrivateKey = Base64.decodeBase64(SettingsImpl.instance().getValue(Config.Settings.PRIVATEKEY));
             byte[] decryptedPrivateKey = aesCipher.doFinal(encryptedPrivateKey);
-            byte[] publicKey = Base64.decodeBase64(Settings.instance().getValue(Config.Settings.PUBLICKEY));
+            byte[] publicKey = Base64.decodeBase64(SettingsImpl.instance().getValue(Config.Settings.PUBLICKEY));
 
             //Write the decrypted private key to a file
             File privateKeyFile = new File(Config.CONFIG_PATH + Config.PRIVATE_KEY_FILE_DEC);
