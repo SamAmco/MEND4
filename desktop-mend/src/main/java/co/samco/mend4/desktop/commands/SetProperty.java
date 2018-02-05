@@ -20,9 +20,6 @@ public class SetProperty extends Command {
 
     @Override
     public void execute(List<String> args) {
-        if (printHelp(args))
-            return;
-
         if (args.size() != 2) {
             System.err.println("Wrong number of arguments:");
             System.err.println();

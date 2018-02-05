@@ -27,9 +27,6 @@ public class Unlock extends Command {
 
     @Override
     public void execute(List<String> args) {
-        if (printHelp(args))
-            return;
-
         char[] password = System.console().readPassword("Please enter your password: ");
 
         try {

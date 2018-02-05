@@ -19,9 +19,6 @@ public class Lock extends Command {
 
     @Override
     public void execute(List<String> args) {
-        if (printHelp(args))
-            return;
-
         File privateKeyFile = new File(Config.CONFIG_PATH + Config.PRIVATE_KEY_FILE_DEC);
         if (!privateKeyFile.exists()) {
             System.err.println("MEND did not appear to be unlocked.");

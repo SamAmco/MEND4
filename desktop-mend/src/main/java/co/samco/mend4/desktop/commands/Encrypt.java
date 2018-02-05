@@ -43,9 +43,6 @@ public class Encrypt extends Command implements InputBoxListener {
 
     @Override
     public void execute(List<String> args) {
-        if (printHelp(args))
-            return;
-
         readOptions(args);
 
         if (args.size() <= 0) {

@@ -1,17 +1,21 @@
 package co.samco.mend4.desktop.commands;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public abstract class Command {
-    public abstract void execute(List<String> args);
+    private static final List<String> HELP_ALIASES = Arrays.asList("-h", "--help");
 
-    protected boolean printHelp(List<String> args) {
-        if (args.contains("-h")) {
+    protected abstract void execute(List<String> args);
+
+    public void executeCommand(List<String> args) {
+        if (Collections.disjoint(args, HELP_ALIASES)) {
+            execute(args);
+        } else {
             System.err.println(getUsageText());
-            return true;
         }
-        return false;
     }
 
     public boolean isCommandForString(String name) {

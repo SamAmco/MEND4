@@ -13,9 +13,6 @@ public class EncryptFromStdIn extends Encrypt {
 
     @Override
     public void execute(List<String> args) {
-        if (printHelp(args))
-            return;
-
         readOptions(args);
 
         Scanner scanner = new Scanner(System.in);

@@ -38,9 +38,6 @@ public class Decrypt extends Command {
 
     @Override
     public void execute(List<String> args) {
-        if (printHelp(args))
-            return;
-
         try {
             //check they provided a file to decrypt
             if (args.size() < 1) {

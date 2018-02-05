@@ -32,9 +32,6 @@ public class Merge extends Command {
 
     @Override
     public void execute(List<String> args) {
-        if (printHelp(args))
-            return;
-
         try {
             if (args.size() != 3) {
                 System.err.println("Incorrect number of arguments");

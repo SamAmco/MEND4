@@ -22,9 +22,6 @@ public class StatePrinter extends Command {
 
     @Override
     public void execute(List<String> args) {
-        if (printHelp(args))
-            return;
-
         if (args.size() < 1 || args.size() > 1) {
             System.err.println("Wrong number of arguments.");
             getUsageText();

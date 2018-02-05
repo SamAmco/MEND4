@@ -22,9 +22,6 @@ public class Clean extends Command {
 
     @Override
     public void execute(List<String> args) {
-        if (printHelp(args))
-            return;
-
         try {
             String decDir = Settings.instance().getValue(Config.Settings.DECDIR);
             if (decDir == null) {

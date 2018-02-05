@@ -3,6 +3,8 @@ package co.samco.mend4.desktop;
 import co.samco.mend4.desktop.commands.Command;
 import co.samco.mend4.desktop.config.CommandsModule;
 import dagger.Component;
+
+import java.util.Arrays;
 import java.util.Set;
 
 public class Main {
@@ -16,7 +18,7 @@ public class Main {
         Runner runner = DaggerMain_Runner.create();
         for (Command c : runner.commands()) {
             if (c.isCommandForString(args[0]))
-                c.execute(null);
+                c.executeCommand(Arrays.asList(args));
         }
     }
 }

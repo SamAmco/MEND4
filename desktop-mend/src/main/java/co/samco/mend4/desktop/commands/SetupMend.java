@@ -33,9 +33,6 @@ public class SetupMend extends Command {
 
     @Override
     public void execute(List<String> args) {
-        if (printHelp(args))
-            return;
-
         boolean setupExists = false;
         if (new File(Config.CONFIG_PATH + Config.SETTINGS_FILE).exists()) {
             System.err.println("WARNING: MEND already has a Settings.xml file at " + Config.CONFIG_PATH + Config
