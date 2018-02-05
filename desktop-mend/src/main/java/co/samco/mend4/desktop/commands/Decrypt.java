@@ -2,12 +2,14 @@ package co.samco.mend4.desktop.commands;
 
 import java.awt.Desktop;
 import java.io.*;
+import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.spec.InvalidKeySpecException;
+import java.util.Arrays;
 import java.util.List;
 
 import javax.crypto.BadPaddingException;
@@ -17,6 +19,7 @@ import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
+import javax.inject.Inject;
 
 import co.samco.mend4.core.EncryptionUtils;
 import org.apache.commons.io.FilenameUtils;
@@ -28,6 +31,11 @@ import co.samco.mend4.core.Settings.InvalidSettingNameException;
 import co.samco.mend4.core.Settings.UnInitializedSettingsException;
 
 public class Decrypt extends Command {
+    private final String COMMAND_NAME = "dec";
+
+    @Inject
+    public Decrypt() { }
+
     @Override
     public void execute(List<String> args) {
         if (printHelp(args))
@@ -221,5 +229,10 @@ public class Decrypt extends Command {
     @Override
     public String getDescriptionText() {
         return "To decrypt an encrypted log or other mend encrypted file.";
+    }
+
+    @Override
+    protected List<String> getCommandAliases() {
+        return Arrays.asList(COMMAND_NAME);
     }
 }

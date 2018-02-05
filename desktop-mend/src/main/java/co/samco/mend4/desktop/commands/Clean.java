@@ -2,6 +2,7 @@ package co.samco.mend4.desktop.commands;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 
 import co.samco.mend4.core.Config;
@@ -21,8 +22,7 @@ public class Clean extends Command {
 
     @Override
     public void execute(List<String> args) {
-        System.err.println("YOYOYO2");
-        /*if (printHelp(args))
+        if (printHelp(args))
             return;
 
         try {
@@ -56,12 +56,7 @@ public class Clean extends Command {
         } catch (CorruptSettingsException | InvalidSettingNameException | IOException | InterruptedException |
                 UnInitializedSettingsException e) {
             System.err.println(e.getMessage());
-        }*/
-    }
-
-    @Override
-    public boolean isCommandForString(String name) {
-        return name.equals(COMMAND_NAME);
+        }
     }
 
     @Override
@@ -77,19 +72,8 @@ public class Clean extends Command {
     }
 
     @Override
-    public boolean equals(Object obj) {
-        return obj == this;
+    protected List<String> getCommandAliases() {
+        return Arrays.asList(COMMAND_NAME);
     }
-
-    @Override
-    public int hashCode() {
-        return Integer.valueOf(COMMAND_NAME);
-    }
-
-    @Override
-    public String toString() {
-        return COMMAND_NAME;
-    }
-
 
 }

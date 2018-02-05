@@ -10,12 +10,14 @@ import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
+import javax.inject.Inject;
 import javax.xml.transform.TransformerException;
 
 import org.apache.commons.io.FilenameUtils;
@@ -32,8 +34,12 @@ import co.samco.mend4.core.Settings.InvalidSettingNameException;
 import co.samco.mend4.core.Settings.UnInitializedSettingsException;
 
 public class Encrypt extends Command implements InputBoxListener {
+    private final String COMMAND_NAME = "enc";
     private InputBox inputBox;
     protected boolean dropHeader = false;
+
+    @Inject
+    public Encrypt() { }
 
     @Override
     public void execute(List<String> args) {
@@ -85,6 +91,11 @@ public class Encrypt extends Command implements InputBoxListener {
     @Override
     public String getDescriptionText() {
         return "To encrypt text to your current log, or encrypt a file and recieve an id for it.";
+    }
+
+    @Override
+    protected List<String> getCommandAliases() {
+        return Arrays.asList(COMMAND_NAME);
     }
 
     @Override

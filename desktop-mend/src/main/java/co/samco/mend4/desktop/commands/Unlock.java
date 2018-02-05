@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.security.spec.KeySpec;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import javax.crypto.Cipher;
@@ -11,6 +12,7 @@ import javax.crypto.SecretKey;
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
+import javax.inject.Inject;
 
 import org.apache.commons.codec.binary.Base64;
 
@@ -18,6 +20,11 @@ import co.samco.mend4.core.Config;
 import co.samco.mend4.core.Settings;
 
 public class Unlock extends Command {
+    private final String COMMAND_NAME = "unlock";
+
+    @Inject
+    public Unlock() { }
+
     @Override
     public void execute(List<String> args) {
         if (printHelp(args))
@@ -96,6 +103,11 @@ public class Unlock extends Command {
     @Override
     public String getDescriptionText() {
         return "To decrypt the private key.";
+    }
+
+    @Override
+    protected List<String> getCommandAliases() {
+        return Arrays.asList(COMMAND_NAME);
     }
 
 }

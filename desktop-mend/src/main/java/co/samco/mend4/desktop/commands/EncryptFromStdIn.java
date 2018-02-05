@@ -1,9 +1,16 @@
 package co.samco.mend4.desktop.commands;
 
+import javax.inject.Inject;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
 
 public class EncryptFromStdIn extends Encrypt {
+    private final String COMMAND_NAME = "enci";
+
+    @Inject
+    public EncryptFromStdIn() { }
+
     @Override
     public void execute(List<String> args) {
         if (printHelp(args))
@@ -21,6 +28,11 @@ public class EncryptFromStdIn extends Encrypt {
         scanner.close();
 
         encryptTextToLog(sb.toString().toCharArray(), dropHeader);
+    }
+
+    @Override
+    public List<String> getCommandAliases() {
+        return Arrays.asList(COMMAND_NAME);
     }
 
     @Override

@@ -1,7 +1,9 @@
 package co.samco.mend4.desktop.commands;
 
+import java.util.Arrays;
 import java.util.List;
 
+import javax.inject.Inject;
 import javax.xml.transform.TransformerException;
 
 import co.samco.mend4.core.Config;
@@ -11,6 +13,11 @@ import co.samco.mend4.core.Settings.InvalidSettingNameException;
 import co.samco.mend4.core.Settings.UnInitializedSettingsException;
 
 public class SetProperty extends Command {
+    private final String COMMAND_NAME = "set";
+
+    @Inject
+    public SetProperty() { }
+
     @Override
     public void execute(List<String> args) {
         if (printHelp(args))
@@ -67,5 +74,10 @@ public class SetProperty extends Command {
     @Override
     public String getDescriptionText() {
         return "Set the value of a property in your settings file.";
+    }
+
+    @Override
+    protected List<String> getCommandAliases() {
+        return Arrays.asList(COMMAND_NAME);
     }
 }

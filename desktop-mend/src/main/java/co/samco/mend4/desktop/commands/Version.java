@@ -1,11 +1,12 @@
 package co.samco.mend4.desktop.commands;
 
 import javax.inject.Inject;
+import java.util.Arrays;
 import java.util.List;
 
 public class Version extends Command {
     //TODO we may want to have many aliases for this command
-    private final String COMMAND_NAME = "-v";
+    private final List<String> COMMAND_ALIASES = Arrays.asList("-v", "--version");
 
     @Inject
     public Version() {}
@@ -13,11 +14,6 @@ public class Version extends Command {
     @Override
     public void execute(List<String> args) {
         System.err.println("YOYOYO");
-    }
-
-    @Override
-    public boolean isCommandForString(String name) {
-        return name.equals(COMMAND_NAME);
     }
 
     @Override
@@ -31,17 +27,8 @@ public class Version extends Command {
     }
 
     @Override
-    public boolean equals(Object obj) {
-        return obj == this;
+    protected List<String> getCommandAliases() {
+        return COMMAND_ALIASES;
     }
 
-    @Override
-    public int hashCode() {
-        return Integer.valueOf(COMMAND_NAME);
-    }
-
-    @Override
-    public String toString() {
-        return COMMAND_NAME;
-    }
 }

@@ -7,6 +7,7 @@ import co.samco.mend4.core.Settings;
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
+import javax.inject.Inject;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
@@ -17,12 +18,18 @@ import java.security.interfaces.RSAPrivateKey;
 import java.security.spec.InvalidKeySpecException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class Merge extends Command {
+    private final String COMMAND_NAME = "merge";
+
+    @Inject
+    public Merge() { }
+
     @Override
     public void execute(List<String> args) {
         if (printHelp(args))
@@ -195,6 +202,11 @@ public class Merge extends Command {
     @Override
     public String getDescriptionText() {
         return "Merges all the logs from two different log files into one log file, sorted by date.";
+    }
+
+    @Override
+    protected List<String> getCommandAliases() {
+        return Arrays.asList(COMMAND_NAME);
     }
 
 

@@ -3,12 +3,20 @@ package co.samco.mend4.desktop.commands;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStreamReader;
+import java.util.Arrays;
 import java.util.List;
 
 import co.samco.mend4.core.Config;
 import co.samco.mend4.core.Settings;
 
+import javax.inject.Inject;
+
 public class Lock extends Command {
+    private final String COMMAND_NAME = "lock";
+
+    @Inject
+    public Lock() { }
+
     @Override
     public void execute(List<String> args) {
         if (printHelp(args))
@@ -59,5 +67,10 @@ public class Lock extends Command {
     @Override
     public String getDescriptionText() {
         return "Shreds the decrypted private key. Requires shred to be installed.";
+    }
+
+    @Override
+    protected List<String> getCommandAliases() {
+        return Arrays.asList(COMMAND_NAME);
     }
 }

@@ -1,6 +1,7 @@
 package co.samco.mend4.desktop.commands;
 
 import java.io.File;
+import java.util.Arrays;
 import java.util.List;
 
 import org.apache.commons.io.FilenameUtils;
@@ -11,7 +12,13 @@ import co.samco.mend4.core.Settings.CorruptSettingsException;
 import co.samco.mend4.core.Settings.InvalidSettingNameException;
 import co.samco.mend4.core.Settings.UnInitializedSettingsException;
 
+import javax.inject.Inject;
+
 public class StatePrinter extends Command {
+    private final String COMMAND_NAME = "get";
+
+    @Inject
+    public StatePrinter() { }
 
     @Override
     public void execute(List<String> args) {
@@ -127,6 +134,11 @@ public class StatePrinter extends Command {
     @Override
     public String getDescriptionText() {
         return "Get the values of properties in your settings file.";
+    }
+
+    @Override
+    protected List<String> getCommandAliases() {
+        return Arrays.asList(COMMAND_NAME);
     }
 
 }

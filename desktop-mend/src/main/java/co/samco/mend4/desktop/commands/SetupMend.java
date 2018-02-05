@@ -10,6 +10,7 @@ import java.security.interfaces.RSAPublicKey;
 import java.security.spec.KeySpec;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
+import java.util.Arrays;
 import java.util.List;
 
 import javax.crypto.Cipher;
@@ -17,6 +18,7 @@ import javax.crypto.SecretKey;
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
+import javax.inject.Inject;
 
 import co.samco.mend4.core.Config;
 import co.samco.mend4.core.Settings;
@@ -24,6 +26,11 @@ import co.samco.mend4.core.Settings;
 import org.apache.commons.codec.binary.Base64;
 
 public class SetupMend extends Command {
+    private final String COMMAND_NAME = "setup";
+
+    @Inject
+    public SetupMend() { }
+
     @Override
     public void execute(List<String> args) {
         if (printHelp(args))
@@ -167,6 +174,11 @@ public class SetupMend extends Command {
     @Override
     public String getDescriptionText() {
         return "Run this command first. It creates some basic config necessary.";
+    }
+
+    @Override
+    protected List<String> getCommandAliases() {
+        return Arrays.asList(COMMAND_NAME);
     }
 
 }
