@@ -12,7 +12,7 @@ import java.util.Set;
 public class Main {
 
     @Singleton
-    @Component (modules = {DesktopModule.class, CommandsModule.class })
+    @Component (modules = { DesktopModule.class, CommandsModule.class })
     interface Runner {
         Set<Command> commands();
     }

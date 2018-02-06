@@ -4,13 +4,14 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.logging.Logger;
 
 import co.samco.mend4.core.Config;
 import co.samco.mend4.core.Settings;
-import co.samco.mend4.core.impl.SettingsImpl;
 import co.samco.mend4.core.impl.SettingsImpl.CorruptSettingsException;
 import co.samco.mend4.core.impl.SettingsImpl.InvalidSettingNameException;
-import co.samco.mend4.core.impl.SettingsImpl.UnInitializedSettingsException;
+import co.samco.mend4.desktop.dao.OSDao;
+import co.samco.mend4.desktop.output.PrintStreamProvider;
 import dagger.Lazy;
 
 import javax.inject.Inject;
@@ -19,46 +20,55 @@ public class Clean extends Command {
 
     private final String COMMAND_NAME = "clean";
     private final Lazy<Settings> settings;
+    private final OSDao OSDao;
+    private final PrintStreamProvider log;
 
     @Inject
-    public Clean(Lazy<Settings> settings) {
+    public Clean(PrintStreamProvider log, Lazy<Settings> settings, OSDao OSDao) {
         this.settings = settings;
+        this.OSDao = OSDao;
+        this.log = log;
+    }
+
+    private void assertDecDirNotNull(String decDir) throws CorruptSettingsException {
+        if (decDir == null) {
+            throw new CorruptSettingsException("You need to set the "
+                    + Config.SETTINGS_NAMES_MAP.get(Config.Settings.DECDIR.ordinal())
+                    + " property before you can clean the files in it.");
+        }
+    }
+
+    private void assertShredCommandNotNull(String shredCommand) throws CorruptSettingsException {
+        if (shredCommand == null) {
+            throw new CorruptSettingsException("You need to set the "
+                    + Config.SETTINGS_NAMES_MAP.get(Config.Settings.SHREDCOMMAND.ordinal())
+                    + " property in your settings before you can shred files.");
+        }
+    }
+
+    private void shredFile(File file, String shredCommand) throws IOException, InterruptedException {
+        String absolutePath = OSDao.getAbsolutePath(file);
+        log.err().println("Cleaning: " + absolutePath);
+        String[] shredCommandArgs = generateShredCommandArgs(absolutePath, shredCommand);
+        Process tr = OSDao.executeCommand(shredCommandArgs);
+        tr.waitFor();
     }
 
     @Override
     public void execute(List<String> args) {
         try {
             String decDir = settings.get().getValue(Config.Settings.DECDIR);
-            System.err.println(decDir);
+            assertDecDirNotNull(decDir);
+            String shredCommand = settings.get().getValue(Config.Settings.SHREDCOMMAND);
+            assertShredCommandNotNull(shredCommand);
 
-            if (decDir == null) {
-                System.err.println("You need to set the "
-                        + Config.SETTINGS_NAMES_MAP.get(Config.Settings.DECDIR.ordinal()) + " property before you can" +
-                        " clean the files in it.");
-                return;
-            }
-            File dir = new File(decDir);
-            File[] directoryListing = dir.listFiles();
-            if (directoryListing == null) {
-                System.err.println("Could not find the directory: " + dir.getAbsolutePath());
-                return;
-            }
+            File[] directoryListing = OSDao.getDirectoryListing(new File(decDir));
             for (File child : directoryListing) {
-                System.err.println("Cleaning: " + child.getAbsolutePath());
-                String shredCommand = settings.get().getValue(Config.Settings.SHREDCOMMAND);
-                if (shredCommand == null) {
-                    System.err.println("You need to set the " + Config.SETTINGS_NAMES_MAP.get(Config.Settings
-                            .SHREDCOMMAND.ordinal())
-                            + " property in your settings before you can shred files.");
-                    return;
-                }
-                String[] shredCommandArgs = generateShredCommandArgs(child.getAbsolutePath(), shredCommand);
-                Process tr = Runtime.getRuntime().exec(shredCommandArgs);
-                tr.waitFor();
+                shredFile(child, shredCommand);
             }
-            System.err.println("Cleaning Complete");
+            log.err().println("Cleaning Complete");
         } catch (CorruptSettingsException | InvalidSettingNameException | IOException | InterruptedException e) {
-            System.err.println(e.getMessage());
+            log.err().println(e.getMessage());
         }
     }
 
@@ -69,9 +79,8 @@ public class Clean extends Command {
 
     @Override
     public String getDescriptionText() {
-        //return "Runs the " + Config.SETTINGS_NAMES_MAP.get(Config.Settings.SHREDCOMMAND.ordinal()) + " on every file " +
-                //"in your decrypt directory.";
-        return null;
+        return "Runs the " + Config.SETTINGS_NAMES_MAP.get(Config.Settings.SHREDCOMMAND.ordinal()) + " on every file " +
+                "in your decrypt directory.";
     }
 
     @Override
