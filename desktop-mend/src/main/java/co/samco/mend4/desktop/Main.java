@@ -3,6 +3,7 @@ package co.samco.mend4.desktop;
 import co.samco.mend4.desktop.commands.Command;
 import co.samco.mend4.desktop.config.CommandsModule;
 import co.samco.mend4.desktop.config.DesktopModule;
+import co.samco.mend4.desktop.core.I18N;
 import dagger.Component;
 
 import javax.inject.Singleton;

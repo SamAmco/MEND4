@@ -4,6 +4,7 @@ import co.samco.mend4.core.Config;
 import co.samco.mend4.core.Settings;
 import co.samco.mend4.core.impl.SettingsImpl;
 import co.samco.mend4.desktop.commands.Lock;
+import co.samco.mend4.desktop.core.I18N;
 import co.samco.mend4.desktop.dao.OSDao;
 import co.samco.mend4.desktop.helper.ShredHelper;
 import co.samco.mend4.desktop.output.PrintStreamProvider;
@@ -31,9 +32,11 @@ public class LockTest {
    private PrintStream err;
    private PrintStream out;
    private ShredHelper shredHelper;
+   private I18N strings;
 
    @Before
    public void setup() {
+      strings = new I18N("en", "UK");
       err = mock(PrintStream.class);
       out = mock(PrintStream.class);
       printStreamProvider = mock(PrintStreamProvider.class);
@@ -41,8 +44,8 @@ public class LockTest {
       when(printStreamProvider.out()).thenReturn(out);
       settings = mock(Settings.class);
       osDao = mock(OSDao.class);
-      shredHelper = new ShredHelper(osDao, new FakeLazy<>(settings), printStreamProvider);
-      lock = new Lock(printStreamProvider, osDao, shredHelper);
+      shredHelper = new ShredHelper(strings, osDao, new FakeLazy<>(settings), printStreamProvider);
+      lock = new Lock(strings, printStreamProvider, osDao, shredHelper);
    }
 
    private ArgumentCaptor<String> getOutputOfLockTest() throws IOException, SettingsImpl.InvalidSettingNameException,
@@ -56,16 +59,22 @@ public class LockTest {
       return stdErr;
    }
 
+   private void assertCleaning(ArgumentCaptor<String> stdErr, int startInd) {
+      Assert.assertEquals(stdErr.getAllValues().get(startInd), strings.getf("Shred.cleaning",
+              Config.CONFIG_PATH + Config.PRIVATE_KEY_FILE_DEC));
+      Assert.assertEquals(stdErr.getAllValues().get(startInd + 1), strings.getf("Shred.cleaning",
+              Config.CONFIG_PATH + Config.PUBLIC_KEY_FILE));
+   }
+
    @Test
    public void testKeyNotFound() throws SettingsImpl.InvalidSettingNameException,
            SettingsImpl.CorruptSettingsException, IOException {
       when(osDao.fileExists(any(File.class))).thenReturn(false);
       ArgumentCaptor<String> stdErr = getOutputOfLockTest();
       verify(err, times(4)).println(stdErr.capture());
-      Assert.assertEquals("MEND did not appear to be unlocked.", stdErr.getAllValues().get(0));
-      Assert.assertTrue(stdErr.getAllValues().get(1).contains("Cleaning"));
-      Assert.assertTrue(stdErr.getAllValues().get(2).contains("Cleaning"));
-      Assert.assertEquals("MEND Locked.", stdErr.getAllValues().get(3));
+      Assert.assertEquals(strings.get("Lock.notUnlocked"), stdErr.getAllValues().get(0));
+      assertCleaning(stdErr, 1);
+      Assert.assertEquals(strings.get("Lock.locked"), stdErr.getAllValues().get(3));
    }
 
    @Test
@@ -74,9 +83,8 @@ public class LockTest {
       when(osDao.fileExists(any(File.class))).thenReturn(true);
       ArgumentCaptor<String> stdErr = getOutputOfLockTest();
       verify(err, times(3)).println(stdErr.capture());
-      Assert.assertTrue(stdErr.getAllValues().get(0).contains("Cleaning"));
-      Assert.assertTrue(stdErr.getAllValues().get(1).contains("Cleaning"));
-      Assert.assertEquals("Locking may have failed, your private key file still exists.", stdErr.getAllValues().get(2));
+      assertCleaning(stdErr, 0);
+      Assert.assertEquals(strings.get("Lock.lockFailed"), stdErr.getAllValues().get(2));
    }
 
    @Test
@@ -92,8 +100,7 @@ public class LockTest {
       });
       ArgumentCaptor<String> stdErr = getOutputOfLockTest();
       verify(err, times(3)).println(stdErr.capture());
-      Assert.assertTrue(stdErr.getAllValues().get(0).contains("Cleaning"));
-      Assert.assertTrue(stdErr.getAllValues().get(1).contains("Cleaning"));
-      Assert.assertEquals("MEND Locked.", stdErr.getAllValues().get(2));
+      assertCleaning(stdErr, 0);
+      Assert.assertEquals(strings.get("Lock.locked"), stdErr.getAllValues().get(2));
    }
 }

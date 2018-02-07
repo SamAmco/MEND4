@@ -7,6 +7,7 @@ import java.util.List;
 
 import co.samco.mend4.core.Config;
 import co.samco.mend4.core.impl.SettingsImpl;
+import co.samco.mend4.desktop.core.I18N;
 import co.samco.mend4.desktop.dao.OSDao;
 import co.samco.mend4.desktop.helper.ShredHelper;
 import co.samco.mend4.desktop.output.PrintStreamProvider;
@@ -18,12 +19,14 @@ public class Lock extends Command {
     private final OSDao osDao;
     private final PrintStreamProvider log;
     private final ShredHelper shredHelper;
+    private final I18N strings;
 
     @Inject
-    public Lock(PrintStreamProvider log, OSDao OSDao, ShredHelper shredHelper) {
+    public Lock(I18N strings, PrintStreamProvider log, OSDao OSDao, ShredHelper shredHelper) {
         this.osDao = OSDao;
         this.log = log;
         this.shredHelper = shredHelper;
+        this.strings = strings;
     }
 
     private void printIfNotNull(String message) {
@@ -41,11 +44,10 @@ public class Lock extends Command {
     @Override
     public void execute(List<String> args) {
         try {
-            printLockStatus(null, "MEND did not appear to be unlocked.");
+            printLockStatus(null, strings.get("Lock.notUnlocked"));
             shredHelper.tryShredFile(Config.CONFIG_PATH + Config.PRIVATE_KEY_FILE_DEC);
             shredHelper.tryShredFile(Config.CONFIG_PATH + Config.PUBLIC_KEY_FILE);
-            printLockStatus("Locking may have failed, your private key file still exists.",
-                    "MEND Locked.");
+            printLockStatus(strings.get("Lock.lockFailed"), strings.get("Lock.locked"));
         } catch (IOException | SettingsImpl.CorruptSettingsException | SettingsImpl.InvalidSettingNameException e) {
             log.err().println(e.getMessage());
         }
@@ -53,12 +55,12 @@ public class Lock extends Command {
 
     @Override
     public String getUsageText() {
-        return "Usage:\tmend lock";
+        return strings.get("Lock.usage");
     }
 
     @Override
     public String getDescriptionText() {
-        return "Shreds the decrypted private key. Requires shred to be installed.";
+        return strings.get("Lock.description");
     }
 
     @Override

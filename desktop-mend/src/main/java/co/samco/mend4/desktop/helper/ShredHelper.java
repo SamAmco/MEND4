@@ -3,6 +3,7 @@ package co.samco.mend4.desktop.helper;
 import co.samco.mend4.core.Config;
 import co.samco.mend4.core.Settings;
 import co.samco.mend4.core.impl.SettingsImpl;
+import co.samco.mend4.desktop.core.I18N;
 import co.samco.mend4.desktop.dao.OSDao;
 import co.samco.mend4.desktop.output.PrintStreamProvider;
 import dagger.Lazy;
@@ -18,16 +19,18 @@ public class ShredHelper {
     private final OSDao osDao;
     private final PrintStreamProvider log;
     private final Lazy<Settings> settings;
+    private final I18N strings;
 
     @Inject
-    public ShredHelper(OSDao osDao, Lazy<Settings> settings, PrintStreamProvider log) {
+    public ShredHelper(I18N strings, OSDao osDao, Lazy<Settings> settings, PrintStreamProvider log) {
         this.osDao = osDao;
         this.log = log;
         this.settings = settings;
+        this.strings = strings;
     }
 
     private String mapFilename(String s, String fileName) {
-        return s.equals("<filename>") ? fileName : s;
+        return s.equals(strings.get("Shred.fileName")) ? fileName : s;
     }
 
     public String[] generateShredCommandArgs(String fileName, String commandString) {
@@ -39,9 +42,8 @@ public class ShredHelper {
     private String getShredCommand() throws SettingsImpl.CorruptSettingsException, SettingsImpl.InvalidSettingNameException {
         String shredCommand = settings.get().getValue(Config.Settings.SHREDCOMMAND);
         if (shredCommand == null) {
-            throw new SettingsImpl.CorruptSettingsException("You need to set the "
-                    + Config.SETTINGS_NAMES_MAP.get(Config.Settings.SHREDCOMMAND.ordinal())
-                    + " property in your settings before you can shred files.");
+            throw new SettingsImpl.CorruptSettingsException(strings.getf("Shred.noShredCommand",
+                    Config.SETTINGS_NAMES_MAP.get(Config.Settings.SHREDCOMMAND.ordinal())));
         }
         return shredCommand;
     }
@@ -49,7 +51,7 @@ public class ShredHelper {
     public void tryShredFile(String absolutePath) throws IOException, SettingsImpl.InvalidSettingNameException, SettingsImpl.CorruptSettingsException {
         String shredCommand = getShredCommand();
         String[] shredCommandArgs = generateShredCommandArgs(absolutePath, shredCommand);
-        log.err().println("Cleaning: " + absolutePath);
+        log.err().println(strings.getf("Shred.cleaning", absolutePath));
         Process tr = osDao.executeCommand(shredCommandArgs);
         BufferedReader rd = new BufferedReader(new InputStreamReader(tr.getInputStream()));
         String s = rd.readLine();
