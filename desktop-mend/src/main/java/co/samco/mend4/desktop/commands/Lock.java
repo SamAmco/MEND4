@@ -1,58 +1,53 @@
 package co.samco.mend4.desktop.commands;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.InputStreamReader;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
 import co.samco.mend4.core.Config;
 import co.samco.mend4.core.impl.SettingsImpl;
+import co.samco.mend4.desktop.dao.OSDao;
+import co.samco.mend4.desktop.helper.ShredHelper;
+import co.samco.mend4.desktop.output.PrintStreamProvider;
 
 import javax.inject.Inject;
 
 public class Lock extends Command {
     private final String COMMAND_NAME = "lock";
+    private final OSDao osDao;
+    private final PrintStreamProvider log;
+    private final ShredHelper shredHelper;
 
     @Inject
-    public Lock() { }
+    public Lock(PrintStreamProvider log, OSDao OSDao, ShredHelper shredHelper) {
+        this.osDao = OSDao;
+        this.log = log;
+        this.shredHelper = shredHelper;
+    }
 
-    @Override
-    public void execute(List<String> args) {
-        File privateKeyFile = new File(Config.CONFIG_PATH + Config.PRIVATE_KEY_FILE_DEC);
-        if (!privateKeyFile.exists()) {
-            System.err.println("MEND did not appear to be unlocked.");
-        }
-
-        try {
-            String shredCommand = SettingsImpl.instance().getValue(Config.Settings.SHREDCOMMAND);
-            if (shredCommand == null) {
-                System.err.println("You need to set the " + Config.SETTINGS_NAMES_MAP.get(Config.Settings
-                        .SHREDCOMMAND.ordinal())
-                        + " property in your settings before you can shred files.");
-                return;
-            }
-
-            tryShredFile(Config.PRIVATE_KEY_FILE_DEC, shredCommand);
-            tryShredFile(Config.PUBLIC_KEY_FILE, shredCommand);
-
-            if (!privateKeyFile.exists())
-                System.out.println("MEND Locked.");
-            else System.out.println("Locking may have failed, your private key file still exists.");
-        } catch (Exception e) {
-            System.err.println(e.getMessage());
+    private void printIfNotNull(String message) {
+        if (message != null) {
+            log.err().println(message);
         }
     }
 
-    private void tryShredFile(String name, String shredCommand) throws Exception {
-        //If there is already a file existent, just shred it and unlock again.
-        String[] shredCommandArgs = generateShredCommandArgs(Config.CONFIG_PATH + name, shredCommand);
-        Process tr = Runtime.getRuntime().exec(shredCommandArgs);
-        BufferedReader rd = new BufferedReader(new InputStreamReader(tr.getInputStream()));
-        String s = rd.readLine();
-        while (s != null) {
-            System.out.println(s);
-            s = rd.readLine();
+    private void printLockStatus(String messageIfUnlocked, String messageIfLocked) {
+        File privateKeyFile = new File(Config.CONFIG_PATH + Config.PRIVATE_KEY_FILE_DEC);
+        boolean locked = !osDao.fileExists(privateKeyFile);
+        printIfNotNull(locked ? messageIfLocked : messageIfUnlocked);
+    }
+
+    @Override
+    public void execute(List<String> args) {
+        try {
+            printLockStatus(null, "MEND did not appear to be unlocked.");
+            shredHelper.tryShredFile(Config.CONFIG_PATH + Config.PRIVATE_KEY_FILE_DEC);
+            shredHelper.tryShredFile(Config.CONFIG_PATH + Config.PUBLIC_KEY_FILE);
+            printLockStatus("Locking may have failed, your private key file still exists.",
+                    "MEND Locked.");
+        } catch (IOException | SettingsImpl.CorruptSettingsException | SettingsImpl.InvalidSettingNameException e) {
+            log.err().println(e.getMessage());
         }
     }
 

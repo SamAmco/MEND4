@@ -30,4 +30,9 @@ public class OSDaoImpl implements OSDao {
     public Process executeCommand(String[] commandArgs) throws IOException {
         return Runtime.getRuntime().exec(commandArgs);
     }
+
+    @Override
+    public boolean fileExists(File file) {
+        return file.exists();
+    }
 }

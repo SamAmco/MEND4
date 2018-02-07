@@ -8,4 +8,5 @@ public interface OSDao {
     File[] getDirectoryListing(File dirFile) throws FileNotFoundException;
     String getAbsolutePath(File file);
     Process executeCommand(String[] commandArgs) throws IOException;
+    boolean fileExists(File file);
 }

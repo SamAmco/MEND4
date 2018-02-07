@@ -51,10 +51,11 @@ public class Unlock extends Command {
                 return;
             }
 
+            //TODO I only commented this out because it was throwing an exception now the Lock class is injected, it should be in
             //If there is already a prKey file existent, just shred it and unlock again.
-            if (new File(Config.CONFIG_PATH + Config.PRIVATE_KEY_FILE_DEC).exists() || new File(Config.CONFIG_PATH +
-                    Config.PUBLIC_KEY_FILE).exists())
-                new Lock().execute(new ArrayList<>());
+            //if (new File(Config.CONFIG_PATH + Config.PRIVATE_KEY_FILE_DEC).exists() || new File(Config.CONFIG_PATH +
+            //        Config.PUBLIC_KEY_FILE).exists())
+            //    new Lock().execute(new ArrayList<>());
 
             //Decrypt the private key with the password.
             byte[] encryptedPrivateKey = Base64.decodeBase64(SettingsImpl.instance().getValue(Config.Settings.PRIVATEKEY));

@@ -29,17 +29,6 @@ public abstract class Command {
 
     public abstract String getDescriptionText();
 
-    private String mapFilename(String s, String fileName) {
-        return s.equals("<filename>") ? fileName : s;
-    }
-
-    //TODO move this out of here
-    protected String[] generateShredCommandArgs(String fileName, String commandString) {
-        return Arrays.stream(commandString.split(" "))
-                .map(s -> mapFilename(s, fileName))
-                .toArray(String[]::new);
-    }
-
     protected abstract List<String> getCommandAliases();
 
     @Override
