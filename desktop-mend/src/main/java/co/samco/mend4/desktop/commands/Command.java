@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public abstract class Command {
-    private static final List<String> HELP_ALIASES = Arrays.asList("-h", "--help");
+    protected static final List<String> HELP_ALIASES = Arrays.asList("-h", "--help");
 
     protected abstract void execute(List<String> args);
 

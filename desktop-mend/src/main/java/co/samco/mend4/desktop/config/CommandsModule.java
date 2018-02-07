@@ -18,4 +18,7 @@ public abstract class CommandsModule {
     @IntoSet @Binds abstract Command provideSetupMend(SetupMend c);
     @IntoSet @Binds abstract Command provideStatePrinter(StatePrinter c);
     @IntoSet @Binds abstract Command provideUnlock(Unlock c);
+    @IntoSet @Binds abstract Command provideHelp(Help c);
+
+    @Binds abstract Command provideDefaultCommand(EncryptFromStdIn c);
 }
