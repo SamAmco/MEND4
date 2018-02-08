@@ -9,4 +9,8 @@ public interface OSDao {
     String getAbsolutePath(File file);
     Process executeCommand(String[] commandArgs) throws IOException;
     boolean fileExists(File file);
+    boolean fileIsFile(File file);
+    String getFileExtension(File file);
+    String getFileExtension(String filePath);
+    String getFileName(File file);
 }

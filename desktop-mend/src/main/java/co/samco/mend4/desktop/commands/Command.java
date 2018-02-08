@@ -3,6 +3,7 @@ package co.samco.mend4.desktop.commands;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public abstract class Command {
@@ -23,6 +24,17 @@ public abstract class Command {
                 .filter(s -> s.equals(name))
                 .findFirst()
                 .isPresent();
+    }
+
+    protected void executeBehaviourChain(List<Function<List<String>, List<String>>> behaviourChain,
+                                         List<String> args) {
+        List<String> newArgs = args;
+        for (Function<List<String>, List<String>> f : behaviourChain) {
+            newArgs = f.apply(newArgs);
+            if (newArgs == null) {
+                return;
+            }
+        }
     }
 
     public abstract String getUsageText();

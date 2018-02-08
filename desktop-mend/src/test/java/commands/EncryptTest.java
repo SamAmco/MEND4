@@ -2,7 +2,7 @@ package commands;
 
 import co.samco.mend4.desktop.commands.Encrypt;
 import co.samco.mend4.desktop.core.I18N;
-import co.samco.mend4.desktop.helper.EncryptHelper;
+import co.samco.mend4.desktop.helper.CryptoHelper;
 import co.samco.mend4.desktop.helper.InputHelper;
 import co.samco.mend4.desktop.output.PrintStreamProvider;
 import org.junit.Before;
@@ -17,7 +17,7 @@ import static org.mockito.Mockito.*;
 public class EncryptTest {
     private Encrypt encrypt;
     private InputHelper inputHelper;
-    private EncryptHelper encryptHelper;
+    private CryptoHelper cryptoHelper;
     private PrintStreamProvider printStreamProvider;
     private PrintStream err;
     private PrintStream out;
@@ -31,9 +31,9 @@ public class EncryptTest {
         printStreamProvider = mock(PrintStreamProvider.class);
         when(printStreamProvider.err()).thenReturn(err);
         when(printStreamProvider.out()).thenReturn(out);
-        encryptHelper = mock(EncryptHelper.class);
+        cryptoHelper = mock(CryptoHelper.class);
         inputHelper = mock(InputHelper.class);
-        encrypt = new Encrypt(printStreamProvider, strings, encryptHelper, inputHelper);
+        encrypt = new Encrypt(printStreamProvider, strings, cryptoHelper, inputHelper);
     }
 
     @Test
@@ -41,7 +41,7 @@ public class EncryptTest {
         encrypt.execute(Collections.emptyList());
         verify(inputHelper).createInputProviderAndRegisterListener(encrypt);
         encrypt.onWrite("hi".toCharArray());
-        verify(encryptHelper).encryptTextToLog("hi".toCharArray(), false);
+        verify(cryptoHelper).encryptTextToLog("hi".toCharArray(), false);
     }
 
     @Test
@@ -49,25 +49,25 @@ public class EncryptTest {
         encrypt.execute(Arrays.asList(Encrypt.APPEND_FLAG));
         verify(inputHelper).createInputProviderAndRegisterListener(encrypt);
         encrypt.onWrite("hi".toCharArray());
-        verify(encryptHelper).encryptTextToLog("hi".toCharArray(), true);
+        verify(cryptoHelper).encryptTextToLog("hi".toCharArray(), true);
     }
 
     @Test
     public void encryptFromArg() {
         encrypt.execute(Arrays.asList(Encrypt.FROM_ARG_FLAG, "hi"));
-        verify(encryptHelper).encryptTextToLog("hi".toCharArray(), false);
+        verify(cryptoHelper).encryptTextToLog("hi".toCharArray(), false);
     }
 
     @Test
     public void encryptFromArgAppend() {
         encrypt.execute(Arrays.asList(Encrypt.APPEND_FLAG, Encrypt.FROM_ARG_FLAG, "hi"));
-        verify(encryptHelper).encryptTextToLog("hi".toCharArray(), true);
+        verify(cryptoHelper).encryptTextToLog("hi".toCharArray(), true);
     }
 
     @Test
     public void encryptFromArgAppendFlipped() {
         encrypt.execute(Arrays.asList(Encrypt.FROM_ARG_FLAG, Encrypt.APPEND_FLAG, "hi"));
-        verify(encryptHelper).encryptTextToLog("hi".toCharArray(), true);
+        verify(cryptoHelper).encryptTextToLog("hi".toCharArray(), true);
     }
 
     @Test
@@ -85,12 +85,12 @@ public class EncryptTest {
     @Test
     public void encryptFile() {
         encrypt.execute(Arrays.asList("hi"));
-        verify(encryptHelper).encryptFile("hi", null);
+        verify(cryptoHelper).encryptFile("hi", null);
     }
 
     @Test
     public void encryptFileWithName() {
         encrypt.execute(Arrays.asList("a", "b"));
-        verify(encryptHelper).encryptFile("a", "b");
+        verify(cryptoHelper).encryptFile("a", "b");
     }
 }

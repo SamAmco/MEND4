@@ -8,9 +8,9 @@ import java.util.function.Function;
 import javax.inject.Inject;
 
 import co.samco.mend4.desktop.core.I18N;
+import co.samco.mend4.desktop.helper.CryptoHelper;
 import co.samco.mend4.desktop.helper.InputHelper;
 import co.samco.mend4.desktop.input.InputListener;
-import co.samco.mend4.desktop.helper.EncryptHelper;
 import co.samco.mend4.desktop.output.PrintStreamProvider;
 
 public class Encrypt extends Command implements InputListener {
@@ -18,7 +18,7 @@ public class Encrypt extends Command implements InputListener {
     public static final String APPEND_FLAG = "-a";
     public static final String FROM_ARG_FLAG = "-d";
 
-    protected final EncryptHelper encryptHelper;
+    protected final CryptoHelper cryptoHelper;
     protected final InputHelper inputHelper;
     protected final PrintStreamProvider log;
     protected final I18N strings;
@@ -35,22 +35,16 @@ public class Encrypt extends Command implements InputListener {
     );
 
     @Inject
-    public Encrypt(PrintStreamProvider log, I18N strings, EncryptHelper encryptHelper, InputHelper inputHelper) {
+    public Encrypt(PrintStreamProvider log, I18N strings, CryptoHelper cryptoHelper, InputHelper inputHelper) {
         this.log = log;
-        this.encryptHelper = encryptHelper;
+        this.cryptoHelper = cryptoHelper;
         this.inputHelper = inputHelper;
         this.strings = strings;
     }
 
     @Override
     public void execute(List<String> args) {
-        List<String> newArgs = args;
-        for (Function<List<String>, List<String>> f : behaviourChain) {
-            newArgs = f.apply(newArgs);
-            if (newArgs == null) {
-                return;
-            }
-        }
+        executeBehaviourChain(behaviourChain, args);
     }
 
     protected List<String> encryptFile(List<String> args) {
@@ -58,7 +52,7 @@ public class Encrypt extends Command implements InputListener {
         if (args.size() > 1) {
             name = args.get(1);
         }
-        encryptHelper.encryptFile(args.get(0), name);
+        cryptoHelper.encryptFile(args.get(0), name);
         return null;
     }
 
@@ -89,7 +83,7 @@ public class Encrypt extends Command implements InputListener {
             if (args.size() != index + 2) {
                 log.err().println(strings.getf("Encrypt.badDataArgs", FROM_ARG_FLAG));
             }
-            encryptHelper.encryptTextToLog(args.get(index + 1).toCharArray(), dropHeader);
+            cryptoHelper.encryptTextToLog(args.get(index + 1).toCharArray(), dropHeader);
             return null;
         }
         return args;
@@ -121,6 +115,6 @@ public class Encrypt extends Command implements InputListener {
 
     @Override
     public void onWrite(char[] text) {
-        encryptHelper.encryptTextToLog(text, dropHeader);
+        cryptoHelper.encryptTextToLog(text, dropHeader);
     }
 }
