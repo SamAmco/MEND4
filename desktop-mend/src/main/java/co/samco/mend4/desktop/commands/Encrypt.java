@@ -11,7 +11,6 @@ import co.samco.mend4.desktop.core.I18N;
 import co.samco.mend4.desktop.helper.InputHelper;
 import co.samco.mend4.desktop.input.InputListener;
 import co.samco.mend4.desktop.helper.EncryptHelper;
-import co.samco.mend4.desktop.input.InputProvider;
 import co.samco.mend4.desktop.output.PrintStreamProvider;
 
 public class Encrypt extends Command implements InputListener {
@@ -24,7 +23,6 @@ public class Encrypt extends Command implements InputListener {
     protected final PrintStreamProvider log;
     protected final I18N strings;
 
-    private InputProvider inputProvider;
     protected boolean dropHeader = false;
 
     private final List<Function<List<String>, List<String>>> behaviourChain = Arrays.asList(
@@ -79,7 +77,7 @@ public class Encrypt extends Command implements InputListener {
 
     protected List<String> shouldEncryptFromTextEditor(List<String> args) {
         if (args.size() <= 0) {
-            inputProvider = inputHelper.createInputProviderAndRegisterListener(this);
+            inputHelper.createInputProviderAndRegisterListener(this);
             return null;
         }
         return args;
@@ -122,15 +120,7 @@ public class Encrypt extends Command implements InputListener {
     }
 
     @Override
-    public void onLogAndClose(char[] text) {
-        inputProvider.clear();
-        encryptHelper.encryptTextToLog(text, dropHeader);
-        inputProvider.close();
-    }
-
-    @Override
-    public void onLogAndClear(char[] text) {
-        inputProvider.clear();
+    public void onWrite(char[] text) {
         encryptHelper.encryptTextToLog(text, dropHeader);
     }
 }

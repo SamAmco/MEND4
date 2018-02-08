@@ -2,7 +2,6 @@ package co.samco.mend4.desktop.input.impl;
 
 import co.samco.mend4.desktop.core.ColorSchemeData;
 import co.samco.mend4.desktop.input.InputListener;
-import co.samco.mend4.desktop.input.InputProvider;
 
 import java.awt.Dimension;
 import java.awt.Toolkit;
@@ -18,14 +17,14 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.text.JTextComponent;
 
-public class MendInputBox extends JFrame implements KeyListener, InputProvider {
+public class MendInputBox extends JFrame implements KeyListener {
     private static final long serialVersionUID = -7214084221385969252L;
 
-    JTextComponent textInput;
-    List<InputListener> listeners = new ArrayList<InputListener>();
+    private final JTextComponent textInput;
+    private List<InputListener> listeners = new ArrayList<InputListener>();
 
-    boolean shiftDown = false;
-    boolean ctrlDown = false;
+    private boolean shiftDown = false;
+    private boolean ctrlDown = false;
 
     public MendInputBox(boolean decorated, boolean password, int width, int height) {
         setSize(width, height);
@@ -72,23 +71,40 @@ public class MendInputBox extends JFrame implements KeyListener, InputProvider {
 
     @Override
     public void keyReleased(KeyEvent e) {
+        handleControlsUp(e);
+        if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+            handleSubmit();
+        }
+    }
+
+    private void handleSubmit() {
+        char[] text = getText();
+
+        if (shiftDown || ctrlDown) {
+            for (InputListener l : listeners) {
+                l.onWrite(text);
+            }
+        }
+        if (shiftDown) {
+            close();
+        }
+        if (ctrlDown) {
+            clear();
+        }
+    }
+
+    private char[] getText() {
+        return (textInput instanceof JPasswordField)
+                ? ((JPasswordField) textInput).getPassword()
+                : textInput.getText().toCharArray();
+    }
+
+    private void handleControlsUp(KeyEvent e) {
         if (e.getKeyCode() == KeyEvent.VK_SHIFT) {
             shiftDown = false;
         }
         if (e.getKeyCode() == KeyEvent.VK_CONTROL) {
             ctrlDown = false;
-        }
-        if (e.getKeyCode() == KeyEvent.VK_ENTER) {
-            char[] text = (textInput instanceof JPasswordField)
-                    ? ((JPasswordField) textInput).getPassword()
-                    : textInput.getText().toCharArray();
-
-            for (InputListener l : listeners) {
-                if (shiftDown)
-                    l.onLogAndClose(text);
-                if (ctrlDown)
-                    l.onLogAndClear(text);
-            }
         }
     }
 
