@@ -21,6 +21,7 @@ import co.samco.mend4.core.impl.SettingsImpl.InvalidSettingNameException;
 
 public class Decrypt extends Command {
     private final String COMMAND_NAME = "dec";
+    private final String SILENT_FLAG = "dec";
 
     private final CryptoHelper cryptoHelper;
     private final PrintStreamProvider log;
@@ -54,7 +55,7 @@ public class Decrypt extends Command {
 
     private List<String> assertFileProvided(List<String> args) {
         if (args.size() < 1) {
-            log.err().println("Please provide the file to decrypt.");
+            log.err().println(strings.get("Decrypt.noFile"));
             log.err().println(getUsageText());
             return null;
         }
@@ -63,18 +64,17 @@ public class Decrypt extends Command {
 
     private List<String> checkShouldBeSilent(List<String> args) {
         List<String> newArgs = new ArrayList<>(args);
-        if (newArgs.contains("-s")) {
+        if (newArgs.contains(SILENT_FLAG)) {
             silent = true;
-            newArgs.remove("-s");
+            newArgs.remove(SILENT_FLAG);
         }
         return newArgs;
     }
 
     private List<String> assertMendUnlocked(List<String> args) {
         File privateKeyFile = new File(Config.CONFIG_PATH + Config.PRIVATE_KEY_FILE_DEC);
-        //TODO update this to use OSDao
         if (!osDao.fileExists(privateKeyFile)) {
-            log.err().println("MEND is Locked. Please run mend unlock");
+            log.err().println(strings.get("Decrypt.locked"));
             return null;
         }
         return args;
@@ -84,8 +84,7 @@ public class Decrypt extends Command {
         try {
             String filePath = args.get(0);
             if (filePathIsLegacyEncId(filePath)) {
-                //TODO move these file extensions out
-                filePath = getEncDir() + File.separatorChar + filePath + ".enc";
+                filePath = getEncDir() + File.separatorChar + filePath + "." + Config.ENC_FILE_EXTENSION;
             }
             file = new File(filePath);
             return args;
@@ -98,14 +97,14 @@ public class Decrypt extends Command {
     private List<String> tryDecryptFileIfExists(List<String> args) {
         if (!osDao.fileExists(file) || !osDao.fileIsFile(file)) {
             return args;
-        } else if (osDao.getFileExtension(file).equals("mend")) {
+        } else if (osDao.getFileExtension(file).equals(Config.LOG_FILE_EXTENSION)) {
             cryptoHelper.decryptLog(file);
-        } else if (osDao.getFileExtension(file).equals("enc")) {
+        } else if (osDao.getFileExtension(file).equals(Config.ENC_FILE_EXTENSION)) {
             cryptoHelper.decryptFile(file, silent);
         } else {
-            log.err().println("Failed attempting to decrypt: " + osDao.getFileName(file));
-            log.err().println("MEND does not know how to decrypt this file as it does not recognize the file " +
-                    "extention. Expecting either .mend or .enc");
+            log.err().println(strings.getf("Decrypt.failed", osDao.getFileName(file)));
+            log.err().println(strings.getf("Decrypt.unkownType",
+                    Config.LOG_FILE_EXTENSION, Config.ENC_FILE_EXTENSION));
         }
         return null;
     }
@@ -115,7 +114,7 @@ public class Decrypt extends Command {
             String filePath = args.get(0);
             String extension = osDao.getFileExtension(filePath);
             if (extension.equals("")) {
-                filePath += ".mend";
+                filePath += "." + Config.LOG_FILE_EXTENSION;
             }
 
             file = new File(getLogDir() + File.separatorChar + filePath);
@@ -127,7 +126,7 @@ public class Decrypt extends Command {
     }
 
     private List<String> fallbackFileNotFound(List<String> args) {
-        log.err().println("Could not find specified file: " + file.getAbsolutePath());
+        log.err().println(strings.getf("Decrypt.fileNotFound", file.getAbsolutePath()));
         return null;
     }
 
@@ -138,9 +137,8 @@ public class Decrypt extends Command {
     private String getLogDir() throws CorruptSettingsException, InvalidSettingNameException {
         String logDir = settings.get().getValue(Config.Settings.LOGDIR);
         if (logDir == null) {
-            throw new CorruptSettingsException("Defaulted to searching "
-                    + Config.SETTINGS_NAMES_MAP.get(Config.Settings.LOGDIR.ordinal())
-                    + " but the property is not set in your Settings file.");
+            throw new CorruptSettingsException(strings.getf("Decrypt.noDecDir",
+                    Config.SETTINGS_NAMES_MAP.get(Config.Settings.LOGDIR.ordinal())));
         }
         return logDir;
     }
@@ -148,9 +146,8 @@ public class Decrypt extends Command {
     private String getEncDir() throws InvalidSettingNameException, CorruptSettingsException {
         String encDir = settings.get().getValue(Config.Settings.ENCDIR);
         if (encDir == null) {
-            throw new CorruptSettingsException("You need to set the "
-                    + Config.SETTINGS_NAMES_MAP.get(Config.Settings.ENCDIR.ordinal())
-                    + " property in your settings file before you can decrypt files from it.");
+            throw new CorruptSettingsException(strings.getf("Decrypt.noEncDir",
+                    Config.SETTINGS_NAMES_MAP.get(Config.Settings.ENCDIR.ordinal())));
         }
         return encDir;
     }
@@ -162,12 +159,12 @@ public class Decrypt extends Command {
 
     @Override
     public String getUsageText() {
-        return "Usage:\tmend dec [-s] <log_file_name>|<enc_file>";
+        return strings.getf("Decrypt.usage", COMMAND_NAME, SILENT_FLAG);
     }
 
     @Override
     public String getDescriptionText() {
-        return "To decrypt an encrypted log or other mend encrypted file.";
+        return strings.get("Decrypt.description");
     }
 
     @Override

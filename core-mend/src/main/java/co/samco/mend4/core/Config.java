@@ -19,6 +19,8 @@ public class Config {
     public static final String SETTINGS_FILE = "Settings.xml";
     public static final String PRIVATE_KEY_FILE_DEC = "prKey";
     public static final String PUBLIC_KEY_FILE = "pubKey";
+    public static final String LOG_FILE_EXTENSION = "mend";
+    public static final String ENC_FILE_EXTENSION = "enc";
     public static final String PASSCHECK_TEXT = "How much wood could a wood chuck chuck if a wood chuck could chuck " +
             "wood?";
     public static final byte[] PASSCHECK_SALT = new byte[]{
