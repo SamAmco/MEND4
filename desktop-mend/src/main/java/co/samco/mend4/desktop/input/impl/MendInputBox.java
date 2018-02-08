@@ -1,4 +1,8 @@
-package co.samco.mend4.desktop.core;
+package co.samco.mend4.desktop.input.impl;
+
+import co.samco.mend4.desktop.core.ColorSchemeData;
+import co.samco.mend4.desktop.input.InputListener;
+import co.samco.mend4.desktop.input.InputProvider;
 
 import java.awt.Dimension;
 import java.awt.Toolkit;
@@ -14,16 +18,16 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.text.JTextComponent;
 
-public class InputBox extends JFrame implements KeyListener {
+public class MendInputBox extends JFrame implements KeyListener, InputProvider {
     private static final long serialVersionUID = -7214084221385969252L;
 
     JTextComponent textInput;
-    List<InputBoxListener> listeners = new ArrayList<InputBoxListener>();
+    List<InputListener> listeners = new ArrayList<InputListener>();
 
     boolean shiftDown = false;
     boolean ctrlDown = false;
 
-    public InputBox(boolean decorated, boolean password, int width, int height) {
+    public MendInputBox(boolean decorated, boolean password, int width, int height) {
         setSize(width, height);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         if (!decorated)
@@ -52,7 +56,7 @@ public class InputBox extends JFrame implements KeyListener {
         textInput.addKeyListener(this);
     }
 
-    public void addListener(InputBoxListener l) {
+    public void addListener(InputListener l) {
         listeners.add(l);
     }
 
@@ -64,13 +68,6 @@ public class InputBox extends JFrame implements KeyListener {
         if (e.getKeyCode() == KeyEvent.VK_CONTROL) {
             ctrlDown = true;
         }
-        //if (e.getKeyCode() == KeyEvent.VK_ESCAPE)
-        //{
-        //	for (InputBoxListener l : listeners)
-        //	{
-        //		l.OnEscape();
-        //	}
-        //}
     }
 
     @Override
@@ -86,19 +83,17 @@ public class InputBox extends JFrame implements KeyListener {
                     ? ((JPasswordField) textInput).getPassword()
                     : textInput.getText().toCharArray();
 
-            for (InputBoxListener l : listeners) {
-                l.OnEnter(text);
+            for (InputListener l : listeners) {
                 if (shiftDown)
-                    l.OnShiftEnter(text);
+                    l.onLogAndClose(text);
                 if (ctrlDown)
-                    l.OnCtrlEnter(text);
+                    l.onLogAndClear(text);
             }
         }
     }
 
     @Override
-    public void keyTyped(KeyEvent e) {
-    }
+    public void keyTyped(KeyEvent e) { }
 
     public void clear() {
         textInput.setText("");

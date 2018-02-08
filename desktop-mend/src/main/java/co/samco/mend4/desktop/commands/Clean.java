@@ -52,7 +52,7 @@ public class Clean extends Command {
 
     @Override
     public String getUsageText() {
-        return strings.get("Clean.usage");
+        return strings.getf("Clean.usage", COMMAND_NAME);
     }
 
     @Override

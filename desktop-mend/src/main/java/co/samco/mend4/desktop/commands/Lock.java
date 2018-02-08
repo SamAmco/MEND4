@@ -55,7 +55,7 @@ public class Lock extends Command {
 
     @Override
     public String getUsageText() {
-        return strings.get("Lock.usage");
+        return strings.getf("Lock.usage", COMMAND_NAME);
     }
 
     @Override

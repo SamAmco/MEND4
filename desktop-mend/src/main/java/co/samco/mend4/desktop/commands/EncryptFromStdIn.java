@@ -1,5 +1,10 @@
 package co.samco.mend4.desktop.commands;
 
+import co.samco.mend4.desktop.core.I18N;
+import co.samco.mend4.desktop.helper.EncryptHelper;
+import co.samco.mend4.desktop.helper.InputHelper;
+import co.samco.mend4.desktop.output.PrintStreamProvider;
+
 import javax.inject.Inject;
 import java.util.Arrays;
 import java.util.List;
@@ -9,11 +14,14 @@ public class EncryptFromStdIn extends Encrypt {
     private final String COMMAND_NAME = "enci";
 
     @Inject
-    public EncryptFromStdIn() { }
+    public EncryptFromStdIn(PrintStreamProvider log, I18N strings,
+                            EncryptHelper encryptHelper, InputHelper inputHelper) {
+        super(log, strings, encryptHelper, inputHelper);
+    }
 
     @Override
     public void execute(List<String> args) {
-        readOptions(args);
+        shouldDropHeader(args);
 
         Scanner scanner = new Scanner(System.in);
         StringBuilder sb = new StringBuilder();
@@ -24,7 +32,7 @@ public class EncryptFromStdIn extends Encrypt {
         }
         scanner.close();
 
-        encryptTextToLog(sb.toString().toCharArray(), dropHeader);
+        encryptHelper.encryptTextToLog(sb.toString().toCharArray(), dropHeader);
     }
 
     @Override

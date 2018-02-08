@@ -2,14 +2,12 @@ package co.samco.mend4.desktop.dao.impl;
 
 import co.samco.mend4.desktop.dao.OSDao;
 
-import javax.inject.Inject;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
 public class OSDaoImpl implements OSDao {
 
-    @Inject
     public OSDaoImpl() {}
 
     @Override

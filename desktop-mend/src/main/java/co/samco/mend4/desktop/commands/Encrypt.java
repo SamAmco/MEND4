@@ -1,93 +1,119 @@
 package co.samco.mend4.desktop.commands;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
-import java.security.spec.InvalidKeySpecException;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
+import java.util.function.Function;
 
-import javax.crypto.BadPaddingException;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.NoSuchPaddingException;
 import javax.inject.Inject;
-import javax.xml.transform.TransformerException;
 
-import org.apache.commons.io.FilenameUtils;
+import co.samco.mend4.desktop.core.I18N;
+import co.samco.mend4.desktop.helper.InputHelper;
+import co.samco.mend4.desktop.input.InputListener;
+import co.samco.mend4.desktop.helper.EncryptHelper;
+import co.samco.mend4.desktop.input.InputProvider;
+import co.samco.mend4.desktop.output.PrintStreamProvider;
 
-import co.samco.mend4.core.Config;
-import co.samco.mend4.core.EncryptionUtils;
-import co.samco.mend4.core.EncryptionUtils.MissingPublicKeyException;
-import co.samco.mend4.desktop.core.ApacheCommonsEncoder;
-import co.samco.mend4.desktop.core.InputBox;
-import co.samco.mend4.desktop.core.InputBoxListener;
-import co.samco.mend4.core.impl.SettingsImpl;
-import co.samco.mend4.core.impl.SettingsImpl.CorruptSettingsException;
-import co.samco.mend4.core.impl.SettingsImpl.InvalidSettingNameException;
-import co.samco.mend4.core.impl.SettingsImpl.UnInitializedSettingsException;
+public class Encrypt extends Command implements InputListener {
+    public static final String COMMAND_NAME = "enc";
+    public static final String APPEND_FLAG = "-a";
+    public static final String FROM_ARG_FLAG = "-d";
 
-public class Encrypt extends Command implements InputBoxListener {
-    private final String COMMAND_NAME = "enc";
-    private InputBox inputBox;
+    protected final EncryptHelper encryptHelper;
+    protected final InputHelper inputHelper;
+    protected final PrintStreamProvider log;
+    protected final I18N strings;
+
+    private InputProvider inputProvider;
     protected boolean dropHeader = false;
 
+    private final List<Function<List<String>, List<String>>> behaviourChain = Arrays.asList(
+            a -> shouldDropHeader(a),
+            a -> shouldEncryptFromTextEditor(a),
+            a -> shouldEncryptFromArg(a),
+            a -> tooManyArgs(a),
+            a -> encryptFile(a),
+            a -> unknownBehaviour(a)
+    );
+
     @Inject
-    public Encrypt() { }
+    public Encrypt(PrintStreamProvider log, I18N strings, EncryptHelper encryptHelper, InputHelper inputHelper) {
+        this.log = log;
+        this.encryptHelper = encryptHelper;
+        this.inputHelper = inputHelper;
+        this.strings = strings;
+    }
 
     @Override
     public void execute(List<String> args) {
-        readOptions(args);
-
-        if (args.size() <= 0) {
-            inputBox = new InputBox(true, false, 800, 250);
-            inputBox.addListener(this);
-            inputBox.setVisible(true);
-        } else if (args.size() > 0) {
-            if (args.contains("-d")) {
-                int index = args.indexOf("-d");
-                if (args.size() < index + 2) {
-                    System.err.println("You must provide the text you wish to encrypt after the -d option");
-                    return;
-                }
-                encryptTextToLog(args.get(index + 1).toCharArray(), dropHeader);
+        List<String> newArgs = args;
+        for (Function<List<String>, List<String>> f : behaviourChain) {
+            newArgs = f.apply(newArgs);
+            if (newArgs == null) {
                 return;
             }
-
-            if (args.size() > 2)
-                System.err.println("Invalid number of arguments. See \"mend enc -h\" for more information.");
-
-            String name = null;
-            if (args.size() > 1)
-                name = args.get(1);
-
-            encryptFile(args.get(0), name);
-
-            return;
         }
     }
 
-    protected void readOptions(List<String> args) {
-        if (args.contains("-a")) {
-            dropHeader = true;
-            args.remove("-a");
+    protected List<String> encryptFile(List<String> args) {
+        String name = null;
+        if (args.size() > 1) {
+            name = args.get(1);
         }
+        encryptHelper.encryptFile(args.get(0), name);
+        return null;
+    }
+
+    protected List<String> unknownBehaviour(List<String> args) {
+        log.err().println(strings.getf("Encrypt.malformedCommand", COMMAND_NAME));
+        return null;
+    }
+
+    protected List<String> tooManyArgs(List<String> args) {
+        if (args.size() > 2) {
+            log.err().println(strings.getf("Encrypt.invalidArgNum", COMMAND_NAME));
+            return null;
+        }
+        return args;
+    }
+
+    protected List<String> shouldEncryptFromTextEditor(List<String> args) {
+        if (args.size() <= 0) {
+            inputProvider = inputHelper.createInputProviderAndRegisterListener(this);
+            return null;
+        }
+        return args;
+    }
+
+    protected List<String> shouldEncryptFromArg(List<String> args) {
+        if (args.contains(FROM_ARG_FLAG)) {
+            int index = args.indexOf(FROM_ARG_FLAG);
+            if (args.size() != index + 2) {
+                log.err().println(strings.getf("Encrypt.badDataArgs", FROM_ARG_FLAG));
+            }
+            encryptHelper.encryptTextToLog(args.get(index + 1).toCharArray(), dropHeader);
+            return null;
+        }
+        return args;
+    }
+
+    protected List<String> shouldDropHeader(List<String> args) {
+        List<String> newArgs = new ArrayList<>(args);
+        if (newArgs.contains(APPEND_FLAG)) {
+            dropHeader = true;
+            newArgs.remove(APPEND_FLAG);
+        }
+        return newArgs;
     }
 
     @Override
     public String getUsageText() {
-        return "Usage:\tmend enc [-a][-d <text>|<path to file> [<encrypted file name>]]";
+        return strings.getf("Encrypt.usage", COMMAND_NAME, APPEND_FLAG, FROM_ARG_FLAG);
     }
 
     @Override
     public String getDescriptionText() {
-        return "To encrypt text to your current log, or encrypt a file and recieve an id for it.";
+        return strings.get("Encrypt.description");
     }
 
     @Override
@@ -96,137 +122,15 @@ public class Encrypt extends Command implements InputBoxListener {
     }
 
     @Override
-    public void OnEnter(char[] password) {
+    public void onLogAndClose(char[] text) {
+        inputProvider.clear();
+        encryptHelper.encryptTextToLog(text, dropHeader);
+        inputProvider.close();
     }
 
     @Override
-    public void OnShiftEnter(char[] text) {
-        inputBox.clear();
-        encryptTextToLog(text, dropHeader);
-        inputBox.close();
+    public void onLogAndClear(char[] text) {
+        inputProvider.clear();
+        encryptHelper.encryptTextToLog(text, dropHeader);
     }
-
-    @Override
-    public void OnCtrlEnter(char[] text) {
-        inputBox.clear();
-        encryptTextToLog(text, dropHeader);
-    }
-
-    private void encryptFile(String filePath, String name) {
-        //If there isn't a file name given, then let's generate a name for the file using a timestamp (16 digits).
-        if (name == null)
-            name = new SimpleDateFormat("yyyyMMddHHmmssSS").format(new Date());
-
-        File fileToEncrypt = new File(filePath);
-        if (!fileToEncrypt.exists()) {
-            System.err.println("Could not find file.");
-            return;
-        }
-
-        FileInputStream fis = null;
-        try {
-            FileOutputStream fos = null;
-            try {
-                //Make sure you're able to set up a file input stream
-                fis = new FileInputStream(fileToEncrypt);
-                //Check that you're able to set up an output stream
-                String encLocation = SettingsImpl.instance().getValue(Config.Settings.ENCDIR);
-                if (encLocation == null) {
-                    throw new IOException("You need to set the " + Config.SETTINGS_NAMES_MAP.get(Config.Settings
-                            .ENCDIR.ordinal())
-                            + " property in your settings file before you can encrypt files to it.");
-                }
-                File outputFile = new File(encLocation + File.separatorChar + name + ".enc");
-                if (outputFile.exists()) {
-                    System.err.println("The output file already exists: " + outputFile.getAbsolutePath());
-                }
-                fos = new FileOutputStream(outputFile);
-
-                String fileExtension = FilenameUtils.getExtension(fileToEncrypt.getAbsolutePath());
-
-                //now we can append all the encrypted file bytes
-                System.err.println("Encrypting file to: " + outputFile.getAbsolutePath());
-                EncryptionUtils.encryptFileToStream(new ApacheCommonsEncoder(), fis, fos, fileExtension);
-                System.err.println("Encryption complete. Key: " + name);
-
-            } finally {
-                if (fos != null)
-                    fos.close();
-            }
-        } catch (CorruptSettingsException | InvalidSettingNameException
-                | UnInitializedSettingsException | IOException | InvalidKeyException
-                | NoSuchAlgorithmException | NoSuchPaddingException | InvalidAlgorithmParameterException
-                | InvalidKeySpecException | IllegalBlockSizeException | BadPaddingException e) {
-            System.err.println(e.getMessage());
-        } catch (MissingPublicKeyException e) {
-            System.err.println("Failed to find your public key. Please ensure you have run \"mend setup\" "
-                    + "and that your Settings are not corrupt or in-accessable to mend");
-        } finally {
-            try {
-                if (fis != null)
-                    fis.close();
-            } catch (IOException e1) {
-                System.err.println("MEND encountered an error closing file input stream.");
-                e1.printStackTrace();
-            }
-        }
-    }
-
-    protected void encryptTextToLog(char[] text, boolean dropHeader) {
-        if (text.length <= 0)
-            return;
-
-        FileOutputStream fos = null;
-        try {
-            String logDir = SettingsImpl.instance().getValue(Config.Settings.LOGDIR);
-            String currentLogName = SettingsImpl.instance().getValue(Config.Settings.CURRENTLOG);
-            if (logDir == null)
-                throw new IOException("You need to set the " + Config.SETTINGS_NAMES_MAP.get(Config.Settings.LOGDIR
-                        .ordinal())
-                        + " property in your settings file before you can encrypt logs to it.");
-            if (currentLogName == null) {
-                SettingsImpl.instance().setValue(Config.Settings.CURRENTLOG, "Log");
-                currentLogName = "Log";
-            }
-
-            if (currentLogName.length() < 1)
-                currentLogName = "Log";
-            if (currentLogName.length() < 6 || !currentLogName.substring(currentLogName.length() - 5, currentLogName
-                    .length()).equals(".mend"))
-                currentLogName += ".mend";
-
-            File currentLogFile = new File(logDir + File.separatorChar + currentLogName);
-            currentLogFile.createNewFile();
-            fos = new FileOutputStream(currentLogFile, true);
-
-            EncryptionUtils.encryptLogToStream(new ApacheCommonsEncoder(), fos, text, dropHeader);
-
-            DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
-            Date date = new Date();
-            System.out.println("Successfully Logged entry at: " + dateFormat.format(date));
-        } catch (NoSuchAlgorithmException | IOException | InvalidKeyException
-                | IllegalBlockSizeException | BadPaddingException
-                | InvalidKeySpecException | TransformerException | CorruptSettingsException
-                | InvalidSettingNameException | NoSuchPaddingException | InvalidAlgorithmParameterException
-                | UnInitializedSettingsException e) {
-            System.err.println(e.getMessage());
-        } catch (MissingPublicKeyException e) {
-            System.err.println("Failed to find your public key. Please ensure you have run \"mend setup\" "
-                    + "and that your Settings are not corrupt or in-accessable to mend");
-        } finally {
-            try {
-                if (fos != null)
-                    fos.close();
-            } catch (IOException e1) {
-                System.err.println("MEND encountered a fatal error.");
-                e1.printStackTrace();
-            }
-        }
-    }
-
-    @Override
-    public void OnEscape() {
-        inputBox.close();
-    }
-
 }
