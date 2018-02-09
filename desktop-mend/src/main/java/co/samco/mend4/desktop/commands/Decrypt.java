@@ -103,7 +103,7 @@ public class Decrypt extends Command {
             cryptoHelper.decryptFile(file, silent);
         } else {
             log.err().println(strings.getf("Decrypt.failed", osDao.getFileName(file)));
-            log.err().println(strings.getf("Decrypt.unkownType",
+            log.err().println(strings.getf("Decrypt.unknownType",
                     Config.LOG_FILE_EXTENSION, Config.ENC_FILE_EXTENSION));
         }
         return null;
