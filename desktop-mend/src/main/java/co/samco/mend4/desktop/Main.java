@@ -37,7 +37,7 @@ public class Main {
 
     private boolean printHelp(Runner runner, List<String> args) {
         if (Help.HELP_ALIASES.contains(args.get(0))) {
-            runner.helpCommand().executeCommand(args);
+            runner.helpCommand().executeCommand(args.subList(1, args.size()));
             return true;
         }
         return false;
@@ -55,7 +55,7 @@ public class Main {
 
     @Singleton
     @Component (modules = { DesktopModule.class, CommandsModule.class })
-    interface Runner {
+    public interface Runner {
         Set<Command> commands();
         @Named(CommandsModule.HELP_COMMAND_NAME) Command helpCommand();
         @Named(CommandsModule.DEFAULT_COMMAND_NAME) Command defaultCommand();
