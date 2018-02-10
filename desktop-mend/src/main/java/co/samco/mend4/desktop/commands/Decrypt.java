@@ -21,8 +21,8 @@ import co.samco.mend4.core.impl.SettingsImpl.InvalidSettingNameException;
 import org.apache.commons.io.FileUtils;
 
 public class Decrypt extends Command {
-    private final String COMMAND_NAME = "dec";
-    private final String SILENT_FLAG = "dec";
+    public static final String COMMAND_NAME = "dec";
+    public static final String SILENT_FLAG = "dec";
 
     private final CryptoHelper cryptoHelper;
     private final PrintStreamProvider log;
@@ -110,7 +110,6 @@ public class Decrypt extends Command {
     private List<String> tryResolveFileAsLog(List<String> args) {
         try {
             File file = resolveLogFilePath(fileIdentifier);
-
             if (existsAndHasExtension(file, Config.LOG_FILE_EXTENSION)) {
                 cryptoHelper.decryptLog(file);
                 return null;
@@ -133,7 +132,7 @@ public class Decrypt extends Command {
     private String getLogDir() throws CorruptSettingsException, InvalidSettingNameException {
         String logDir = settings.get().getValue(Config.Settings.LOGDIR);
         if (logDir == null) {
-            throw new CorruptSettingsException(strings.getf("Decrypt.noDecDir",
+            throw new CorruptSettingsException(strings.getf("Decrypt.noLogDir",
                     Config.SETTINGS_NAMES_MAP.get(Config.Settings.LOGDIR.ordinal())));
         }
         return logDir;
