@@ -72,6 +72,7 @@ public class Config {
         SETTINGS_NAMES_MAP = Collections.unmodifiableMap(m);
     }
 
+    //TODO move these to strings
     static {
         Map<Integer, String> m = new HashMap<Integer, String>();
         int i = 0;
