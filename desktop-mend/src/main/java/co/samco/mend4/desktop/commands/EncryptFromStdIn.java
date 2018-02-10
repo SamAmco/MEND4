@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Scanner;
 
 public class EncryptFromStdIn extends Encrypt {
-    private final String COMMAND_NAME = "enci";
+    public static final String COMMAND_NAME = "enci";
 
     @Inject
     public EncryptFromStdIn(PrintStreamProvider log, I18N strings,

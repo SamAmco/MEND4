@@ -16,7 +16,8 @@ import dagger.Lazy;
 import javax.inject.Inject;
 
 public class Clean extends Command {
-    private final String COMMAND_NAME = "clean";
+    public static final String COMMAND_NAME = "clean";
+
     private final Lazy<Settings> settings;
     private final PrintStreamProvider log;
     private final ShredHelper shredHelper;

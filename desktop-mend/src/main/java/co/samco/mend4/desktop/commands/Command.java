@@ -7,7 +7,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public abstract class Command {
-    protected static final List<String> HELP_ALIASES = Arrays.asList("-h", "--help");
+    public static final List<String> HELP_ALIASES = Arrays.asList("-h", "--help");
 
     protected abstract void execute(List<String> args);
 
