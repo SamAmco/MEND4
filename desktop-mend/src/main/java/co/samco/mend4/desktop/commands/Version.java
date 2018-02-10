@@ -6,7 +6,8 @@ import java.util.List;
 
 public class Version extends Command {
     //TODO we may want to have many aliases for this command
-    private final List<String> COMMAND_ALIASES = Arrays.asList("-v", "--version");
+    public static final String VERSION_FLAG = "-v";
+    private final List<String> COMMAND_ALIASES = Arrays.asList(VERSION_FLAG, "--version");
 
     @Inject
     public Version() {}

@@ -17,4 +17,8 @@ public class I18N {
     public String get(String name) {
         return strings.getString(name);
     }
+
+    public String getNewLine() {
+        return System.getProperty("line.separator");
+    }
 }

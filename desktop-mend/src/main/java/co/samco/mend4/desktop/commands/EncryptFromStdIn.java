@@ -36,7 +36,7 @@ public class EncryptFromStdIn extends Encrypt {
         while (scanner.hasNextLine()) {
             sb.append(scanner.nextLine());
             if (scanner.hasNextLine()) {
-                sb.append(System.getProperty("line.separator"));
+                sb.append(strings.getNewLine());
             }
         }
         scanner.close();

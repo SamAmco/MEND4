@@ -1,45 +1,92 @@
 package co.samco.mend4.desktop.commands;
 
-import javax.inject.Inject;
-import java.util.Arrays;
-import java.util.List;
+import co.samco.mend4.desktop.core.I18N;
+import co.samco.mend4.desktop.output.PrintStreamProvider;
 
-//TODO implement this command somehow
+import javax.inject.Inject;
+import java.util.*;
+import java.util.stream.Collectors;
+
 public class Help extends Command {
-    //NOTE: --help is explicitly mentioned in the strings
-    List<String> COMMAND_ALIASES = Arrays.asList("-h", "--help");
+    public static final String HELP_FLAG = "-h";
+    List<String> COMMAND_ALIASES = Arrays.asList(HELP_FLAG, "--help");
+
+    private final Set<Command> commands;
+    private final I18N strings;
+    private final PrintStreamProvider log;
 
     @Inject
-    public Help() { }
-
-    @Override
-    protected void execute(List<String> args) { }
-
-    @Override
-    public String getUsageText() {
-        /*StringBuilder sb = new StringBuilder();
-        sb.append("Usage:\tmend [-v | -h] | [<command> [-h|<args>]]\n");
-        sb.append("\n");
-        sb.append("Commands:\n");
-        Iterator<Map.Entry<String, Class<?>>> it = commands.entrySet().iterator();
-        while (it.hasNext()) {
-            Map.Entry<String, Class<?>> entry = it.next();
-            sb.append("\t");
-            sb.append(entry.getKey());
-            sb.append("\t");
-            //TODO this would need a try and catch, but we need to change it to spring anyway
-            //sb.append(((Command) entry.getValue().newInstance()).getDescriptionText());
-            System.err.println(sb.toString());
-        }
-        return sb.toString();*/
-        return null;
+    public Help(I18N strings, PrintStreamProvider log, Set<Command> commands) {
+        this.strings = strings;
+        this.log = log;
+        this.commands = commands;
     }
 
     @Override
-    public String getDescriptionText() { return null; }
+    protected void execute(List<String> args) {
+        log.err().println(getUsageText());
+    }
+
+    @Override
+    public String getUsageText() {
+        StringBuilder sb = new StringBuilder();
+        appendMendUsage(sb);
+        appendCommandDescriptions(sb);
+        return sb.toString();
+    }
+
+    private void appendCommandDescriptions(StringBuilder sb) {
+        sb.append(strings.get("Help.commands"));
+        sb.append(strings.getNewLine());
+        Iterator<Command> it = commands.iterator();
+        while (it.hasNext()) {
+            Command entry = it.next();
+            sb.append("\t");
+            appendCommandDescription(sb, entry);
+            sb.append(strings.getNewLine());
+        }
+    }
+
+    private void appendCommandDescription(StringBuilder sb, Command command) {
+        sb.append(command.getCommandAliases().stream().collect(Collectors.joining(", ")));
+        sb.append("\t:\t");
+        sb.append(command.getDescriptionText());
+    }
+
+    private void appendMendUsage(StringBuilder sb) {
+        sb.append(strings.getf("Help.usage", Version.VERSION_FLAG, HELP_FLAG, HELP_FLAG));
+        sb.append(strings.getNewLine());
+        sb.append(strings.getNewLine());
+    }
+
+    @Override
+    public String getDescriptionText() {
+        return strings.get("Help.description");
+    }
 
     @Override
     protected List<String> getCommandAliases() {
         return COMMAND_ALIASES;
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

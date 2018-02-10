@@ -5,8 +5,13 @@ import dagger.Binds;
 import dagger.Module;
 import dagger.multibindings.IntoSet;
 
+import javax.inject.Named;
+
 @Module
 public abstract class CommandsModule {
+    public static final String HELP_COMMAND_NAME = "help";
+    public static final String DEFAULT_COMMAND_NAME = "default";
+
     @IntoSet @Binds abstract Command provideClean(Clean c);
     @IntoSet @Binds abstract Command provideVersion(Version c);
     @IntoSet @Binds abstract Command provideDecrypt(Decrypt c);
@@ -18,7 +23,7 @@ public abstract class CommandsModule {
     @IntoSet @Binds abstract Command provideSetupMend(SetupMend c);
     @IntoSet @Binds abstract Command provideStatePrinter(StatePrinter c);
     @IntoSet @Binds abstract Command provideUnlock(Unlock c);
-    @IntoSet @Binds abstract Command provideHelp(Help c);
 
-    @Binds abstract Command provideDefaultCommand(EncryptFromStdIn c);
+    @Binds @Named(HELP_COMMAND_NAME) abstract Command provideHelp(Help c);
+    @Binds @Named(DEFAULT_COMMAND_NAME) abstract Command provideDefaultCommand(EncryptFromStdIn c);
 }

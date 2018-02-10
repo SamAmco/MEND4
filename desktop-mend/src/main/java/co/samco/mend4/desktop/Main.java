@@ -1,6 +1,7 @@
 package co.samco.mend4.desktop;
 
 import co.samco.mend4.desktop.commands.Command;
+import co.samco.mend4.desktop.commands.Help;
 import co.samco.mend4.desktop.config.CommandsModule;
 import co.samco.mend4.desktop.config.DesktopModule;
 import co.samco.mend4.desktop.core.I18N;
@@ -8,6 +9,7 @@ import co.samco.mend4.desktop.output.PrintStreamProvider;
 import dagger.Component;
 
 import javax.inject.Inject;
+import javax.inject.Named;
 import javax.inject.Singleton;
 import java.util.Arrays;
 import java.util.List;
@@ -26,15 +28,25 @@ public class Main {
     public void run(Runner runner, List<String> args) {
         if (args.size() < 1) {
             runner.defaultCommand().executeCommand(args);
+        } else if (printHelp(runner, args)) {
+           return;
         } else if (!findAndRunCommand(runner.commands(), args)) {
             log.err().println(strings.get("Main.commandNotFound"));
         }
     }
 
+    private boolean printHelp(Runner runner, List<String> args) {
+        if (Help.HELP_ALIASES.contains(args.get(0))) {
+            runner.helpCommand().executeCommand(args);
+            return true;
+        }
+        return false;
+    }
+
     private boolean findAndRunCommand(Set<Command> commands, List<String> args) {
         for (Command c : commands) {
             if (c.isCommandForString(args.get(0))) {
-                c.executeCommand(args);
+                c.executeCommand(args.subList(1, args.size()));
                 return true;
             }
         }
@@ -45,7 +57,8 @@ public class Main {
     @Component (modules = { DesktopModule.class, CommandsModule.class })
     interface Runner {
         Set<Command> commands();
-        Command defaultCommand();
+        @Named(CommandsModule.HELP_COMMAND_NAME) Command helpCommand();
+        @Named(CommandsModule.DEFAULT_COMMAND_NAME) Command defaultCommand();
         Main getMain();
     }
 
