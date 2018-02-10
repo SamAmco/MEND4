@@ -23,6 +23,7 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
+//TODO refactor this whole class, it's an un-godly mess
 public class CryptoHelper {
 
     PrintStreamProvider log;
@@ -142,6 +143,7 @@ public class CryptoHelper {
         }
     }
 
+    //TODO print some sort of helpful message if mend is not unlocked
     public void decryptLog(File file) {
         try {
             File privateKeyFile = new File(Config.CONFIG_PATH + Config.PRIVATE_KEY_FILE_DEC);
@@ -157,6 +159,7 @@ public class CryptoHelper {
         }
     }
 
+    //TODO print some sort of helpful message if mend is not unlocked
     public void decryptFile(File file, boolean silent) {
         FileInputStream fis = null;
         FileOutputStream fos = null;
