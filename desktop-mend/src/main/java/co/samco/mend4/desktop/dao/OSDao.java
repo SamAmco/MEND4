@@ -3,6 +3,7 @@ package co.samco.mend4.desktop.dao;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 
 public interface OSDao {
     File[] getDirectoryListing(File dirFile) throws FileNotFoundException;
@@ -13,4 +14,5 @@ public interface OSDao {
     String getFileExtension(File file);
     String getFileExtension(String filePath);
     String getFileName(File file);
+    InputStream getStdIn();
 }

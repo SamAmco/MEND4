@@ -6,6 +6,7 @@ import org.apache.commons.io.FilenameUtils;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 
 public class OSDaoImpl implements OSDao {
 
@@ -54,4 +55,10 @@ public class OSDaoImpl implements OSDao {
     public String getFileName(File file) {
         return file.getName();
     }
+
+    @Override
+    public InputStream getStdIn() {
+        return System.in;
+    }
+
 }
