@@ -1,7 +1,7 @@
 package co.samco.mend4.desktop.commands;
 
 import co.samco.mend4.desktop.core.I18N;
-import co.samco.mend4.desktop.helper.EncryptHelper;
+import co.samco.mend4.desktop.helper.CryptoHelper;
 import co.samco.mend4.desktop.helper.InputHelper;
 import co.samco.mend4.desktop.output.PrintStreamProvider;
 
@@ -15,8 +15,8 @@ public class EncryptFromStdIn extends Encrypt {
 
     @Inject
     public EncryptFromStdIn(PrintStreamProvider log, I18N strings,
-                            EncryptHelper encryptHelper, InputHelper inputHelper) {
-        super(log, strings, encryptHelper, inputHelper);
+                            CryptoHelper cryptoHelper, InputHelper inputHelper) {
+        super(log, strings, cryptoHelper, inputHelper);
     }
 
     @Override
@@ -32,7 +32,7 @@ public class EncryptFromStdIn extends Encrypt {
         }
         scanner.close();
 
-        encryptHelper.encryptTextToLog(sb.toString().toCharArray(), dropHeader);
+        cryptoHelper.encryptTextToLog(sb.toString().toCharArray(), dropHeader);
     }
 
     @Override

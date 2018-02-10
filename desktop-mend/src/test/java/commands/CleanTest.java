@@ -48,7 +48,7 @@ public class CleanTest {
 
     @Test
     public void executesCorrectCommand() throws SettingsImpl.InvalidSettingNameException,
-            SettingsImpl.CorruptSettingsException, IOException, InterruptedException {
+            SettingsImpl.CorruptSettingsException, IOException {
         when(settings.getValue(Config.Settings.DECDIR)).thenReturn("");
         when(settings.getValue(Config.Settings.SHREDCOMMAND)).thenReturn("shred -u <filename> and do other stuff");
         when(osDao.getDirectoryListing(any(File.class))).thenReturn(new File[] { new File("a") });
@@ -63,7 +63,7 @@ public class CleanTest {
 
     @Test
     public void executesCommandCorrectNumberOfTimes() throws SettingsImpl.InvalidSettingNameException,
-            SettingsImpl.CorruptSettingsException, IOException, InterruptedException {
+            SettingsImpl.CorruptSettingsException, IOException {
         when(settings.getValue(Config.Settings.DECDIR)).thenReturn("");
         when(settings.getValue(Config.Settings.SHREDCOMMAND)).thenReturn("shred -u <filename> and do other stuff");
         File[] files = IntStream.range(0, 26)
@@ -80,7 +80,7 @@ public class CleanTest {
 
     @Test
     public void shouldPrintErrorWhenNullDecDir() throws SettingsImpl.InvalidSettingNameException,
-            SettingsImpl.CorruptSettingsException, IOException, InterruptedException {
+            SettingsImpl.CorruptSettingsException, IOException {
         when(settings.getValue(Config.Settings.DECDIR)).thenReturn(null);
         when(settings.getValue(Config.Settings.SHREDCOMMAND)).thenReturn("");
         when(osDao.getDirectoryListing(any(File.class))).thenReturn(new File[] {new File("")});
@@ -93,7 +93,7 @@ public class CleanTest {
 
     @Test
     public void shouldPrintErrorWhenNullShredCommand() throws SettingsImpl.InvalidSettingNameException,
-            SettingsImpl.CorruptSettingsException, IOException, InterruptedException {
+            SettingsImpl.CorruptSettingsException, IOException {
         when(settings.getValue(Config.Settings.DECDIR)).thenReturn("");
         when(settings.getValue(Config.Settings.SHREDCOMMAND)).thenReturn(null);
         when(osDao.getDirectoryListing(any(File.class))).thenReturn(new File[] {new File("")});

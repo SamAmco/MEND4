@@ -93,7 +93,7 @@ public class LockTest {
       when(osDao.fileExists(any(File.class))).thenAnswer(new Answer<Boolean>() {
          int count = 0;
          @Override
-         public Boolean answer(InvocationOnMock invocation) throws Throwable {
+         public Boolean answer(InvocationOnMock invocation) {
             if (count++ > 0) return false;
             else return true;
          }
