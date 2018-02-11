@@ -62,7 +62,7 @@ public class SetProperty extends Command {
     private List<String> setProperty(List<String> args) {
         try {
             Integer propertyIndex = Config.SETTINGS_NAMES_MAP.entrySet().stream()
-                    .filter(entry -> Objects.equals(entry.getValue(), value))
+                    .filter(entry -> entry.getValue().equals(propertyName))
                     .map(Map.Entry::getKey)
                     .findFirst()
                     .get();
