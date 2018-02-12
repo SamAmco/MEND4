@@ -26,10 +26,14 @@ import java.util.Date;
 //TODO refactor this whole class, it's an un-godly mess
 public class CryptoHelper {
 
-    PrintStreamProvider log;
+    private final PrintStreamProvider log;
+    private final FileResolveHelper fileResolveHelper;
 
     @Inject
-    public CryptoHelper() {}
+    public CryptoHelper(PrintStreamProvider log, FileResolveHelper fileResolveHelper) {
+        this.log = log;
+        this.fileResolveHelper = fileResolveHelper;
+    }
 
     public void encryptFile(String filePath, String name) {
         //If there isn't a file name given, then let's generate a name for the file using a timestamp (16 digits).
@@ -146,8 +150,7 @@ public class CryptoHelper {
     //TODO print some sort of helpful message if mend is not unlocked
     public void decryptLog(File file) {
         try {
-            File privateKeyFile = new File(Config.CONFIG_PATH + Config.PRIVATE_KEY_FILE_DEC);
-            EncryptionUtils.decryptLog(file, privateKeyFile, System.out);
+            EncryptionUtils.decryptLog(file, fileResolveHelper.getPrivateKey(), System.out);
         }
         catch (IOException | EncryptionUtils.MalformedLogFileException
                 | SettingsImpl.InvalidSettingNameException | SettingsImpl.CorruptSettingsException

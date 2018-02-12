@@ -79,7 +79,7 @@ public class EncryptTest {
     @Test
     public void encryptTooManyArgs() {
         encrypt.execute(Arrays.asList("a", "b", "c"));
-        verify(err).println(strings.getf("Encrypt.invalidArgNum", Encrypt.COMMAND_NAME));
+        verify(err).println(strings.getf("General.invalidArgNum", Encrypt.COMMAND_NAME));
     }
 
     @Test

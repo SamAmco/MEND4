@@ -63,7 +63,7 @@ public class Encrypt extends Command implements InputListener {
 
     protected List<String> tooManyArgs(List<String> args) {
         if (args.size() > 2) {
-            log.err().println(strings.getf("Encrypt.invalidArgNum", COMMAND_NAME));
+            log.err().println(strings.getf("General.invalidArgNum", COMMAND_NAME));
             return null;
         }
         return args;

@@ -58,12 +58,12 @@ public class SetPropertyTest {
     @Test
     public void tooManyArgs() {
         setter.execute(Arrays.asList("anunknownproperty", "value", "extraarg"));
-        verify(strings).get(eq("SetProperty.invalidArgNum"));
+        verify(strings).getf(eq("General.invalidArgNum"), eq(SetProperty.COMMAND_NAME));
     }
 
     @Test
     public void tooFewArgs() {
         setter.execute(Arrays.asList("anunknownproperty"));
-        verify(strings).get(eq("SetProperty.invalidArgNum"));
+        verify(strings).getf(eq("General.invalidArgNum"), eq(SetProperty.COMMAND_NAME));
     }
 }

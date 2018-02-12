@@ -160,14 +160,13 @@ public class EncryptionUtils {
         return getNextLogTextWithDataBlocks(inputStream, privateKey, lc1Bytes).entryText;
     }
 
-    public static void decryptLog(File file, File privateKeyFile, PrintStream outputStream)
+    public static void decryptLog(File file, RSAPrivateKey privateKey, PrintStream outputStream)
             throws IOException, MalformedLogFileException, InvalidSettingNameException,
             CorruptSettingsException, UnInitializedSettingsException, InvalidKeyException,
             BadPaddingException, IllegalBlockSizeException, NoSuchPaddingException,
             NoSuchAlgorithmException, InvalidAlgorithmParameterException, InvalidKeySpecException {
         FileInputStream inputStream = null;
         try {
-            RSAPrivateKey privateKey = getPrivateKeyFromFile(privateKeyFile);
             inputStream = new FileInputStream(file);
             byte[] lc1Bytes = new byte[4];
             //while there is an initial length code to be read in, read it in

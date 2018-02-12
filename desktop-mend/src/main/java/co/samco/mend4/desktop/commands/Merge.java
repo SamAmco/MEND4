@@ -1,204 +1,106 @@
 package co.samco.mend4.desktop.commands;
 
 import co.samco.mend4.core.Config;
-import co.samco.mend4.core.EncryptionUtils;
 import co.samco.mend4.core.impl.SettingsImpl;
+import co.samco.mend4.desktop.core.I18N;
+import co.samco.mend4.desktop.dao.OSDao;
+import co.samco.mend4.desktop.helper.FileResolveHelper;
+import co.samco.mend4.desktop.helper.MergeHelper;
+import co.samco.mend4.desktop.output.PrintStreamProvider;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 
-import javax.crypto.BadPaddingException;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.NoSuchPaddingException;
 import javax.inject.Inject;
 import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
-import java.security.interfaces.RSAPrivateKey;
-import java.security.spec.InvalidKeySpecException;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.function.Function;
 
 public class Merge extends Command {
-    private final String COMMAND_NAME = "merge";
+    public static final String COMMAND_NAME = "merge";
+    public static final String FIRST_FLAG = "-1";
+    public static final String SECOND_FLAG = "-2";
+
+    private final I18N strings;
+    private final PrintStreamProvider log;
+    private final FileResolveHelper fileResolveHelper;
+    private final MergeHelper mergeHelper;
+    private final OSDao osDao;
+
+    private final List<Function<List<String>, List<String>>> behaviourChain = Arrays.asList(
+            a -> assertCorrectNumOfArgs(a),
+            a -> tryMergeInPlace(a),
+            a -> tryMergeToNew(a)
+    );
+
 
     @Inject
-    public Merge() { }
+    public Merge(I18N strings, PrintStreamProvider log, FileResolveHelper fileResolveHelper,
+                 MergeHelper mergeHelper, OSDao osDao) {
+        this.strings = strings;
+        this.log = log;
+        this.fileResolveHelper = fileResolveHelper;
+        this.mergeHelper = mergeHelper;
+        this.osDao = osDao;
+    }
+
+    private List<String> assertCorrectNumOfArgs(List<String> args) {
+        if (args.size() != 3) {
+            log.err().println(strings.getf("General.invalidArgNum", COMMAND_NAME));
+            return null;
+        }
+        return args;
+    }
+
+    private List<String> tryMergeInPlace(List<String> args) {
+        try {
+            if (args.get(0).equals(FIRST_FLAG) || args.get(0).equals(SECOND_FLAG)) {
+                Pair<File, File> logFiles = resolveFiles(args.get(1), args.get(2));
+                mergeHelper.mergeToFirstOrSecond(logFiles, args.get(0).equals(FIRST_FLAG));
+                return null;
+            }
+        } catch (SettingsImpl.InvalidSettingNameException | SettingsImpl.CorruptSettingsException
+                | FileNotFoundException e) {
+            e.printStackTrace();
+        }
+        return args;
+    }
+
+    private List<String> tryMergeToNew(List<String> args) {
+        try {
+            Pair<File, File> logFiles = resolveFiles(args.get(0), args.get(1));
+            mergeHelper.mergeLogFilesToNew(logFiles, new File(args.get(2)));
+            return null;
+        } catch (SettingsImpl.InvalidSettingNameException | SettingsImpl.CorruptSettingsException
+                | FileNotFoundException e) {
+            e.printStackTrace();
+        }
+        return args;
+    }
+
+    private Pair<File, File> resolveFiles(String file1, String file2)
+            throws SettingsImpl.InvalidSettingNameException, SettingsImpl.CorruptSettingsException, FileNotFoundException {
+        File firstLog = fileResolveHelper.resolveLogFilePath(file1);
+        File secondLog = fileResolveHelper.resolveLogFilePath(file2);
+        fileResolveHelper.assertFileExistsAndHasExtension(file1, Config.LOG_FILE_EXTENSION, firstLog);
+        fileResolveHelper.assertFileExistsAndHasExtension(file2, Config.LOG_FILE_EXTENSION, secondLog);
+        return new ImmutablePair<>(firstLog, secondLog);
+    }
+
 
     @Override
     public void execute(List<String> args) {
-        try {
-            if (args.size() != 3) {
-                System.err.println("Incorrect number of arguments");
-                return;
-            }
-            if (args.get(0).equals("-2") || args.get(0).equals("-1")) {
-                File firstLog = resolveLogFile(args.get(1));
-                File secondLog = resolveLogFile(args.get(2));
-                if (firstLog == null || secondLog == null)
-                    return;
-                mergeToFirstOrSecond(firstLog, secondLog, args.get(0));
-                return;
-            }
-
-            File firstLog = resolveLogFile(args.get(0));
-            File secondLog = resolveLogFile(args.get(1));
-            if (firstLog == null || secondLog == null)
-                return;
-            mergeFilesToNew(firstLog, secondLog, new File(args.get(2)));
-        } catch (Exception e) {
-            System.err.println(e.getMessage());
-        }
-    }
-
-    private RSAPrivateKey getPrivateKey() throws NoSuchAlgorithmException, IOException, InvalidKeySpecException {
-        //first check if mend is unlocked
-        File privateKeyFile = new File(Config.CONFIG_PATH + Config.PRIVATE_KEY_FILE_DEC);
-        if (!privateKeyFile.exists())
-            return null;
-
-        return EncryptionUtils.getPrivateKeyFromFile(privateKeyFile);
-    }
-
-    private File resolveLogFile(String logName) throws SettingsImpl.UnInitializedSettingsException,
-            SettingsImpl.InvalidSettingNameException, SettingsImpl.CorruptSettingsException {
-        File logFile = new File(logName);
-        if (!logFile.exists()) {
-            String logDir = SettingsImpl.instance().getValue(Config.Settings.LOGDIR);
-            if (logDir == null)
-                return null;
-            logFile = new File(logDir + File.separatorChar + logName);
-            if (logFile.exists())
-                return logFile;
-            logFile = new File(logDir + File.separatorChar + logName + ".mend");
-            if (logFile.exists())
-                return logFile;
-            System.err.println("Could not find log:\t" + logName);
-            return null;
-        }
-        return logFile;
-    }
-
-    private void mergeToFirstOrSecond(File firstLog, File secondLog, String flag) {
-        try {
-            String logDir = SettingsImpl.instance().getValue(Config.Settings.LOGDIR);
-            if (logDir == null)
-                throw new IOException("You need to set the " + Config.SETTINGS_NAMES_MAP.get(Config.Settings.LOGDIR
-                        .ordinal())
-                        + " property in your settings file before you can encrypt logs to it.");
-
-            String tempName = "temp";
-            int tempSuffix = 0;
-            File currentOutFile = new File(logDir + File.separatorChar + tempName + tempSuffix + ".mend");
-            while (currentOutFile.exists()) {
-                tempSuffix++;
-                currentOutFile = new File(logDir + tempName + tempSuffix + ".mend");
-            }
-            mergeFilesToNew(firstLog, secondLog, currentOutFile);
-            if (flag.equals("-1"))
-                Files.move(currentOutFile.toPath(), firstLog.toPath(), StandardCopyOption.REPLACE_EXISTING);
-            else
-                Files.move(currentOutFile.toPath(), secondLog.toPath(), StandardCopyOption.REPLACE_EXISTING);
-        } catch (IOException | SettingsImpl.UnInitializedSettingsException | SettingsImpl.InvalidSettingNameException
-                | SettingsImpl.CorruptSettingsException e) {
-            System.err.println(e.getMessage());
-        }
-    }
-
-    private void mergeFilesToNew(File firstLog, File secondLog, File outputLog) {
-        FileInputStream f1InputStream = null;
-        FileInputStream f2InputStream = null;
-        FileOutputStream fOutputStream = null;
-        try {
-            f1InputStream = new FileInputStream(firstLog);
-            f2InputStream = new FileInputStream(secondLog);
-            outputLog.createNewFile();
-            fOutputStream = new FileOutputStream(outputLog);
-            RSAPrivateKey privateKey = getPrivateKey();
-            if (privateKey == null) {
-                System.err.println("MEND is Locked. Please run mend unlock");
-                return;
-            }
-            //now we need an appropriate output file.
-            mergeToOutputFile(privateKey, f1InputStream, f2InputStream, fOutputStream);
-        } catch (java.io.IOException | InvalidKeyException | InvalidAlgorithmParameterException |
-                NoSuchAlgorithmException
-                | ParseException | NoSuchPaddingException | SettingsImpl.CorruptSettingsException |
-                IllegalBlockSizeException
-                | SettingsImpl.InvalidSettingNameException | BadPaddingException | EncryptionUtils.MalformedLogFileException
-                | SettingsImpl.UnInitializedSettingsException | InvalidKeySpecException e) {
-            System.err.println(e.getMessage());
-            e.printStackTrace();
-        } finally {
-            try {
-                if (f1InputStream != null)
-                    f1InputStream.close();
-                if (f2InputStream != null)
-                    f2InputStream.close();
-                if (fOutputStream != null)
-                    fOutputStream.close();
-            } catch (IOException e) {
-                System.err.println(e.getMessage());
-            }
-        }
-    }
-
-    private void mergeToOutputFile(RSAPrivateKey privateKey, FileInputStream firstLog, FileInputStream secondLog,
-                                   FileOutputStream outputFile) throws IOException, ParseException,
-            NoSuchAlgorithmException,
-            EncryptionUtils.MalformedLogFileException, InvalidKeyException, InvalidAlgorithmParameterException,
-            NoSuchPaddingException,
-            BadPaddingException, SettingsImpl.InvalidSettingNameException, SettingsImpl.CorruptSettingsException,
-            IllegalBlockSizeException,
-            SettingsImpl.UnInitializedSettingsException {
-        byte[] lc1Bytes = new byte[4];
-        byte[] lc2Bytes = new byte[4];
-        LogEntry secondLogEntry = null;
-        if (EncryptionUtils.logHasNext(secondLog, lc2Bytes))
-            secondLogEntry = LogEntry.parseNextLog(secondLog, privateKey, lc2Bytes);
-        //while first has next
-        while (EncryptionUtils.logHasNext(firstLog, lc1Bytes)) {
-            LogEntry firstLogEntry = LogEntry.parseNextLog(firstLog, privateKey, lc1Bytes);
-            //if first has no date
-            //write first
-            if (firstLogEntry.dateTime == null)
-                outputFile.write(firstLogEntry.data);
-            else {
-                //while second has next && second < first || second has no date
-                //write second
-                while (secondLogEntry != null && (secondLogEntry.dateTime == null || secondLogEntry.dateTime.before
-                        (firstLogEntry.dateTime))) {
-                    outputFile.write(secondLogEntry.data);
-                    if (EncryptionUtils.logHasNext(secondLog, lc2Bytes))
-                        secondLogEntry = LogEntry.parseNextLog(secondLog, privateKey, lc2Bytes);
-                    else secondLogEntry = null;
-                }
-            }
-            //write first
-            outputFile.write(firstLogEntry.data);
-        }
-        //now write out the rest of second
-        while (secondLogEntry != null) {
-            outputFile.write(secondLogEntry.data);
-            if (EncryptionUtils.logHasNext(secondLog, lc2Bytes))
-                secondLogEntry = LogEntry.parseNextLog(secondLog, privateKey, lc2Bytes);
-            else secondLogEntry = null;
-        }
+        executeBehaviourChain(behaviourChain, args);
     }
 
     @Override
     public String getUsageText() {
-        return "Usage:\tmend merge [-1 | -2] <first log> <second log> [<output log>]";
+        return strings.getf("Merge.usage", COMMAND_NAME, FIRST_FLAG, SECOND_FLAG);
     }
 
     @Override
     public String getDescriptionText() {
-        return "Merges all the logs from two different log files into one log file, sorted by date.";
+        return strings.get("Merge.description");
     }
 
     @Override
@@ -206,37 +108,4 @@ public class Merge extends Command {
         return Arrays.asList(COMMAND_NAME);
     }
 
-
-    private static class LogEntry {
-        private byte[] data;
-        private Date dateTime = null;
-
-        private LogEntry(byte[] data, Date dateTime) {
-            this.data = data;
-            this.dateTime = dateTime;
-        }
-
-        public static LogEntry parseNextLog(FileInputStream inputStream,
-                                            RSAPrivateKey privateKey, byte[] lc1Bytes) throws IOException,
-                InvalidKeyException,
-                NoSuchAlgorithmException, SettingsImpl.InvalidSettingNameException, InvalidAlgorithmParameterException,
-                NoSuchPaddingException, SettingsImpl.CorruptSettingsException, BadPaddingException, EncryptionUtils
-                        .MalformedLogFileException,
-                IllegalBlockSizeException, SettingsImpl.UnInitializedSettingsException, ParseException {
-            EncryptionUtils.LogDataBlocksAndText nextLog = EncryptionUtils.getNextLogTextWithDataBlocks(inputStream,
-                    privateKey, lc1Bytes);
-            String logText = nextLog.entryText;
-            Date firstDate = null;
-            Pattern pattern = Pattern.compile("(\\d+)\\/(\\d+)\\/(\\d+) (\\d+):(\\d+):(\\d+)");
-            Matcher matcher = pattern.matcher(logText);
-            if (matcher.lookingAt()) {
-                //then the log has a date, so let's parse the text to a Date object
-                firstDate = (new SimpleDateFormat("dd/MM/yyyy HH:mm:ss")).parse(matcher.group());
-                //DateFormat df = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss");
-                //System.out.println(matcher.group());
-                //System.out.println(df.format(firstDate));
-            }
-            return new LogEntry(nextLog.logDataBlocks.getAsOneBlock(), firstDate);
-        }
-    }
 }

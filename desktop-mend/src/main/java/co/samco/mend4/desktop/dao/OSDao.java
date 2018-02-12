@@ -4,6 +4,8 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.CopyOption;
+import java.nio.file.Path;
 
 public interface OSDao {
     File[] getDirectoryListing(File dirFile) throws FileNotFoundException;
@@ -15,4 +17,5 @@ public interface OSDao {
     String getFileExtension(String filePath);
     String getFileName(File file);
     InputStream getStdIn();
+    Path moveFile(Path source, Path target, CopyOption... options) throws IOException;
 }

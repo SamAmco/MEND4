@@ -12,13 +12,13 @@ import co.samco.mend4.core.Settings;
 import co.samco.mend4.desktop.core.I18N;
 import co.samco.mend4.desktop.dao.OSDao;
 import co.samco.mend4.desktop.helper.CryptoHelper;
+import co.samco.mend4.desktop.helper.FileResolveHelper;
 import co.samco.mend4.desktop.output.PrintStreamProvider;
 import dagger.Lazy;
 
 import co.samco.mend4.core.Config;
 import co.samco.mend4.core.impl.SettingsImpl.CorruptSettingsException;
 import co.samco.mend4.core.impl.SettingsImpl.InvalidSettingNameException;
-import org.apache.commons.io.FileUtils;
 
 public class Decrypt extends Command {
     public static final String COMMAND_NAME = "dec";
@@ -29,6 +29,7 @@ public class Decrypt extends Command {
     private final OSDao osDao;
     private final I18N strings;
     private final Lazy<Settings> settings;
+    private final FileResolveHelper fileResolveHelper;
 
     private boolean silent;
     private String fileIdentifier;
@@ -37,18 +38,18 @@ public class Decrypt extends Command {
             a -> getFileIdentifier(a),
             a -> checkShouldBeSilent(a),
             a -> tryResolveFileAsEncId(a),
-            a -> tryResolveFileAsLog(a),
-            a -> fallbackFileNotFound(a)
+            a -> tryResolveFileAsLog(a)
     );
 
     @Inject
     public Decrypt(PrintStreamProvider log, I18N strings, Lazy<Settings> settings,
-                   CryptoHelper cryptoHelper, OSDao osDao) {
+                   CryptoHelper cryptoHelper, OSDao osDao, FileResolveHelper fileResolveHelper) {
         this.cryptoHelper = cryptoHelper;
         this.log = log;
         this.osDao = osDao;
         this.strings = strings;
         this.settings = settings;
+        this.fileResolveHelper = fileResolveHelper;
     }
 
     private List<String> getFileIdentifier(List<String> args) {
@@ -72,8 +73,8 @@ public class Decrypt extends Command {
 
     private List<String> tryResolveFileAsEncId(List<String> args) {
         try {
-            File file = resolveEncFilePath(fileIdentifier);
-            if (existsAndHasExtension(file, Config.ENC_FILE_EXTENSION)) {
+            File file = fileResolveHelper.resolveEncFilePath(fileIdentifier);
+            if (fileResolveHelper.fileExistsAndHasExtension(Config.ENC_FILE_EXTENSION, file)) {
                 cryptoHelper.decryptFile(file, silent);
                 return null;
             } else return args;
@@ -83,68 +84,15 @@ public class Decrypt extends Command {
         return null;
     }
 
-    private File resolveEncFilePath(String filePath) throws InvalidSettingNameException, CorruptSettingsException {
-        if (filePathIsEncId(filePath)) {
-            return FileUtils.getFile(getEncDir(), filePath + "." + Config.ENC_FILE_EXTENSION);
-        } else {
-            return new File(filePath);
-        }
-    }
-
-    private File resolveLogFilePath(String filePath) throws InvalidSettingNameException, CorruptSettingsException {
-        if (osDao.getFileExtension(filePath).equals("")) {
-            return FileUtils.getFile(getLogDir(), filePath + "." + Config.LOG_FILE_EXTENSION);
-        } else if (osDao.fileExists(new File(filePath))) {
-            return new File(filePath);
-        } else {
-            return FileUtils.getFile(getLogDir(), filePath);
-        }
-    }
-
-    private boolean existsAndHasExtension(File file, String extension) {
-        return osDao.fileExists(file)
-                    && osDao.fileIsFile(file)
-                    && osDao.getFileExtension(file).equals(extension);
-    }
-
     private List<String> tryResolveFileAsLog(List<String> args) {
         try {
-            File file = resolveLogFilePath(fileIdentifier);
-            if (existsAndHasExtension(file, Config.LOG_FILE_EXTENSION)) {
-                cryptoHelper.decryptLog(file);
-                return null;
-            } else return args;
-        } catch (CorruptSettingsException | InvalidSettingNameException e) {
+            File file = fileResolveHelper.resolveLogFilePath(fileIdentifier);
+            fileResolveHelper.assertFileExistsAndHasExtension(fileIdentifier, Config.LOG_FILE_EXTENSION, file);
+            cryptoHelper.decryptLog(file);
+        } catch (CorruptSettingsException | InvalidSettingNameException | FileNotFoundException e) {
             log.err().println(e.getMessage());
-            return null;
         }
-    }
-
-    private List<String> fallbackFileNotFound(List<String> args) {
-        log.err().println(strings.getf("Decrypt.unknownIdentifier", fileIdentifier));
         return null;
-    }
-
-    private boolean filePathIsEncId(String filePath) {
-        return filePath.matches("\\d{14}") || filePath.matches("\\d{16}") || filePath.matches("\\d{17}");
-    }
-
-    private String getLogDir() throws CorruptSettingsException, InvalidSettingNameException {
-        String logDir = settings.get().getValue(Config.Settings.LOGDIR);
-        if (logDir == null) {
-            throw new CorruptSettingsException(strings.getf("Decrypt.noLogDir",
-                    Config.SETTINGS_NAMES_MAP.get(Config.Settings.LOGDIR.ordinal())));
-        }
-        return logDir;
-    }
-
-    private String getEncDir() throws InvalidSettingNameException, CorruptSettingsException {
-        String encDir = settings.get().getValue(Config.Settings.ENCDIR);
-        if (encDir == null) {
-            throw new CorruptSettingsException(strings.getf("Decrypt.noEncDir",
-                    Config.SETTINGS_NAMES_MAP.get(Config.Settings.ENCDIR.ordinal())));
-        }
-        return encDir;
     }
 
     @Override

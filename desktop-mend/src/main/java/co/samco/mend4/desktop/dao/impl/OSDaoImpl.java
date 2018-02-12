@@ -7,6 +7,9 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.CopyOption;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 public class OSDaoImpl implements OSDao {
 
@@ -59,6 +62,11 @@ public class OSDaoImpl implements OSDao {
     @Override
     public InputStream getStdIn() {
         return System.in;
+    }
+
+    @Override
+    public Path moveFile(Path source, Path target, CopyOption... options) throws IOException {
+        return Files.move(source, target, options);
     }
 
 }
