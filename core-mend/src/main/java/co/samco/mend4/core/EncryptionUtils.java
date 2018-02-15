@@ -25,10 +25,11 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
 import co.samco.mend4.core.impl.SettingsImpl;
-import co.samco.mend4.core.impl.SettingsImpl.CorruptSettingsException;
-import co.samco.mend4.core.impl.SettingsImpl.InvalidSettingNameException;
-import co.samco.mend4.core.impl.SettingsImpl.UnInitializedSettingsException;
+import co.samco.mend4.core.Settings.CorruptSettingsException;
+import co.samco.mend4.core.Settings.InvalidSettingNameException;
+import co.samco.mend4.core.Settings.UnInitializedSettingsException;
 
+//TODO this is now a total mess, all needs fixing and refactoring
 public class EncryptionUtils {
     private static String addHeaderToLogText(char[] logText) throws UnInitializedSettingsException {
         StringBuilder sb = new StringBuilder();
@@ -36,9 +37,9 @@ public class EncryptionUtils {
         SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss", Locale.ENGLISH);
         sb.append(sdf.format(cal.getTime()));
         sb.append("//MEND" + Config.CORE_VERSION_NUMBER + "//");
-        sb.append(SettingsImpl.instance().getPlatformDependentHeader());
-        sb.append
-                ("////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////\n");
+        //TODO only commented to compile
+        //sb.append(SettingsImpl.instance().getPlatformDependentHeader());
+        sb.append ("////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////\n");
         sb.append(logText);
         return sb.toString();
     }
@@ -189,7 +190,8 @@ public class EncryptionUtils {
             IllegalBlockSizeException, BadPaddingException, IOException {
         CipherOutputStream cos = null;
         try {
-            String userPublicKeyString = SettingsImpl.instance().getValue(Config.Settings.PUBLICKEY);
+            //TODO only commented to compile
+            String userPublicKeyString = "";//SettingsImpl.instance().getValue(Config.Settings.PUBLICKEY);
             if (userPublicKeyString == null)
                 throw new MissingPublicKeyException();
 
@@ -249,7 +251,8 @@ public class EncryptionUtils {
             IllegalBlockSizeException, BadPaddingException, InvalidKeySpecException, MissingPublicKeyException,
             IOException {
         //Lets just do some basic checks first
-        String userPublicKeyString = SettingsImpl.instance().getValue(Config.Settings.PUBLICKEY);
+        //TODO only commented to compile
+        String userPublicKeyString = "";//SettingsImpl.instance().getValue(Config.Settings.PUBLICKEY);
         if (userPublicKeyString == null)
             throw new MissingPublicKeyException();
 

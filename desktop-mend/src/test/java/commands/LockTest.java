@@ -2,7 +2,8 @@ package commands;
 
 import co.samco.mend4.core.Config;
 import co.samco.mend4.core.Settings;
-import co.samco.mend4.core.impl.SettingsImpl;
+import co.samco.mend4.core.Settings.CorruptSettingsException;
+import co.samco.mend4.core.Settings.InvalidSettingNameException;
 import co.samco.mend4.desktop.commands.Lock;
 import co.samco.mend4.desktop.core.I18N;
 import co.samco.mend4.desktop.dao.OSDao;
@@ -48,9 +49,9 @@ public class LockTest {
       lock = new Lock(strings, printStreamProvider, osDao, shredHelper);
    }
 
-   private ArgumentCaptor<String> getOutputOfLockTest() throws IOException, SettingsImpl.InvalidSettingNameException,
-           SettingsImpl.CorruptSettingsException {
-      when(settings.getValue(Config.Settings.SHREDCOMMAND)).thenReturn("");
+   private ArgumentCaptor<String> getOutputOfLockTest() throws IOException, InvalidSettingNameException,
+           CorruptSettingsException {
+      when(settings.getValue(Settings.Name.SHREDCOMMAND)).thenReturn("");
       Process process = mock(Process.class);
       when(process.getInputStream()).thenReturn(TestUtils.getEmptyInputStream());
       ArgumentCaptor<String> stdErr = ArgumentCaptor.forClass(String.class);
@@ -67,8 +68,8 @@ public class LockTest {
    }
 
    @Test
-   public void testKeyNotFound() throws SettingsImpl.InvalidSettingNameException,
-           SettingsImpl.CorruptSettingsException, IOException {
+   public void testKeyNotFound() throws InvalidSettingNameException,
+           CorruptSettingsException, IOException {
       when(osDao.fileExists(any(File.class))).thenReturn(false);
       ArgumentCaptor<String> stdErr = getOutputOfLockTest();
       verify(err, times(4)).println(stdErr.capture());
@@ -78,8 +79,8 @@ public class LockTest {
    }
 
    @Test
-   public void testKeyFoundAndLockFailed() throws SettingsImpl.InvalidSettingNameException,
-           SettingsImpl.CorruptSettingsException, IOException {
+   public void testKeyFoundAndLockFailed() throws InvalidSettingNameException,
+           CorruptSettingsException, IOException {
       when(osDao.fileExists(any(File.class))).thenReturn(true);
       ArgumentCaptor<String> stdErr = getOutputOfLockTest();
       verify(err, times(3)).println(stdErr.capture());
@@ -88,8 +89,8 @@ public class LockTest {
    }
 
    @Test
-   public void testKeyFoundAndLockPassed() throws SettingsImpl.InvalidSettingNameException,
-           SettingsImpl.CorruptSettingsException, IOException {
+   public void testKeyFoundAndLockPassed() throws InvalidSettingNameException,
+           CorruptSettingsException, IOException {
       when(osDao.fileExists(any(File.class))).thenAnswer(new Answer<Boolean>() {
          int count = 0;
          @Override

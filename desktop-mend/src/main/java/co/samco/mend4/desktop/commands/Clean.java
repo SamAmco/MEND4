@@ -4,46 +4,37 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
-import co.samco.mend4.core.Config;
 import co.samco.mend4.core.Settings;
-import co.samco.mend4.core.impl.SettingsImpl.CorruptSettingsException;
-import co.samco.mend4.core.impl.SettingsImpl.InvalidSettingNameException;
+import co.samco.mend4.core.Settings.CorruptSettingsException;
+import co.samco.mend4.core.Settings.InvalidSettingNameException;
 import co.samco.mend4.desktop.core.I18N;
+import co.samco.mend4.desktop.helper.FileResolveHelper;
 import co.samco.mend4.desktop.helper.ShredHelper;
 import co.samco.mend4.desktop.output.PrintStreamProvider;
-import dagger.Lazy;
 
 import javax.inject.Inject;
 
 public class Clean extends Command {
     public static final String COMMAND_NAME = "clean";
 
-    private final Lazy<Settings> settings;
     private final PrintStreamProvider log;
     private final ShredHelper shredHelper;
+    private final FileResolveHelper fileResolveHelper;
     private final I18N strings;
 
     @Inject
-    public Clean(I18N strings, PrintStreamProvider log, Lazy<Settings> settings, ShredHelper shredHelper) {
+    public Clean(I18N strings, PrintStreamProvider log, ShredHelper shredHelper,
+                 FileResolveHelper fileResolveHelper) {
         this.strings = strings;
-        this.settings = settings;
         this.log = log;
         this.shredHelper = shredHelper;
-    }
-
-    private String getDecDir() throws CorruptSettingsException, InvalidSettingNameException {
-        String decDir = settings.get().getValue(Config.Settings.DECDIR);
-        if (decDir == null) {
-            throw new CorruptSettingsException(strings.getf("Clean.noDecDir",
-                    Config.SETTINGS_NAMES_MAP.get(Config.Settings.DECDIR.ordinal())));
-        }
-        return decDir;
+        this.fileResolveHelper = fileResolveHelper;
     }
 
     @Override
     public void execute(List<String> args) {
         try {
-            String decDir = getDecDir();
+            String decDir = fileResolveHelper.getDecDir();
             shredHelper.shredFilesInDirectory(decDir);
             log.err().println(strings.get("Clean.cleanComplete"));
         } catch (CorruptSettingsException | InvalidSettingNameException | IOException e) {
@@ -58,7 +49,7 @@ public class Clean extends Command {
 
     @Override
     public String getDescriptionText() {
-        return strings.getf("Clean.description", Config.SETTINGS_NAMES_MAP.get(Config.Settings.SHREDCOMMAND.ordinal()));
+        return strings.getf("Clean.description", Settings.Name.SHREDCOMMAND.toString());
     }
 
     @Override

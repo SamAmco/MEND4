@@ -2,7 +2,8 @@ package co.samco.mend4.desktop.helper;
 
 import co.samco.mend4.core.Config;
 import co.samco.mend4.core.Settings;
-import co.samco.mend4.core.impl.SettingsImpl;
+import co.samco.mend4.core.Settings.CorruptSettingsException;
+import co.samco.mend4.core.Settings.InvalidSettingNameException;
 import co.samco.mend4.desktop.core.I18N;
 import co.samco.mend4.desktop.dao.OSDao;
 import dagger.Lazy;
@@ -25,11 +26,20 @@ public class FileResolveHelper {
         this.strings = strings;
     }
 
-    public String getLogDir() throws SettingsImpl.CorruptSettingsException, SettingsImpl.InvalidSettingNameException {
-        String logDir = settings.get().getValue(Config.Settings.LOGDIR);
+    public String getDecDir() throws CorruptSettingsException, InvalidSettingNameException {
+        String decDir = settings.get().getValue(Settings.Name.DECDIR);
+        if (decDir == null) {
+            throw new CorruptSettingsException(strings.getf("Clean.noDecDir",
+                    Settings.Name.DECDIR.toString()));
+        }
+        return decDir;
+    }
+
+    public String getLogDir() throws CorruptSettingsException, InvalidSettingNameException {
+        String logDir = settings.get().getValue(Settings.Name.LOGDIR);
         if (logDir == null) {
-            throw new SettingsImpl.CorruptSettingsException(strings.getf("FileResolve.noLogDir",
-                    Config.SETTINGS_NAMES_MAP.get(Config.Settings.LOGDIR.ordinal())));
+            throw new CorruptSettingsException(strings.getf("FileResolve.noLogDir",
+                    Settings.Name.LOGDIR.toString()));
         }
         return logDir;
     }
@@ -44,11 +54,11 @@ public class FileResolveHelper {
         }
     }
 
-    public String getEncDir() throws SettingsImpl.InvalidSettingNameException, SettingsImpl.CorruptSettingsException {
-        String encDir = settings.get().getValue(Config.Settings.ENCDIR);
+    public String getEncDir() throws InvalidSettingNameException, CorruptSettingsException {
+        String encDir = settings.get().getValue(Settings.Name.ENCDIR);
         if (encDir == null) {
-            throw new SettingsImpl.CorruptSettingsException(strings.getf("FileResolve.noEncDir",
-                    Config.SETTINGS_NAMES_MAP.get(Config.Settings.ENCDIR.ordinal())));
+            throw new CorruptSettingsException(strings.getf("FileResolve.noEncDir",
+                    Settings.Name.ENCDIR.toString()));
         }
         return encDir;
     }
@@ -63,7 +73,7 @@ public class FileResolveHelper {
         return filePath.matches("\\d{14}") || filePath.matches("\\d{16}") || filePath.matches("\\d{17}");
     }
 
-    public File resolveLogFilePath(String filePath) throws SettingsImpl.InvalidSettingNameException, SettingsImpl.CorruptSettingsException {
+    public File resolveLogFilePath(String filePath) throws InvalidSettingNameException, CorruptSettingsException {
         if (osDao.getFileExtension(filePath).equals("")) {
             return FileUtils.getFile(getLogDir(), filePath + "." + Config.LOG_FILE_EXTENSION);
         } else if (osDao.fileExists(new File(filePath))) {
@@ -73,7 +83,8 @@ public class FileResolveHelper {
         }
     }
 
-    public File resolveEncFilePath(String filePath) throws SettingsImpl.InvalidSettingNameException, SettingsImpl.CorruptSettingsException {
+    public File resolveEncFilePath(String filePath)
+            throws InvalidSettingNameException, CorruptSettingsException {
         if (filePathIsEncId(filePath)) {
             return FileUtils.getFile(getEncDir(), filePath + "." + Config.ENC_FILE_EXTENSION);
         } else {

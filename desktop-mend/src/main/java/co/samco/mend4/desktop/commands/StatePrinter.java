@@ -1,136 +1,151 @@
 package co.samco.mend4.desktop.commands;
 
 import java.io.File;
-import java.util.Arrays;
-import java.util.List;
+import java.io.FileNotFoundException;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
-import org.apache.commons.io.FilenameUtils;
+import co.samco.mend4.core.Settings;
+import co.samco.mend4.desktop.core.I18N;
+import co.samco.mend4.desktop.dao.OSDao;
+import co.samco.mend4.desktop.helper.FileResolveHelper;
+import co.samco.mend4.desktop.helper.SettingsHelper;
+import co.samco.mend4.desktop.output.PrintStreamProvider;
 
 import co.samco.mend4.core.Config;
-import co.samco.mend4.core.impl.SettingsImpl;
-import co.samco.mend4.core.impl.SettingsImpl.CorruptSettingsException;
-import co.samco.mend4.core.impl.SettingsImpl.InvalidSettingNameException;
-import co.samco.mend4.core.impl.SettingsImpl.UnInitializedSettingsException;
+import dagger.Lazy;
 
 import javax.inject.Inject;
 
 public class StatePrinter extends Command {
-    private final String COMMAND_NAME = "get";
+    public static final String COMMAND_NAME = "get";
+    public static final String ALL_FLAG = "-a";
+    public static final String LOGS_FLAG = "-l";
+    public static final String ENCS_FLAG = "-e";
+
+    private final I18N strings;
+    private final PrintStreamProvider log;
+    private final OSDao osDao;
+    private final FileResolveHelper fileResolveHelper;
+    private final Lazy<Settings> settings;
+    private final SettingsHelper settingsHelper;
+
+    private String arg;
+
+    private final List<Function<List<String>, List<String>>> behaviourChain = Arrays.asList(
+            a -> getArg(a),
+            a -> checkArgIsFlag(a),
+            a -> checkArgIsSetting(a),
+            a -> fallbackUnknown(a)
+    );
 
     @Inject
-    public StatePrinter() { }
-
-    @Override
-    public void execute(List<String> args) {
-        if (args.size() < 1 || args.size() > 1) {
-            System.err.println("Wrong number of arguments.");
-            getUsageText();
-            return;
-        }
-
-        try {
-            if (args.get(0).equals("-a")) {
-                for (int i = 0; i < Config.SETTINGS_NAMES_MAP.size(); i++) {
-                    String key = Config.SETTINGS_NAMES_MAP.get(i);
-                    String value = SettingsImpl.instance().getValue(Config.Settings.values()[i]);
-                    StringBuilder sb = new StringBuilder();
-                    sb.append(key);
-                    sb.append("\t");
-                    if (value == null)
-                        sb.append("NOT SET");
-                    else sb.append(value);
-                    System.err.println(sb.toString());
-                    System.err.println();
-                }
-            } else if (args.get(0).equals("-l")) {
-                String logDir = SettingsImpl.instance().getValue(Config.Settings.LOGDIR);
-                if (logDir == null) {
-                    System.err.println("You need to set the "
-                            + Config.SETTINGS_NAMES_MAP.get(Config.Settings.LOGDIR.ordinal())
-                            + " property of your settings file before you can list the files in it.");
-                    return;
-                }
-
-                File logDirFile = new File(logDir);
-                if (!logDirFile.exists() || !logDirFile.isDirectory()) {
-                    System.err.println("Your "
-                            + Config.SETTINGS_NAMES_MAP.get(Config.Settings.LOGDIR.ordinal())
-                            + " does not appear to be valid: "
-                            + logDirFile.getAbsolutePath());
-                    return;
-                }
-
-                File[] files = logDirFile.listFiles();
-                for (File f : files) {
-                    if (FilenameUtils.getExtension(f.getAbsolutePath()).equals("mend")) {
-                        System.out.println(FilenameUtils.getBaseName(f.getAbsolutePath()));
-                    }
-                }
-            } else if (args.get(0).equals("-e")) {
-                String encDir = SettingsImpl.instance().getValue(Config.Settings.ENCDIR);
-                if (encDir == null) {
-                    System.err.println("You need to set the "
-                            + Config.SETTINGS_NAMES_MAP.get(Config.Settings.ENCDIR.ordinal())
-                            + " property of your settings file before you can list the files in it.");
-                    return;
-                }
-
-                File encDirFile = new File(encDir);
-                if (!encDirFile.exists() || !encDirFile.isDirectory()) {
-                    System.err.println("Your "
-                            + Config.SETTINGS_NAMES_MAP.get(Config.Settings.ENCDIR.ordinal())
-                            + " does not appear to be valid: "
-                            + encDirFile.getAbsolutePath());
-                    return;
-                }
-
-                File[] files = encDirFile.listFiles();
-                for (File f : files) {
-                    if (FilenameUtils.getExtension(f.getAbsolutePath()).equals("enc")) {
-                        System.out.println(FilenameUtils.getBaseName(f.getAbsolutePath()));
-                    }
-                }
-            } else {
-                String value = null;
-                for (int i = 0; i < Config.SETTINGS_NAMES_MAP.size(); i++) {
-                    if (Config.SETTINGS_NAMES_MAP.get(i).equals(args.get(0))) {
-                        value = SettingsImpl.instance().getValue(Config.Settings.values()[i]);
-                        break;
-                    }
-                }
-
-                if (value == null)
-                    System.err.println("Value not found.");
-                else System.out.println(value);
-            }
-        } catch (CorruptSettingsException | InvalidSettingNameException | UnInitializedSettingsException e) {
-            System.err.println(e.getMessage());
-        }
+    public StatePrinter(I18N strings, PrintStreamProvider log, OSDao osDao, FileResolveHelper fileResolveHelper,
+                        Lazy<Settings> settings, SettingsHelper settingsHelper) {
+        this.strings = strings;
+        this.log = log;
+        this.osDao = osDao;
+        this.fileResolveHelper = fileResolveHelper;
+        this.settings = settings;
+        this.settingsHelper = settingsHelper;
     }
 
-    @Override
-    public String getUsageText() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("Usage:\tmend get [-a | -l | -e] | <property>");
-        sb.append("\n");
-        sb.append("\n-a\tPrint all properties from your Setting file.");
-        sb.append("\n-l\tPrint the names of log files.");
-        sb.append("\n-e\tPrint the names of enc files.");
-        sb.append("\n");
-        sb.append("\nRecognized properties:");
-
-        for (int i = 0; i < Config.Settings.values().length; i++) {
-            sb.append("\n\t");
-            sb.append(Config.SETTINGS_NAMES_MAP.get(i));
-            sb.append("\t\t");
-            sb.append(Config.SETTINGS_DESCRIPTIONS_MAP.get(i));
+    private List<String> getArg(List<String> args) {
+        if (args.size() != 1) {
+            log.err().println(strings.getf("General.invalidArgNum", COMMAND_NAME));
+            getUsageText();
+            return null;
         }
+        arg = args.get(0);
+        return args;
+    }
+
+    private List<String> checkArgIsFlag(List<String> args) {
+        try {
+            if (arg.equals(ALL_FLAG)) {
+                printAll();
+                return null;
+            } else if (arg.equals(LOGS_FLAG)) {
+                printLogs();
+                return null;
+            } else if (arg.equals(ENCS_FLAG)) {
+                printEncs();
+                return null;
+            }
+        } catch (FileNotFoundException | Settings.InvalidSettingNameException | Settings.CorruptSettingsException e) {
+            log.err().println(e.getMessage());
+        }
+        return args;
+    }
+
+    private List<String> checkArgIsSetting(List<String> args) {
+        Optional<String> value = Arrays.stream(Settings.Name.values())
+                .filter(n -> n.toString().equals(arg))
+                .map(n -> settingsHelper.getSettingValueWrapped(n))
+                .findFirst();
+
+        if (value.isPresent()) {
+            log.out().println(value.get());
+            return null;
+        } else return args;
+    }
+
+    private List<String> fallbackUnknown(List<String> args) {
+        log.err().println(strings.getf("StatePrinter.settingNotFound", arg));
+        return null;
+    }
+
+    private void printEncs() throws Settings.InvalidSettingNameException,
+            Settings.CorruptSettingsException, FileNotFoundException {
+        File encDir = new File(fileResolveHelper.getEncDir());
+        String encs = Arrays.stream(osDao.getDirectoryListing(encDir))
+                .filter(f -> osDao.getFileExtension(f).equals(Config.ENC_FILE_EXTENSION))
+                .map(f -> osDao.getBaseName(f))
+                .collect(Collectors.joining(strings.getNewLine()));
+        log.out().println(encs);
+    }
+
+    private void printLogs() throws Settings.InvalidSettingNameException,
+            Settings.CorruptSettingsException, FileNotFoundException {
+        File logDir = new File(fileResolveHelper.getLogDir());
+        String logs = Arrays.stream(osDao.getDirectoryListing(logDir))
+                .filter(f -> osDao.getFileExtension(f).equals(Config.LOG_FILE_EXTENSION))
+                .map(f -> osDao.getBaseName(f))
+                .collect(Collectors.joining(strings.getNewLine()));
+        log.out().println(logs);
+    }
+
+    private void printAll() {
+        String output = Arrays.stream(Settings.Name.values())
+                .map(n -> formatSettingValue(n))
+                .collect(Collectors.joining(strings.getNewLine(2)));
+        log.out().println(output);
+    }
+
+    private String formatSettingValue(Settings.Name name) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(name.toString());
+        sb.append("\t");
+        String value = settingsHelper.getSettingValueWrapped(name);
+        sb.append(value == null ? strings.get("StatePrinter.notFound") : value);
         return sb.toString();
     }
 
     @Override
+    public void execute(List<String> args) {
+        executeBehaviourChain(behaviourChain, args);
+    }
+
+    @Override
+    public String getUsageText() {
+        return strings.getf("StatePrinter.usage", ALL_FLAG, LOGS_FLAG, ENCS_FLAG,
+                ALL_FLAG, LOGS_FLAG, ENCS_FLAG, settingsHelper.getSettingDescriptions());
+    }
+
+    @Override
     public String getDescriptionText() {
-        return "Get the values of properties in your settings file.";
+        return strings.get("StatePrinter.description");
     }
 
     @Override

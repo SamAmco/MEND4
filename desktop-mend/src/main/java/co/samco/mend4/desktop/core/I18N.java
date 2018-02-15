@@ -2,6 +2,8 @@ package co.samco.mend4.desktop.core;
 
 import java.util.Locale;
 import java.util.ResourceBundle;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class I18N {
     private final ResourceBundle strings;
@@ -16,6 +18,12 @@ public class I18N {
 
     public String get(String name) {
         return strings.getString(name);
+    }
+
+    public String getNewLine(int num) {
+        return IntStream.of(num)
+            .mapToObj(i -> getNewLine())
+            .collect(Collectors.joining());
     }
 
     public String getNewLine() {

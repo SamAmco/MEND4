@@ -11,6 +11,7 @@ public interface OSDao {
     File[] getDirectoryListing(File dirFile) throws FileNotFoundException;
     String getAbsolutePath(File file);
     Process executeCommand(String[] commandArgs) throws IOException;
+    String getBaseName(File file);
     boolean fileExists(File file);
     boolean fileIsFile(File file);
     String getFileExtension(File file);

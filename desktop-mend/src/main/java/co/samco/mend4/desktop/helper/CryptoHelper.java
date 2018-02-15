@@ -53,10 +53,11 @@ public class CryptoHelper {
                 //Make sure you're able to set up a file input stream
                 fis = new FileInputStream(fileToEncrypt);
                 //Check that you're able to set up an output stream
-                String encLocation = SettingsImpl.instance().getValue(Config.Settings.ENCDIR);
+                //TODO only commented to compile
+                String encLocation = "";//SettingsImpl.instance().getValue(Config.Settings.ENCDIR);
                 if (encLocation == null) {
-                    throw new IOException("You need to set the " + Config.SETTINGS_NAMES_MAP.get(Config.Settings
-                            .ENCDIR.ordinal())
+                    //TODO only commented to compile
+                    throw new IOException("You need to set the " //Config.SETTINGS_NAMES_MAP.get(Config.Settings.ENCDIR.ordinal())
                             + " property in your settings file before you can encrypt files to it.");
                 }
                 File outputFile = new File(encLocation + File.separatorChar + name + ".enc");
@@ -101,14 +102,17 @@ public class CryptoHelper {
 
         FileOutputStream fos = null;
         try {
-            String logDir = SettingsImpl.instance().getValue(Config.Settings.LOGDIR);
-            String currentLogName = SettingsImpl.instance().getValue(Config.Settings.CURRENTLOG);
+            //TODO only commented to compile
+            String logDir = "";//SettingsImpl.instance().getValue(Config.Settings.LOGDIR);
+            //TODO only commented to compile
+            String currentLogName = "";//SettingsImpl.instance().getValue(Config.Settings.CURRENTLOG);
             if (logDir == null)
-                throw new IOException("You need to set the " + Config.SETTINGS_NAMES_MAP.get(Config.Settings.LOGDIR
-                        .ordinal())
+                //TODO only commented to compile
+                throw new IOException("You need to set the " //+ Config.SETTINGS_NAMES_MAP.get(Config.Settings.LOGDIR .ordinal())
                         + " property in your settings file before you can encrypt logs to it.");
             if (currentLogName == null) {
-                SettingsImpl.instance().setValue(Config.Settings.CURRENTLOG, "Log");
+                //TODO only commented to compile
+                //SettingsImpl.instance().setValue(Config.Settings.CURRENTLOG, "Log");
                 currentLogName = "Log";
             }
 
@@ -129,7 +133,7 @@ public class CryptoHelper {
             System.out.println("Successfully Logged entry at: " + dateFormat.format(date));
         } catch (NoSuchAlgorithmException | IOException | InvalidKeyException
                 | IllegalBlockSizeException | BadPaddingException
-                | InvalidKeySpecException | TransformerException | SettingsImpl.CorruptSettingsException
+                | InvalidKeySpecException | SettingsImpl.CorruptSettingsException
                 | SettingsImpl.InvalidSettingNameException | NoSuchPaddingException | InvalidAlgorithmParameterException
                 | SettingsImpl.UnInitializedSettingsException e) {
             System.err.println(e.getMessage());
@@ -170,10 +174,11 @@ public class CryptoHelper {
         try {
             File privateKeyFile = new File(Config.CONFIG_PATH + Config.PRIVATE_KEY_FILE_DEC);
             RSAPrivateKey privateKey = EncryptionUtils.getPrivateKeyFromFile(privateKeyFile);
-            String decLocation = SettingsImpl.instance().getValue(Config.Settings.DECDIR);
+            //TODO only commented to compile
+            String decLocation = "";//SettingsImpl.instance().getValue(Config.Settings.DECDIR);
             if (decLocation == null)
-                throw new FileNotFoundException("You need to set the " + Config.SETTINGS_NAMES_MAP.get(Config
-                        .Settings.DECDIR.ordinal())
+                //TODO only commented to compile
+                throw new FileNotFoundException("You need to set the " //+ Config.SETTINGS_NAMES_MAP.get(Config .Settings.DECDIR.ordinal())
                         + " property in your settings file before you can decrypt files to it.");
 
             decLocation += File.separatorChar;

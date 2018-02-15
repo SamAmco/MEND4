@@ -2,6 +2,9 @@ package co.samco.mend4.core.impl;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -24,19 +27,6 @@ import org.xml.sax.SAXException;
 // implementation
 //for an xml based settings file
 public abstract class SettingsImpl implements Settings {
-    private static Settings instance;
-
-    public static Settings instance() throws UnInitializedSettingsException {
-        if (instance == null)
-            throw new UnInitializedSettingsException("Your Settings implementation has not been defined.");
-
-        return instance;
-    }
-
-    public static void InitializeSettings(Settings instance) {
-        SettingsImpl.instance = instance;
-    }
-
     protected Document doc;
     protected Element rootElement;
     protected File settingsFile;
@@ -58,9 +48,10 @@ public abstract class SettingsImpl implements Settings {
         }
     }
 
-    public void setValue(co.samco.mend4.core.Config.Settings name, String value)
+    @Override
+    public void setValue(Name name, String value)
             throws TransformerException, CorruptSettingsException, InvalidSettingNameException {
-        String strName = Config.SETTINGS_NAMES_MAP.get(name.ordinal());
+        String strName = name.toString();
         if (strName == null)
             throw new InvalidSettingNameException("Could not find the given Setting name while setting value");
         if (rootElement == null)
@@ -96,9 +87,9 @@ public abstract class SettingsImpl implements Settings {
         transformer.transform(source, result);
     }
 
-    public String getValue(co.samco.mend4.core.Config.Settings name)
-            throws CorruptSettingsException, InvalidSettingNameException {
-        String strName = Config.SETTINGS_NAMES_MAP.get(name.ordinal());
+    @Override
+    public String getValue(Name name) throws CorruptSettingsException, InvalidSettingNameException {
+        String strName = name.toString();
         if (strName == null)
             throw new InvalidSettingNameException("Could not find the given Setting name while setting value");
 
@@ -126,30 +117,4 @@ public abstract class SettingsImpl implements Settings {
             return null;
         else return r;
     }
-
-
-    public static class UnInitializedSettingsException extends Exception {
-        private static final long serialVersionUID = -1209609585057442380L;
-
-        public UnInitializedSettingsException(String message) {
-            super(message);
-        }
-    }
-
-    public static class CorruptSettingsException extends Exception {
-        private static final long serialVersionUID = -7872915002684524393L;
-
-        public CorruptSettingsException(String message) {
-            super(message);
-        }
-    }
-
-    public static class InvalidSettingNameException extends Exception {
-        private static final long serialVersionUID = -396660409805269958L;
-
-        public InvalidSettingNameException(String message) {
-            super(message);
-        }
-    }
-
 }

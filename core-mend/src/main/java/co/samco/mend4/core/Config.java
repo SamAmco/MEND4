@@ -1,17 +1,14 @@
 package co.samco.mend4.core;
 
 import java.security.NoSuchAlgorithmException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
 
 import co.samco.mend4.core.impl.SettingsImpl;
-import co.samco.mend4.core.impl.SettingsImpl.CorruptSettingsException;
-import co.samco.mend4.core.impl.SettingsImpl.InvalidSettingNameException;
-import co.samco.mend4.core.impl.SettingsImpl.UnInitializedSettingsException;
+import co.samco.mend4.core.Settings.CorruptSettingsException;
+import co.samco.mend4.core.Settings.InvalidSettingNameException;
+import co.samco.mend4.core.Settings.UnInitializedSettingsException;
 
 public class Config {
     public static final String CORE_VERSION_NUMBER = "4.0.8";
@@ -35,65 +32,6 @@ public class Config {
         STANDARD_IV = new IvParameterSpec(iv);
     }
 
-    public static enum Settings {
-        PUBLICKEY,
-        PRIVATEKEY,
-        CURRENTLOG,
-        LOGDIR,
-        ENCDIR,
-        DECDIR,
-        PASSCHECK,
-        RSAKEYSIZE,
-        AESKEYSIZE,
-        PREFERREDRSA,
-        PREFERREDAES,
-        SHREDCOMMAND
-    }
-
-    public static final Map<Integer, String> SETTINGS_NAMES_MAP;
-    public static final Map<Integer, String> SETTINGS_DESCRIPTIONS_MAP;
-
-    static {
-        Map<Integer, String> m = new HashMap<Integer, String>();
-        int i = 0;
-        m.put(i++, "publickey");
-        m.put(i++, "privatekey");
-        m.put(i++, "currentlog");
-        m.put(i++, "logdir");
-        m.put(i++, "encdir");
-        m.put(i++, "decdir");
-        m.put(i++, "passcheck");
-        m.put(i++, "rsakeysize");
-        m.put(i++, "aeskeysize");
-        m.put(i++, "preferredrsa");
-        m.put(i++, "preferredaes");
-        m.put(i++, "shredcommand");
-
-        SETTINGS_NAMES_MAP = Collections.unmodifiableMap(m);
-    }
-
-    //TODO move these to strings
-    static {
-        Map<Integer, String> m = new HashMap<Integer, String>();
-        int i = 0;
-        m.put(i++, "The RSA key used to encrypt encoded in url safe base64.");
-        m.put(i++, "The RSA key used to decrypt encoded in url safe base64, and encrypted with AES using the MD5 hash" +
-                " of your password.");
-        m.put(i++, "The log file currently being used.");
-        m.put(i++, "The directory where mend expects all your log files to exist by default.");
-        m.put(i++, "The directory where mend will output encrypted files.");
-        m.put(i++, "The directory where mend will temporarily store decrypted files.");
-        m.put(i++, "A piece of encrypted data used to check the validity of your password");
-        m.put(i++, "The preferred key size to use for RSA. You probably won't want to touch this.");
-        m.put(i++, "The preferred key size to use for AES. You probably won't want to touch this.");
-        m.put(i++, "The preferred transform for RSA ciphers. You probably won't want to touch this. The full list of " +
-                "available transforms is specific to your jvm.");
-        m.put(i++, "The preferred transform for AES ciphers. You probably won't want to touch this. The full list of " +
-                "available transforms is specific to your jvm.");
-        m.put(i++, "The command that will be run to shred a file, where <filename> is the file to be shredded.");
-
-        SETTINGS_DESCRIPTIONS_MAP = Collections.unmodifiableMap(m);
-    }
 
     public static int AES_KEY_GEN_ITERATIONS = 65536;
 
@@ -105,7 +43,8 @@ public class Config {
             return _PREFERRED_RSA_ALG;
         //Set the rsa algorithm
         //If the user has a set preference for the algo then use that
-        String storedRsaAlgStr = SettingsImpl.instance().getValue(Settings.PREFERREDRSA);
+        //TODO only commented to compile
+        String storedRsaAlgStr = "";//SettingsImpl.instance().getValue(Settings.Name.PREFERREDRSA);
         if (storedRsaAlgStr != null)
             _PREFERRED_RSA_ALG = storedRsaAlgStr;
             //otherwise use the max recommended available
@@ -124,7 +63,8 @@ public class Config {
 
         //Set the aes algorithm
         //If the user has a set preference for the algo then use that
-        String storedAesAlgStr = SettingsImpl.instance().getValue(Settings.PREFERREDAES);
+        //TODO only commented to compile
+        String storedAesAlgStr = "";//SettingsImpl.instance().getValue(Settings.Name.PREFERREDAES);
         if (storedAesAlgStr != null)
             _PREFERRED_AES_ALG = storedAesAlgStr;
             //otherwise use the max recommended available
@@ -143,7 +83,8 @@ public class Config {
 
         //Set the rsa key size
         //If the user has a set preference for the size then use that
-        String storedRsaLimitStr = SettingsImpl.instance().getValue(Settings.RSAKEYSIZE);
+        //TODO only commented to compile
+        String storedRsaLimitStr = "";//SettingsImpl.instance().getValue(Settings.Name.RSAKEYSIZE);
         if (storedRsaLimitStr != null)
             _RSA_KEY_SIZE = Integer.parseInt(storedRsaLimitStr);
             //otherwise use the max recommended available
@@ -162,7 +103,8 @@ public class Config {
 
         //Set the aes key size
         //If the user has a set preference for the size then use that
-        String storedAesLimitStr = SettingsImpl.instance().getValue(Settings.AESKEYSIZE);
+        //TODO only commented to compile
+        String storedAesLimitStr = "";//SettingsImpl.instance().getValue(Settings.Name.AESKEYSIZE);
         if (storedAesLimitStr != null)
             _AES_KEY_SIZE = Integer.parseInt(storedAesLimitStr);
             //otherwise use the max recommended available

@@ -30,7 +30,8 @@ public class Unlock extends Command {
         char[] password = System.console().readPassword("Please enter your password: ");
 
         try {
-            String passCheck = SettingsImpl.instance().getValue(Config.Settings.PASSCHECK);
+            //TODO only commented to compile
+            String passCheck = "";//SettingsImpl.instance().getValue(Config.Settings.PASSCHECK);
             byte[] compCheck = Base64.decodeBase64(passCheck);
 
             //generate an aes key from the password
@@ -58,9 +59,11 @@ public class Unlock extends Command {
             //    new Lock().execute(new ArrayList<>());
 
             //Decrypt the private key with the password.
-            byte[] encryptedPrivateKey = Base64.decodeBase64(SettingsImpl.instance().getValue(Config.Settings.PRIVATEKEY));
+            //TODO only commented to compile
+            byte[] encryptedPrivateKey = new byte[0];//Base64.decodeBase64(SettingsImpl.instance().getValue(Config.Settings.PRIVATEKEY));
             byte[] decryptedPrivateKey = aesCipher.doFinal(encryptedPrivateKey);
-            byte[] publicKey = Base64.decodeBase64(SettingsImpl.instance().getValue(Config.Settings.PUBLICKEY));
+            //TODO only commented to compile
+            byte[] publicKey = new byte[0];//Base64.decodeBase64(SettingsImpl.instance().getValue(Config.Settings.PUBLICKEY));
 
             //Write the decrypted private key to a file
             File privateKeyFile = new File(Config.CONFIG_PATH + Config.PRIVATE_KEY_FILE_DEC);

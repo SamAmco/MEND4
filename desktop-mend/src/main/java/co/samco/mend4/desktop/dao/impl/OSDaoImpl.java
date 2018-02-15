@@ -11,17 +11,15 @@ import java.nio.file.CopyOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+//TODO clean this up, take strings out etc
 public class OSDaoImpl implements OSDao {
 
     public OSDaoImpl() {}
 
     @Override
     public File[] getDirectoryListing(File dirFile) throws FileNotFoundException {
-        File[] directoryListing = dirFile.listFiles();
-        if (directoryListing == null) {
-            throw new FileNotFoundException("Could not find the directory: " + dirFile.getAbsolutePath());
-        }
-        return directoryListing;
+        assertDirectoryExists(dirFile);
+        return dirFile.listFiles();
     }
 
     @Override
@@ -32,6 +30,11 @@ public class OSDaoImpl implements OSDao {
     @Override
     public Process executeCommand(String[] commandArgs) throws IOException {
         return Runtime.getRuntime().exec(commandArgs);
+    }
+
+    @Override
+    public String getBaseName(File file) {
+        return FilenameUtils.getBaseName(file.getAbsolutePath());
     }
 
     @Override
@@ -67,6 +70,12 @@ public class OSDaoImpl implements OSDao {
     @Override
     public Path moveFile(Path source, Path target, CopyOption... options) throws IOException {
         return Files.move(source, target, options);
+    }
+
+    private void assertDirectoryExists(File file) throws FileNotFoundException {
+        if (!file.exists() || !file.isDirectory() || file.listFiles() == null) {
+            throw new FileNotFoundException("Could not find the directory: " + file.getAbsolutePath());
+        }
     }
 
 }

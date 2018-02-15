@@ -8,11 +8,11 @@ import javax.xml.transform.TransformerException;
 
 import co.samco.mend4.core.Config;
 import co.samco.mend4.core.Settings;
-import co.samco.mend4.core.impl.SettingsImpl.CorruptSettingsException;
-import co.samco.mend4.core.impl.SettingsImpl.InvalidSettingNameException;
 import co.samco.mend4.desktop.core.I18N;
+import co.samco.mend4.desktop.helper.SettingsHelper;
 import co.samco.mend4.desktop.output.PrintStreamProvider;
 import dagger.Lazy;
+import org.apache.commons.lang3.EnumUtils;
 
 public class SetProperty extends Command {
     public static final String COMMAND_NAME = "set";
@@ -20,6 +20,7 @@ public class SetProperty extends Command {
     private final PrintStreamProvider log;
     private final I18N strings;
     private final Lazy<Settings> settings;
+    private final SettingsHelper settingsHelper;
 
     private String propertyName;
     private String value;
@@ -31,10 +32,12 @@ public class SetProperty extends Command {
     );
 
     @Inject
-    public SetProperty(PrintStreamProvider log, I18N strings, Lazy<Settings> settings) {
+    public SetProperty(PrintStreamProvider log, I18N strings, Lazy<Settings> settings,
+                       SettingsHelper settingsHelper) {
         this.log = log;
         this.strings = strings;
         this.settings = settings;
+        this.settingsHelper = settingsHelper;
     }
 
     private List<String> assertCorrectNumArgs(List<String> args) {
@@ -50,7 +53,7 @@ public class SetProperty extends Command {
     private List<String> assertPropertyExists(List<String> args) {
         propertyName = args.get(0);
         value = args.get(1);
-        if (!Config.SETTINGS_NAMES_MAP.values().contains(propertyName)) {
+        if (!settingsHelper.settingExists(propertyName)) {
             log.err().println(strings.getf("SetProperty.notRecognised", propertyName));
             log.err().println();
             log.err().println(getUsageText());
@@ -61,14 +64,13 @@ public class SetProperty extends Command {
 
     private List<String> setProperty(List<String> args) {
         try {
-            Integer propertyIndex = Config.SETTINGS_NAMES_MAP.entrySet().stream()
-                    .filter(entry -> entry.getValue().equals(propertyName))
-                    .map(Map.Entry::getKey)
+            Settings.Name name = Arrays.stream(Settings.Name.values())
+                    .filter(n -> n.toString().equals(propertyName))
                     .findFirst()
                     .get();
-            settings.get().setValue(Config.Settings.values()[propertyIndex], value);
+            settings.get().setValue(name, value);
             log.err().println(strings.getf("SetProperty.successful", propertyName, value));
-        } catch (TransformerException | CorruptSettingsException | InvalidSettingNameException e) {
+        } catch (TransformerException | Settings.CorruptSettingsException | Settings.InvalidSettingNameException e) {
             log.err().println(e.getMessage());
         }
         return args;
@@ -81,20 +83,7 @@ public class SetProperty extends Command {
 
     @Override
     public String getUsageText() {
-        StringBuilder sb = new StringBuilder();
-        sb.append(strings.getf("SetProperty.usage", COMMAND_NAME));
-        sb.append(strings.getNewLine());
-        sb.append(strings.getNewLine());
-        sb.append(strings.get("SetProperty.recognisedProperties"));
-
-        for (int i = 0; i < Config.Settings.values().length; i++) {
-            sb.append(strings.getNewLine());
-            sb.append("\t");
-            sb.append(Config.SETTINGS_NAMES_MAP.get(i));
-            sb.append("\t\t");
-            sb.append(Config.SETTINGS_DESCRIPTIONS_MAP.get(i));
-        }
-        return sb.toString();
+        return strings.getf("SetProperty.usage", COMMAND_NAME, settingsHelper.getSettingDescriptions());
     }
 
 

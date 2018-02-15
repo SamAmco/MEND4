@@ -17,8 +17,8 @@ import co.samco.mend4.desktop.output.PrintStreamProvider;
 import dagger.Lazy;
 
 import co.samco.mend4.core.Config;
-import co.samco.mend4.core.impl.SettingsImpl.CorruptSettingsException;
-import co.samco.mend4.core.impl.SettingsImpl.InvalidSettingNameException;
+import co.samco.mend4.core.Settings.CorruptSettingsException;
+import co.samco.mend4.core.Settings.InvalidSettingNameException;
 
 public class Decrypt extends Command {
     public static final String COMMAND_NAME = "dec";

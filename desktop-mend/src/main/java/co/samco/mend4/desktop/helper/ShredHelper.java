@@ -1,8 +1,8 @@
 package co.samco.mend4.desktop.helper;
 
-import co.samco.mend4.core.Config;
 import co.samco.mend4.core.Settings;
-import co.samco.mend4.core.impl.SettingsImpl;
+import co.samco.mend4.core.Settings.InvalidSettingNameException;
+import co.samco.mend4.core.Settings.CorruptSettingsException;
 import co.samco.mend4.desktop.core.I18N;
 import co.samco.mend4.desktop.dao.OSDao;
 import co.samco.mend4.desktop.output.PrintStreamProvider;
@@ -39,16 +39,17 @@ public class ShredHelper {
                 .toArray(String[]::new);
     }
 
-    private String getShredCommand() throws SettingsImpl.CorruptSettingsException, SettingsImpl.InvalidSettingNameException {
-        String shredCommand = settings.get().getValue(Config.Settings.SHREDCOMMAND);
+    private String getShredCommand() throws CorruptSettingsException, InvalidSettingNameException {
+        String shredCommand = settings.get().getValue(Settings.Name.SHREDCOMMAND);
         if (shredCommand == null) {
-            throw new SettingsImpl.CorruptSettingsException(strings.getf("Shred.noShredCommand",
-                    Config.SETTINGS_NAMES_MAP.get(Config.Settings.SHREDCOMMAND.ordinal())));
+            throw new CorruptSettingsException(strings.getf("Shred.noShredCommand",
+                    Settings.Name.SHREDCOMMAND.toString()));
         }
         return shredCommand;
     }
 
-    public void tryShredFile(String absolutePath) throws IOException, SettingsImpl.InvalidSettingNameException, SettingsImpl.CorruptSettingsException {
+    public void tryShredFile(String absolutePath) throws IOException,
+            Settings.InvalidSettingNameException, CorruptSettingsException {
         String shredCommand = getShredCommand();
         String[] shredCommandArgs = generateShredCommandArgs(absolutePath, shredCommand);
         log.err().println(strings.getf("Shred.cleaning", absolutePath));
@@ -61,8 +62,8 @@ public class ShredHelper {
         }
     }
 
-    public void shredFilesInDirectory(String dir) throws IOException, SettingsImpl.InvalidSettingNameException,
-            SettingsImpl.CorruptSettingsException {
+    public void shredFilesInDirectory(String dir) throws IOException,
+            InvalidSettingNameException, CorruptSettingsException {
         File[] directoryListing = osDao.getDirectoryListing(new File(dir));
         for (File child : directoryListing) {
             tryShredFile(osDao.getAbsolutePath(child));

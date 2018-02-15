@@ -59,7 +59,7 @@ public class MainTest {
         when(runner.defaultCommand()).thenReturn(defaultCommand);
         main.run(runner, Collections.emptyList());
         verify(runner).defaultCommand();
-        verify(defaultCommand).executeCommand(anyList());
+        verify(defaultCommand).executeCommand(anyListOf(String.class));
     }
 
     @Test
