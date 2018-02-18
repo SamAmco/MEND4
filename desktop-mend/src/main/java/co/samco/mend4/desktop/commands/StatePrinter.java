@@ -37,7 +37,7 @@ public class StatePrinter extends Command {
             a -> getArg(a),
             a -> checkArgIsFlag(a),
             a -> checkArgIsSetting(a),
-            a -> fallbackUnknown(a)
+            a -> fallbackUnknown()
     );
 
     @Inject
@@ -91,7 +91,7 @@ public class StatePrinter extends Command {
         } else return args;
     }
 
-    private List<String> fallbackUnknown(List<String> args) {
+    private List<String> fallbackUnknown() {
         log.err().println(strings.getf("StatePrinter.settingNotFound", arg));
         return null;
     }

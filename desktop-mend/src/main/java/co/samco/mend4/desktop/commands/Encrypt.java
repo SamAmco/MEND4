@@ -31,7 +31,7 @@ public class Encrypt extends Command implements InputListener {
             a -> shouldEncryptFromArg(a),
             a -> tooManyArgs(a),
             a -> encryptFile(a),
-            a -> unknownBehaviour(a)
+            a -> unknownBehaviour()
     );
 
     @Inject
@@ -47,26 +47,13 @@ public class Encrypt extends Command implements InputListener {
         executeBehaviourChain(behaviourChain, args);
     }
 
-    protected List<String> encryptFile(List<String> args) {
-        String name = null;
-        if (args.size() > 1) {
-            name = args.get(1);
+    protected List<String> shouldDropHeader(List<String> args) {
+        List<String> newArgs = new ArrayList<>(args);
+        if (newArgs.contains(APPEND_FLAG)) {
+            dropHeader = true;
+            newArgs.remove(APPEND_FLAG);
         }
-        cryptoHelper.encryptFile(args.get(0), name);
-        return null;
-    }
-
-    protected List<String> unknownBehaviour(List<String> args) {
-        log.err().println(strings.getf("Encrypt.malformedCommand", COMMAND_NAME));
-        return null;
-    }
-
-    protected List<String> tooManyArgs(List<String> args) {
-        if (args.size() > 2) {
-            log.err().println(strings.getf("General.invalidArgNum", COMMAND_NAME));
-            return null;
-        }
-        return args;
+        return newArgs;
     }
 
     protected List<String> shouldEncryptFromTextEditor(List<String> args) {
@@ -89,13 +76,26 @@ public class Encrypt extends Command implements InputListener {
         return args;
     }
 
-    protected List<String> shouldDropHeader(List<String> args) {
-        List<String> newArgs = new ArrayList<>(args);
-        if (newArgs.contains(APPEND_FLAG)) {
-            dropHeader = true;
-            newArgs.remove(APPEND_FLAG);
+    protected List<String> tooManyArgs(List<String> args) {
+        if (args.size() > 2) {
+            log.err().println(strings.getf("General.invalidArgNum", COMMAND_NAME));
+            return null;
         }
-        return newArgs;
+        return args;
+    }
+
+    protected List<String> encryptFile(List<String> args) {
+        String name = null;
+        if (args.size() > 1) {
+            name = args.get(1);
+        }
+        cryptoHelper.encryptFile(args.get(0), name);
+        return null;
+    }
+
+    protected List<String> unknownBehaviour() {
+        log.err().println(strings.getf("Encrypt.malformedCommand", COMMAND_NAME));
+        return null;
     }
 
     @Override

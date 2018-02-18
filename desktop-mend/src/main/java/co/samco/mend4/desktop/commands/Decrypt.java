@@ -38,7 +38,7 @@ public class Decrypt extends Command {
             a -> getFileIdentifier(a),
             a -> checkShouldBeSilent(a),
             a -> tryResolveFileAsEncId(a),
-            a -> tryResolveFileAsLog(a)
+            a -> tryResolveFileAsLog()
     );
 
     @Inject
@@ -84,7 +84,7 @@ public class Decrypt extends Command {
         return null;
     }
 
-    private List<String> tryResolveFileAsLog(List<String> args) {
+    private List<String> tryResolveFileAsLog() {
         try {
             File file = fileResolveHelper.resolveLogFilePath(fileIdentifier);
             fileResolveHelper.assertFileExistsAndHasExtension(fileIdentifier, Config.LOG_FILE_EXTENSION, file);
