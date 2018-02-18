@@ -3,10 +3,7 @@ package co.samco.mend4.desktop.dao.impl;
 import co.samco.mend4.desktop.dao.OSDao;
 import org.apache.commons.io.FilenameUtils;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.nio.file.CopyOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -65,6 +62,11 @@ public class OSDaoImpl implements OSDao {
     @Override
     public InputStream getStdIn() {
         return System.in;
+    }
+
+    @Override
+    public Console getConsole() {
+        return System.console();
     }
 
     @Override

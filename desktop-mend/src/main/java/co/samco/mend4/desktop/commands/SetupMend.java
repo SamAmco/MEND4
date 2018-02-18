@@ -10,8 +10,10 @@ import java.security.interfaces.RSAPublicKey;
 import java.security.spec.KeySpec;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Function;
 
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
@@ -21,72 +23,107 @@ import javax.crypto.spec.SecretKeySpec;
 import javax.inject.Inject;
 
 import co.samco.mend4.core.Config;
-import co.samco.mend4.core.impl.SettingsImpl;
 
-import org.apache.commons.codec.binary.Base64;
+import co.samco.mend4.core.Settings;
+import co.samco.mend4.core.impl.SettingsImpl;
+import co.samco.mend4.desktop.dao.OSDao;
+import dagger.Lazy;
 
 public class SetupMend extends Command {
-    private final String COMMAND_NAME = "setup";
+    public static final String COMMAND_NAME = "setup";
+    public static final String FORCE_FLAG = "-f";
+
+    private final OSDao osDao;
+    private final Lazy<Settings> settings;
+
+    private String password;
+    private List<Function<List<String>, List<String>>> behaviourChain = Arrays.asList(
+            a -> checkAlreadySetup(a),
+            a -> checkArgNum(a),
+            a -> readPassword(a),
+            a -> ensureSettingsPathExists(a),
+            a -> setKeys(a),
+            a -> setEncryptionProperties(a),
+            a -> printSuccess()
+    );
 
     @Inject
-    public SetupMend() { }
+    public SetupMend(OSDao osDao, Lazy<Settings> settings) {
+        this.osDao = osDao;
+        this.settings = settings;
+    }
 
-    @Override
-    public void execute(List<String> args) {
-        boolean setupExists = false;
-        if (new File(Config.CONFIG_PATH + Config.SETTINGS_FILE).exists()) {
-            System.err.println("WARNING: MEND already has a Settings.xml file at " + Config.CONFIG_PATH + Config
-                    .SETTINGS_FILE);
-            setupExists = true;
+    private List<String> checkAlreadySetup(List<String> args) {
+        if (args.contains(FORCE_FLAG)) {
+            args.remove(FORCE_FLAG);
+        } else if (osDao.fileExists(new File(Config.CONFIG_PATH + Config.SETTINGS_FILE))) {
+            System.err.println("MEND already has a Settings.xml file at " + Config.CONFIG_PATH + Config.SETTINGS_FILE);
+            System.err.println("Please use the -f flag to overwrite it.");
+            return null;
         }
+        return args;
+    }
 
+    private List<String> checkArgNum(List<String> args) {
         if (args.size() != 2 && args.size() != 0) {
             System.err.println("Incorrect number of arguments!");
             System.err.println(getUsageText());
+            return null;
         }
+        return args;
+    }
 
-        String password = null;
+    private List<String> readPassword(List<String> args) {
         while (password == null) {
-            char[] passArr1 = System.console().readPassword("Please enter a password: ");
+            char[] passArr1 = osDao.getConsole().readPassword("Please enter a password: ");
             String pass1 = new String(passArr1);
-            char[] passArr2 = System.console().readPassword("Please re-enter your password: ");
+            char[] passArr2 = osDao.getConsole().readPassword("Please re-enter your password: ");
             String pass2 = new String(passArr2);
-            if (pass1.equals(pass2))
+            if (pass1.equals(pass2)) {
                 password = pass1;
-            else
+            } else {
                 System.err.println("Your passwords did not match. Please try again.");
+            }
         }
+        return args;
+    }
 
+    private List<String> ensureSettingsPathExists(List<String> args) {
+        System.out.println("Creating Settings.xml in " + Config.CONFIG_PATH);
+        new File(Config.CONFIG_PATH).mkdirs();
+        return args;
+    }
 
-        //TODO its probably here that we'll want to warn the user if they don't have unlimited crypto policies installed
+    private List<String> setKeys(List<String> args) {
         try {
-            if (!setupExists) {
-                //Ensure the settings path exists
-                System.out.println("Creating Settings.xml in " + Config.CONFIG_PATH);
-                new File(Config.CONFIG_PATH).mkdirs();
-            }
-
-            if (args.size() == 2)
+            if (args.size() == 2) {
                 setKeysFromInputFile(password, args.get(0), args.get(1));
-            else
+            } else {
                 setKeysGenerated(password);
-
-            if (!setupExists) {
-                //TODO only commented to compile
-                //SettingsImpl.instance().setValue(Config.Settings.PREFERREDAES, Config.PREFERRED_AES_ALG());
-                //TODO only commented to compile
-                //SettingsImpl.instance().setValue(Config.Settings.PREFERREDRSA, Config.PREFERRED_RSA_ALG());
-                //TODO only commented to compile
-                //SettingsImpl.instance().setValue(Config.Settings.AESKEYSIZE, Integer.toString(Config.AES_KEY_SIZE()));
-                //TODO only commented to compile
-                //SettingsImpl.instance().setValue(Config.Settings.RSAKEYSIZE, Integer.toString(Config.RSA_KEY_SIZE()));
-
             }
-            System.out.println("MEND Successfully set up.");
-
         } catch (Exception e) {
-            System.err.println(e.getMessage());
+            e.printStackTrace();
         }
+        return args;
+    }
+
+    private List<String> setEncryptionProperties(List<String> args) {
+        //TODO probably move the preferred algo stuff out of Config
+        settings.get().setValue(Settings.Name.PREFERREDAES, Config.PREFERRED_AES_ALG());
+        settings.get().setValue(Settings.Name.PREFERREDRSA, Config.PREFERRED_RSA_ALG());
+        settings.get().setValue(Settings.Name.AESKEYSIZE, Integer.toString(Config.AES_KEY_SIZE()));
+        settings.get().setValue(Settings.Name.RSAKEYSIZE, Integer.toString(Config.RSA_KEY_SIZE()));
+        return args;
+    }
+
+    private List<String> printSuccess() {
+        System.out.println("MEND Successfully set up.");
+        return null;
+    }
+
+    @Override
+    public void execute(List<String> args) {
+        executeBehaviourChain(behaviourChain, args);
     }
 
     private void setKeysFromInputFile(String password, String privateKeyFilePath, String publicKeyFilePath) throws
