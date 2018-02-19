@@ -27,7 +27,7 @@ import co.samco.mend4.desktop.helper.FileResolveHelper;
 import co.samco.mend4.desktop.output.PrintStreamProvider;
 import dagger.Lazy;
 
-public class SetupMend extends Command {
+public class Setup extends Command {
     public static final String COMMAND_NAME = "setup";
     public static final String FORCE_FLAG = "-f";
 
@@ -50,8 +50,8 @@ public class SetupMend extends Command {
     );
 
     @Inject
-    public SetupMend(PrintStreamProvider log, I18N strings, OSDao osDao, CryptoHelper cryptoHelper,
-                     FileResolveHelper fileResolveHelper, Lazy<Settings> settings) {
+    public Setup(PrintStreamProvider log, I18N strings, OSDao osDao, CryptoHelper cryptoHelper,
+                 FileResolveHelper fileResolveHelper, Lazy<Settings> settings) {
         this.log = log;
         this.strings = strings;
         this.osDao = osDao;
@@ -81,9 +81,9 @@ public class SetupMend extends Command {
 
     private List<String> readPassword(List<String> args) {
         while (password == null) {
-            char[] passArr1 = osDao.getConsole().readPassword(strings.get("SetupMend.enterPassword"));
+            char[] passArr1 = osDao.readPassword(strings.get("SetupMend.enterPassword"));
             String pass1 = new String(passArr1);
-            char[] passArr2 = osDao.getConsole().readPassword(strings.get("SetupMend.reEnterPassword"));
+            char[] passArr2 = osDao.readPassword(strings.get("SetupMend.reEnterPassword"));
             String pass2 = new String(passArr2);
             if (pass1.equals(pass2)) {
                 password = pass1;
@@ -95,8 +95,8 @@ public class SetupMend extends Command {
     }
 
     private List<String> ensureSettingsPathExists(List<String> args) {
-        log.out().println("Creating Settings.xml in " + Config.CONFIG_PATH);
-        new File(Config.CONFIG_PATH).mkdirs();
+        log.out().println(strings.getf("SetupMend.creating", Config.CONFIG_PATH));
+        osDao.mkdirs(new File(Config.CONFIG_PATH));
         return args;
     }
 
@@ -111,26 +111,27 @@ public class SetupMend extends Command {
                 | TransformerException | Settings.CorruptSettingsException | InvalidKeySpecException
                 | IllegalBlockSizeException | Settings.InvalidSettingNameException | BadPaddingException
                 | NoSuchPaddingException | IOException e) {
-            e.printStackTrace();
+            log.err().println(e.getMessage());
+            return null;
         }
         return args;
     }
 
     private List<String> setEncryptionProperties(List<String> args) {
-        //TODO probably move the preferred algo stuff out of Config
         try {
             settings.get().setValue(Settings.Name.PREFERREDAES, Config.PREFERRED_AES_ALG);
             settings.get().setValue(Settings.Name.PREFERREDRSA, Config.PREFERRED_RSA_ALG);
             settings.get().setValue(Settings.Name.AESKEYSIZE, Integer.toString(Config.AES_KEY_SIZE));
             settings.get().setValue(Settings.Name.RSAKEYSIZE, Integer.toString(Config.RSA_KEY_SIZE));
         } catch (TransformerException | Settings.CorruptSettingsException | Settings.InvalidSettingNameException e) {
-            e.printStackTrace();
+            log.err().println(e.getMessage());
+            return null;
         }
         return args;
     }
 
     private List<String> printSuccess() {
-        log.out().println("MEND Successfully set up.");
+        log.err().println(strings.get("SetupMend.complete"));
         return null;
     }
 
@@ -168,12 +169,12 @@ public class SetupMend extends Command {
 
     @Override
     public String getUsageText() {
-        return "Usage:\tmend setup [<path_to_private_key_file> <path_to_public_key_file>]";
+        return strings.getf("SetupMend.usage", COMMAND_NAME);
     }
 
     @Override
     public String getDescriptionText() {
-        return "Run this command first. It creates some basic config necessary.";
+        return strings.get("SetupMend.description");
     }
 
     @Override

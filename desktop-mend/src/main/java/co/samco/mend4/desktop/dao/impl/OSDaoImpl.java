@@ -14,6 +14,11 @@ public class OSDaoImpl implements OSDao {
     public OSDaoImpl() {}
 
     @Override
+    public void mkdirs(File file) {
+       file.mkdirs();
+    }
+
+    @Override
     public File[] getDirectoryListing(File dirFile) throws FileNotFoundException {
         assertDirectoryExists(dirFile);
         return dirFile.listFiles();
@@ -55,18 +60,13 @@ public class OSDaoImpl implements OSDao {
     }
 
     @Override
-    public String getFileName(File file) {
-        return file.getName();
-    }
-
-    @Override
     public InputStream getStdIn() {
         return System.in;
     }
 
     @Override
-    public Console getConsole() {
-        return System.console();
+    public char[] readPassword(String message) {
+        return System.console().readPassword(message);
     }
 
     @Override

@@ -5,6 +5,7 @@ import java.nio.file.CopyOption;
 import java.nio.file.Path;
 
 public interface OSDao {
+    void mkdirs(File file);
     File[] getDirectoryListing(File dirFile) throws FileNotFoundException;
     String getAbsolutePath(File file);
     Process executeCommand(String[] commandArgs) throws IOException;
@@ -13,8 +14,7 @@ public interface OSDao {
     boolean fileIsFile(File file);
     String getFileExtension(File file);
     String getFileExtension(String filePath);
-    String getFileName(File file);
     InputStream getStdIn();
-    Console getConsole();
+    char[] readPassword(String message);
     Path moveFile(Path source, Path target, CopyOption... options) throws IOException;
 }

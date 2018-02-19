@@ -20,7 +20,7 @@ public abstract class CommandsModule {
     @IntoSet @Binds abstract Command provideLock(Lock c);
     @IntoSet @Binds abstract Command provideMerge(Merge c);
     @IntoSet @Binds abstract Command provideSetProperty(SetProperty c);
-    @IntoSet @Binds abstract Command provideSetupMend(SetupMend c);
+    @IntoSet @Binds abstract Command provideSetupMend(Setup c);
     @IntoSet @Binds abstract Command provideStatePrinter(StatePrinter c);
     @IntoSet @Binds abstract Command provideUnlock(Unlock c);
 
