@@ -9,12 +9,11 @@ import co.samco.mend4.desktop.dao.OSDao;
 import co.samco.mend4.desktop.helper.CryptoHelper;
 import co.samco.mend4.desktop.helper.FileResolveHelper;
 import co.samco.mend4.desktop.output.PrintStreamProvider;
-import helper.FakeLazy;
+import testutils.FakeLazy;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
-import org.mockito.stubbing.Answer;
 
 import java.io.File;
 import java.io.FileNotFoundException;

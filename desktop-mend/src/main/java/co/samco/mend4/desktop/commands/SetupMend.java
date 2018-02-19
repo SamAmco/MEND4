@@ -1,39 +1,41 @@
 package co.samco.mend4.desktop.commands;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.security.KeyFactory;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
+import java.io.*;
+import java.security.*;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
-import java.security.spec.KeySpec;
+import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
 
-import javax.crypto.Cipher;
-import javax.crypto.SecretKey;
-import javax.crypto.SecretKeyFactory;
-import javax.crypto.spec.PBEKeySpec;
-import javax.crypto.spec.SecretKeySpec;
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 import javax.inject.Inject;
+import javax.xml.transform.TransformerException;
 
 import co.samco.mend4.core.Config;
 
 import co.samco.mend4.core.Settings;
-import co.samco.mend4.core.impl.SettingsImpl;
+import co.samco.mend4.desktop.core.I18N;
 import co.samco.mend4.desktop.dao.OSDao;
+import co.samco.mend4.desktop.helper.CryptoHelper;
+import co.samco.mend4.desktop.helper.FileResolveHelper;
+import co.samco.mend4.desktop.output.PrintStreamProvider;
 import dagger.Lazy;
 
 public class SetupMend extends Command {
     public static final String COMMAND_NAME = "setup";
     public static final String FORCE_FLAG = "-f";
 
+    private final PrintStreamProvider log;
+    private final I18N strings;
     private final OSDao osDao;
+    private final CryptoHelper cryptoHelper;
+    private final FileResolveHelper fileResolveHelper;
     private final Lazy<Settings> settings;
 
     private String password;
@@ -48,8 +50,13 @@ public class SetupMend extends Command {
     );
 
     @Inject
-    public SetupMend(OSDao osDao, Lazy<Settings> settings) {
+    public SetupMend(PrintStreamProvider log, I18N strings, OSDao osDao, CryptoHelper cryptoHelper,
+                     FileResolveHelper fileResolveHelper, Lazy<Settings> settings) {
+        this.log = log;
+        this.strings = strings;
         this.osDao = osDao;
+        this.cryptoHelper = cryptoHelper;
+        this.fileResolveHelper = fileResolveHelper;
         this.settings = settings;
     }
 
@@ -57,8 +64,8 @@ public class SetupMend extends Command {
         if (args.contains(FORCE_FLAG)) {
             args.remove(FORCE_FLAG);
         } else if (osDao.fileExists(new File(Config.CONFIG_PATH + Config.SETTINGS_FILE))) {
-            System.err.println("MEND already has a Settings.xml file at " + Config.CONFIG_PATH + Config.SETTINGS_FILE);
-            System.err.println("Please use the -f flag to overwrite it.");
+            log.err().println(strings.getf("SetupMend.alreadySetup",
+                    Config.CONFIG_PATH + Config.SETTINGS_FILE, FORCE_FLAG));
             return null;
         }
         return args;
@@ -66,8 +73,7 @@ public class SetupMend extends Command {
 
     private List<String> checkArgNum(List<String> args) {
         if (args.size() != 2 && args.size() != 0) {
-            System.err.println("Incorrect number of arguments!");
-            System.err.println(getUsageText());
+            log.err().println(strings.getf("General.invalidArgNum", COMMAND_NAME));
             return null;
         }
         return args;
@@ -75,21 +81,21 @@ public class SetupMend extends Command {
 
     private List<String> readPassword(List<String> args) {
         while (password == null) {
-            char[] passArr1 = osDao.getConsole().readPassword("Please enter a password: ");
+            char[] passArr1 = osDao.getConsole().readPassword(strings.get("SetupMend.enterPassword"));
             String pass1 = new String(passArr1);
-            char[] passArr2 = osDao.getConsole().readPassword("Please re-enter your password: ");
+            char[] passArr2 = osDao.getConsole().readPassword(strings.get("SetupMend.reEnterPassword"));
             String pass2 = new String(passArr2);
             if (pass1.equals(pass2)) {
                 password = pass1;
             } else {
-                System.err.println("Your passwords did not match. Please try again.");
+                log.err().println(strings.get("SetupMend.passwordMismatch"));
             }
         }
         return args;
     }
 
     private List<String> ensureSettingsPathExists(List<String> args) {
-        System.out.println("Creating Settings.xml in " + Config.CONFIG_PATH);
+        log.out().println("Creating Settings.xml in " + Config.CONFIG_PATH);
         new File(Config.CONFIG_PATH).mkdirs();
         return args;
     }
@@ -101,7 +107,10 @@ public class SetupMend extends Command {
             } else {
                 setKeysGenerated(password);
             }
-        } catch (Exception e) {
+        } catch (InvalidKeyException | InvalidAlgorithmParameterException | NoSuchAlgorithmException
+                | TransformerException | Settings.CorruptSettingsException | InvalidKeySpecException
+                | IllegalBlockSizeException | Settings.InvalidSettingNameException | BadPaddingException
+                | NoSuchPaddingException | IOException e) {
             e.printStackTrace();
         }
         return args;
@@ -109,15 +118,19 @@ public class SetupMend extends Command {
 
     private List<String> setEncryptionProperties(List<String> args) {
         //TODO probably move the preferred algo stuff out of Config
-        settings.get().setValue(Settings.Name.PREFERREDAES, Config.PREFERRED_AES_ALG());
-        settings.get().setValue(Settings.Name.PREFERREDRSA, Config.PREFERRED_RSA_ALG());
-        settings.get().setValue(Settings.Name.AESKEYSIZE, Integer.toString(Config.AES_KEY_SIZE()));
-        settings.get().setValue(Settings.Name.RSAKEYSIZE, Integer.toString(Config.RSA_KEY_SIZE()));
+        try {
+            settings.get().setValue(Settings.Name.PREFERREDAES, Config.PREFERRED_AES_ALG);
+            settings.get().setValue(Settings.Name.PREFERREDRSA, Config.PREFERRED_RSA_ALG);
+            settings.get().setValue(Settings.Name.AESKEYSIZE, Integer.toString(Config.AES_KEY_SIZE));
+            settings.get().setValue(Settings.Name.RSAKEYSIZE, Integer.toString(Config.RSA_KEY_SIZE));
+        } catch (TransformerException | Settings.CorruptSettingsException | Settings.InvalidSettingNameException e) {
+            e.printStackTrace();
+        }
         return args;
     }
 
     private List<String> printSuccess() {
-        System.out.println("MEND Successfully set up.");
+        log.out().println("MEND Successfully set up.");
         return null;
     }
 
@@ -127,83 +140,30 @@ public class SetupMend extends Command {
     }
 
     private void setKeysFromInputFile(String password, String privateKeyFilePath, String publicKeyFilePath) throws
-            Exception {
-        //make sure the file exists
-        File privateKeyFile = new File(privateKeyFilePath);
-        if (!privateKeyFile.exists()) {
-            System.err.println("Could not find file: " + privateKeyFilePath);
-            return;
-        }
-        File publicKeyFile = new File(publicKeyFilePath);
-        if (!publicKeyFile.exists()) {
-            System.err.println("Could not find file: " + publicKeyFilePath);
-            return;
-        }
-
-        FileInputStream privateKeyFileInputStream = null;
-        try {
-            FileInputStream publicKeyFileInputStream = null;
-            try {
-                KeyFactory kf = KeyFactory.getInstance("RSA");
-
-                //read in the private rsa key.
-                byte[] keyBytes = new byte[(int) privateKeyFile.length()];
-                privateKeyFileInputStream = new FileInputStream(privateKeyFile);
-                privateKeyFileInputStream.read(keyBytes);
-                PKCS8EncodedKeySpec privateKeySpec = new PKCS8EncodedKeySpec(keyBytes);
-                RSAPrivateKey privateKey = (RSAPrivateKey) kf.generatePrivate(privateKeySpec);
-
-                //read in the public rsa key.
-                byte[] keyBytes2 = new byte[(int) publicKeyFile.length()];
-                publicKeyFileInputStream = new FileInputStream(publicKeyFile);
-                publicKeyFileInputStream.read(keyBytes2);
-                X509EncodedKeySpec publicKeySpec = new X509EncodedKeySpec(keyBytes2);
-                RSAPublicKey publicKey = (RSAPublicKey) kf.generatePublic(publicKeySpec);
-
-                setKeys(password, new KeyPair(publicKey, privateKey));
-            } finally {
-                if (publicKeyFileInputStream != null)
-                    publicKeyFileInputStream.close();
-            }
-        } finally {
-            if (privateKeyFileInputStream != null)
-                privateKeyFileInputStream.close();
-        }
+            NoSuchAlgorithmException, IOException, InvalidKeySpecException, NoSuchPaddingException,
+            InvalidAlgorithmParameterException, TransformerException, IllegalBlockSizeException,
+            Settings.CorruptSettingsException, BadPaddingException, Settings.InvalidSettingNameException,
+            InvalidKeyException {
+        File privateKeyFile = fileResolveHelper.resolveFile(privateKeyFilePath);
+        File publicKeyFile = fileResolveHelper.resolveFile(publicKeyFilePath);
+        setKeys(password, cryptoHelper.readKeyPairFromFiles(privateKeyFile, publicKeyFile));
     }
 
-    private void setKeysGenerated(String password) throws Exception {
-        //Generate an RSA key pair.
-        KeyPairGenerator keyGen;
-        keyGen = KeyPairGenerator.getInstance("RSA");
-        keyGen.initialize(Config.RSA_KEY_SIZE());
-        KeyPair keyPair = keyGen.genKeyPair();
-        setKeys(password, keyPair);
+    private void setKeysGenerated(String password) throws NoSuchAlgorithmException, TransformerException,
+            InvalidKeyException, InvalidAlgorithmParameterException, NoSuchPaddingException, BadPaddingException,
+            Settings.InvalidSettingNameException, UnsupportedEncodingException, Settings.CorruptSettingsException,
+            InvalidKeySpecException, IllegalBlockSizeException {
+        setKeys(password, cryptoHelper.generateKeyPair());
     }
 
-    private void setKeys(String password, KeyPair keyPair) throws Exception {
-        //generate an aes key from the password
-        SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
-        KeySpec spec = new PBEKeySpec(password.toCharArray(), Config.PASSCHECK_SALT, Config.AES_KEY_GEN_ITERATIONS,
-                Config.AES_KEY_SIZE());
-        SecretKey tmp = factory.generateSecret(spec);
-        SecretKey aesKey = new SecretKeySpec(tmp.getEncoded(), "AES");
-        Cipher aesCipher = Cipher.getInstance(Config.PREFERRED_AES_ALG());
-        aesCipher.init(Cipher.ENCRYPT_MODE, aesKey, Config.STANDARD_IV);
-
-        //Encrypt the private key with the password.
-        byte[] encryptedPrivateKey = aesCipher.doFinal(keyPair.getPrivate().getEncoded());
-        //encrypt the text
-        byte[] cipherText = aesCipher.doFinal(Config.PASSCHECK_TEXT.getBytes("UTF-8"));
-
-        //Write the encrypted private key to settings
-        //TODO only commented to compile
-        //SettingsImpl.instance().setValue(Config.Settings.PRIVATEKEY, Base64.encodeBase64URLSafeString(encryptedPrivateKey));
-        //Add a public key element to the settings file containing the public key.
-        //TODO only commented to compile
-        //SettingsImpl.instance().setValue(Config.Settings.PUBLICKEY, Base64.encodeBase64URLSafeString(keyPair.getPublic().getEncoded()));
-        //Add the encrypted pass check text to the Settings
-        //TODO only commented to compile
-        //SettingsImpl.instance().setValue(Config.Settings.PASSCHECK, Base64.encodeBase64URLSafeString(cipherText));
+    private void setKeys(String password, KeyPair keyPair) throws NoSuchPaddingException,
+            UnsupportedEncodingException, InvalidKeyException, NoSuchAlgorithmException, IllegalBlockSizeException,
+            BadPaddingException, InvalidAlgorithmParameterException, InvalidKeySpecException,
+            Settings.InvalidSettingNameException, TransformerException, Settings.CorruptSettingsException {
+        CryptoHelper.EncodedKeyInfo keyInfo = cryptoHelper.getEncodedKeyInfo(password, keyPair);
+        settings.get().setValue(Settings.Name.PRIVATEKEY, keyInfo.getPrivateKey());
+        settings.get().setValue(Settings.Name.PUBLICKEY, keyInfo.getPublicKey());
+        settings.get().setValue(Settings.Name.PASSCHECK, keyInfo.getCipherText());
     }
 
     @Override

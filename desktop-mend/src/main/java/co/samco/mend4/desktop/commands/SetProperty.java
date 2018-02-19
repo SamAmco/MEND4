@@ -43,8 +43,6 @@ public class SetProperty extends Command {
     private List<String> assertCorrectNumArgs(List<String> args) {
         if (args.size() != 2) {
             log.err().println(strings.getf("General.invalidArgNum", COMMAND_NAME));
-            log.err().println();
-            log.err().println(getUsageText());
             return null;
         }
         return args;

@@ -44,14 +44,36 @@ public class FileResolveHelper {
         return logDir;
     }
 
+    private boolean fileExists(File file) {
+        return file != null && osDao.fileExists(file) && osDao.fileIsFile(file);
+    }
+
     public boolean fileExistsAndHasExtension(String extension, File file) {
-        return file != null && osDao.fileExists(file) && osDao.fileIsFile(file) && osDao.getFileExtension(file).equals(extension);
+        return fileExists(file) && osDao.getFileExtension(file).equals(extension);
+    }
+
+    public void assertFileExists(File file) throws FileNotFoundException {
+        if (!fileExists(file)) {
+            throw new FileNotFoundException(strings.getf("General.unknownIdentifier", file));
+        }
     }
 
     public void assertFileExistsAndHasExtension(String name, String extension, File file) throws FileNotFoundException {
         if (!fileExistsAndHasExtension(extension, file)) {
-            throw new FileNotFoundException(strings.getf("General.unknownIdentifier", file));
+            throw new FileNotFoundException(strings.getf("General.unknownIdentifier", name));
         }
+    }
+
+    public File resolveFile(String identifier, String extension) throws FileNotFoundException {
+        File file = new File(identifier);
+        assertFileExistsAndHasExtension(identifier, extension, file);
+        return file;
+    }
+
+    public File resolveFile(String identifier) throws FileNotFoundException {
+        File file = new File(identifier);
+        assertFileExists(file);
+        return file;
     }
 
     public String getEncDir() throws InvalidSettingNameException, CorruptSettingsException {
@@ -83,12 +105,12 @@ public class FileResolveHelper {
         }
     }
 
-    public File resolveEncFilePath(String filePath)
+    public File resolveEncFilePath(String fileIdentifier)
             throws InvalidSettingNameException, CorruptSettingsException {
-        if (filePathIsEncId(filePath)) {
-            return FileUtils.getFile(getEncDir(), filePath + "." + Config.ENC_FILE_EXTENSION);
+        if (filePathIsEncId(fileIdentifier)) {
+            return FileUtils.getFile(getEncDir(), fileIdentifier + "." + Config.ENC_FILE_EXTENSION);
         } else {
-            return new File(filePath);
+            return new File(fileIdentifier);
         }
     }
 

@@ -140,13 +140,13 @@ public class EncryptionUtils {
         LogDataBlocks ldb = getNextLogBytes(inputStream, lc1Bytes);
 
         //now decrypt the aes key
-        Cipher rsaCipher = Cipher.getInstance(Config.PREFERRED_RSA_ALG());
+        Cipher rsaCipher = Cipher.getInstance(Config.PREFERRED_RSA_ALG);
         rsaCipher.init(Cipher.DECRYPT_MODE, privateKey);
         byte[] aesKeyBytes = rsaCipher.doFinal(ldb.encAesKey);
         SecretKey aesKey = new SecretKeySpec(aesKeyBytes, 0, aesKeyBytes.length, "AES");
 
         //now decrypt the entry
-        Cipher aesCipher = Cipher.getInstance(Config.PREFERRED_AES_ALG());
+        Cipher aesCipher = Cipher.getInstance(Config.PREFERRED_AES_ALG);
         aesCipher.init(Cipher.DECRYPT_MODE, aesKey, Config.STANDARD_IV);
         byte[] entry = aesCipher.doFinal(ldb.encEntry);
         return new LogDataBlocksAndText(ldb, new String(entry, "UTF-8"));
@@ -197,15 +197,15 @@ public class EncryptionUtils {
 
             //generate an aes key
             KeyGenerator keyGen = KeyGenerator.getInstance("AES");
-            keyGen.init(Config.AES_KEY_SIZE());
+            keyGen.init(Config.AES_KEY_SIZE);
             SecretKey aesKey = keyGen.generateKey();
 
-            Cipher aesCipher = Cipher.getInstance(Config.PREFERRED_AES_ALG());
+            Cipher aesCipher = Cipher.getInstance(Config.PREFERRED_AES_ALG);
             aesCipher.init(Cipher.ENCRYPT_MODE, aesKey, Config.STANDARD_IV);
             cos = new CipherOutputStream(fos, aesCipher);
 
             //encrypt the aes key with the public rsa key
-            Cipher rsaCipher = Cipher.getInstance(Config.PREFERRED_RSA_ALG());
+            Cipher rsaCipher = Cipher.getInstance(Config.PREFERRED_RSA_ALG);
 
             //read in the public key
             X509EncodedKeySpec publicRsaKeySpec = new X509EncodedKeySpec(encoder.decodeBase64(userPublicKeyString));
@@ -258,11 +258,11 @@ public class EncryptionUtils {
 
         //generate an aes key
         KeyGenerator keyGen = KeyGenerator.getInstance("AES");
-        keyGen.init(Config.AES_KEY_SIZE());
+        keyGen.init(Config.AES_KEY_SIZE);
         SecretKey aesKey = keyGen.generateKey();
 
         //use it to encrypt the text
-        Cipher aesCipher = Cipher.getInstance(Config.PREFERRED_AES_ALG());
+        Cipher aesCipher = Cipher.getInstance(Config.PREFERRED_AES_ALG);
         aesCipher.init(Cipher.ENCRYPT_MODE, aesKey, Config.STANDARD_IV);
         String logText;
         if (dropHeader)
@@ -272,7 +272,7 @@ public class EncryptionUtils {
         byte[] cipherText = aesCipher.doFinal(logText.getBytes("UTF-8"));
 
         //encrypt the aes key with the public rsa key
-        Cipher rsaCipher = Cipher.getInstance(Config.PREFERRED_RSA_ALG());
+        Cipher rsaCipher = Cipher.getInstance(Config.PREFERRED_RSA_ALG);
 
         //read in the public key
         X509EncodedKeySpec publicRsaKeySpec = new X509EncodedKeySpec(encoder.decodeBase64(userPublicKeyString));

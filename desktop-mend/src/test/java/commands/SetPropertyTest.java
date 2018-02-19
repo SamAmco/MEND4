@@ -7,7 +7,7 @@ import co.samco.mend4.desktop.commands.SetProperty;
 import co.samco.mend4.desktop.core.I18N;
 import co.samco.mend4.desktop.helper.SettingsHelper;
 import co.samco.mend4.desktop.output.PrintStreamProvider;
-import helper.FakeLazy;
+import testutils.FakeLazy;
 import org.junit.Before;
 import org.junit.Test;
 

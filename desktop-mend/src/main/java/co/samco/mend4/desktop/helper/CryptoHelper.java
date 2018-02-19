@@ -5,20 +5,23 @@ import co.samco.mend4.core.EncryptionUtils;
 import co.samco.mend4.core.impl.SettingsImpl;
 import co.samco.mend4.desktop.core.ApacheCommonsEncoder;
 import co.samco.mend4.desktop.output.PrintStreamProvider;
+import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.io.FilenameUtils;
 
 import javax.crypto.*;
+import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 import javax.inject.Inject;
-import javax.xml.transform.TransformerException;
 import java.awt.*;
 import java.io.*;
 import java.nio.ByteBuffer;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
+import java.security.*;
 import java.security.interfaces.RSAPrivateKey;
+import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
+import java.security.spec.KeySpec;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.X509EncodedKeySpec;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -198,7 +201,8 @@ public class CryptoHelper {
                 throw new EncryptionUtils.MalformedLogFileException("This log file is malformed.");
 
             //now decrypt the aes key
-            Cipher rsaCipher = Cipher.getInstance(Config.PREFERRED_RSA_ALG());
+            //TODO Should be getting this from settings not config
+            Cipher rsaCipher = Cipher.getInstance(Config.PREFERRED_RSA_ALG);
             rsaCipher.init(Cipher.DECRYPT_MODE, privateKey);
             byte[] aesKeyBytes = rsaCipher.doFinal(encAesKey);
             SecretKey aesKey = new SecretKeySpec(aesKeyBytes, 0, aesKeyBytes.length, "AES");
@@ -230,7 +234,8 @@ public class CryptoHelper {
             fos = new FileOutputStream(outputFile);
 
             //now decrypt the file
-            Cipher aesCipher = Cipher.getInstance(Config.PREFERRED_AES_ALG());
+            //TODO Should be getting this from settings not config
+            Cipher aesCipher = Cipher.getInstance(Config.PREFERRED_AES_ALG);
             aesCipher.init(Cipher.DECRYPT_MODE, aesKey, Config.STANDARD_IV);
             cos = new CipherOutputStream(fos, aesCipher);
 
@@ -247,9 +252,7 @@ public class CryptoHelper {
                 Desktop.getDesktop().open(outputFile);
         } catch (IOException | EncryptionUtils.MalformedLogFileException | NoSuchAlgorithmException
                 | NoSuchPaddingException | InvalidKeyException | IllegalBlockSizeException
-                | BadPaddingException | InvalidAlgorithmParameterException | SettingsImpl.CorruptSettingsException
-                | SettingsImpl.InvalidSettingNameException | SettingsImpl.UnInitializedSettingsException
-                | InvalidKeySpecException e) {
+                | BadPaddingException | InvalidAlgorithmParameterException | InvalidKeySpecException e) {
             System.err.println(e.getMessage());
         }
         finally {
@@ -263,6 +266,90 @@ public class CryptoHelper {
             } catch (IOException e) {
                 System.err.println(e.getMessage());
             }
+        }
+    }
+
+    public KeyPair generateKeyPair() throws NoSuchAlgorithmException {
+        KeyPairGenerator keyGen;
+        keyGen = KeyPairGenerator.getInstance("RSA");
+        keyGen.initialize(Config.RSA_KEY_SIZE);
+        return keyGen.genKeyPair();
+    }
+
+    public KeyPair readKeyPairFromFiles(File privateKeyFile, File publicKeyFile)
+            throws InvalidKeySpecException, IOException, NoSuchAlgorithmException {
+        FileInputStream privateKeyFileInputStream = null;
+        FileInputStream publicKeyFileInputStream = null;
+        try {
+            KeyFactory kf = KeyFactory.getInstance("RSA");
+
+            //read in the private rsa key.
+            byte[] keyBytes = new byte[(int) privateKeyFile.length()];
+            privateKeyFileInputStream = new FileInputStream(privateKeyFile);
+            privateKeyFileInputStream.read(keyBytes);
+            PKCS8EncodedKeySpec privateKeySpec = new PKCS8EncodedKeySpec(keyBytes);
+            RSAPrivateKey privateKey = (RSAPrivateKey) kf.generatePrivate(privateKeySpec);
+
+            //read in the public rsa key.
+            byte[] keyBytes2 = new byte[(int) publicKeyFile.length()];
+            publicKeyFileInputStream = new FileInputStream(publicKeyFile);
+            publicKeyFileInputStream.read(keyBytes2);
+            X509EncodedKeySpec publicKeySpec = new X509EncodedKeySpec(keyBytes2);
+            RSAPublicKey publicKey = (RSAPublicKey) kf.generatePublic(publicKeySpec);
+
+            return new KeyPair(publicKey, privateKey);
+        } finally {
+            if (privateKeyFileInputStream != null) {
+                privateKeyFileInputStream.close();
+            }
+            if (publicKeyFileInputStream != null) {
+                publicKeyFileInputStream.close();
+            }
+        }
+    }
+
+    public EncodedKeyInfo getEncodedKeyInfo(String password, KeyPair keyPair) throws NoSuchAlgorithmException,
+            InvalidKeySpecException, NoSuchPaddingException, InvalidAlgorithmParameterException, InvalidKeyException,
+            BadPaddingException, IllegalBlockSizeException, UnsupportedEncodingException {
+        SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
+        KeySpec spec = new PBEKeySpec(password.toCharArray(), Config.PASSCHECK_SALT,
+                Config.AES_KEY_GEN_ITERATIONS, Config.AES_KEY_SIZE);
+        SecretKey tmp = factory.generateSecret(spec);
+        SecretKey aesKey = new SecretKeySpec(tmp.getEncoded(), "AES");
+        Cipher aesCipher = Cipher.getInstance(Config.PREFERRED_AES_ALG);
+        aesCipher.init(Cipher.ENCRYPT_MODE, aesKey, Config.STANDARD_IV);
+
+        //Encrypt the private key with the password.
+        byte[] encryptedPrivateKey = aesCipher.doFinal(keyPair.getPrivate().getEncoded());
+        //encrypt the text
+        byte[] cipherText = aesCipher.doFinal(Config.PASSCHECK_TEXT.getBytes("UTF-8"));
+
+        return new EncodedKeyInfo(Base64.encodeBase64URLSafeString(encryptedPrivateKey),
+                Base64.encodeBase64URLSafeString(keyPair.getPublic().getEncoded()),
+                Base64.encodeBase64URLSafeString(cipherText));
+    }
+
+    public static class EncodedKeyInfo {
+        private final String privateKey;
+        private final String publicKey;
+        private final String cipherText;
+
+        public EncodedKeyInfo(String privateKey, String publicKey, String cipherText) {
+            this.privateKey = privateKey;
+            this.publicKey = publicKey;
+            this.cipherText = cipherText;
+        }
+
+        public String getPrivateKey() {
+            return privateKey;
+        }
+
+        public String getPublicKey() {
+            return publicKey;
+        }
+
+        public String getCipherText() {
+            return cipherText;
         }
     }
 }

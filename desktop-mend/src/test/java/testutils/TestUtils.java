@@ -1,4 +1,4 @@
-package helper;
+package testutils;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;

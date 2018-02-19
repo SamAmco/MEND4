@@ -10,12 +10,11 @@ import co.samco.mend4.desktop.dao.OSDao;
 import co.samco.mend4.desktop.helper.FileResolveHelper;
 import co.samco.mend4.desktop.helper.SettingsHelper;
 import co.samco.mend4.desktop.output.PrintStreamProvider;
-import helper.FakeLazy;
+import testutils.FakeLazy;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
-import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import java.io.File;
@@ -25,7 +24,6 @@ import java.util.Arrays;
 import java.util.Collections;
 
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;

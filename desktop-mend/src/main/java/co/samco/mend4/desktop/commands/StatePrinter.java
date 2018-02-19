@@ -54,7 +54,6 @@ public class StatePrinter extends Command {
     private List<String> getArg(List<String> args) {
         if (args.size() != 1) {
             log.err().println(strings.getf("General.invalidArgNum", COMMAND_NAME));
-            getUsageText();
             return null;
         }
         arg = args.get(0);
