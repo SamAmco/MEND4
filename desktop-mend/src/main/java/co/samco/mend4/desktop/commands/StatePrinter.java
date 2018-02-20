@@ -138,7 +138,7 @@ public class StatePrinter extends Command {
 
     @Override
     public String getUsageText() {
-        return strings.getf("StatePrinter.usage", ALL_FLAG, LOGS_FLAG, ENCS_FLAG,
+        return strings.getf("StatePrinter.usage", COMMAND_NAME, ALL_FLAG, LOGS_FLAG, ENCS_FLAG,
                 ALL_FLAG, LOGS_FLAG, ENCS_FLAG, settingsHelper.getSettingDescriptions());
     }
 

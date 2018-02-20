@@ -269,6 +269,21 @@ public class CryptoHelper {
         }
     }
 
+    public byte[] decryptBytesWithPassword(byte[] ciphertext, char[] password) throws NoSuchAlgorithmException,
+            InvalidKeySpecException, NoSuchPaddingException, InvalidAlgorithmParameterException, InvalidKeyException,
+            BadPaddingException, IllegalBlockSizeException {
+        //generate an aes key from the password
+        SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
+        KeySpec spec = new PBEKeySpec(password, Config.PASSCHECK_SALT, Config.AES_KEY_GEN_ITERATIONS, Config.AES_KEY_SIZE);
+        SecretKey tmp = factory.generateSecret(spec);
+        SecretKey aesKey = new SecretKeySpec(tmp.getEncoded(), "AES");
+
+        //use it to decrypt the text
+        Cipher aesCipher = Cipher.getInstance(Config.PREFERRED_AES_ALG);
+        aesCipher.init(Cipher.DECRYPT_MODE, aesKey, Config.STANDARD_IV);
+        return aesCipher.doFinal(ciphertext);
+    }
+
     public KeyPair generateKeyPair() throws NoSuchAlgorithmException {
         KeyPairGenerator keyGen;
         keyGen = KeyPairGenerator.getInstance("RSA");

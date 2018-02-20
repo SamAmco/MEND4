@@ -12,6 +12,7 @@ public interface OSDao {
     String getBaseName(File file);
     boolean fileExists(File file);
     boolean fileIsFile(File file);
+    void writeDataToFile(byte[] data, File outputFile) throws IOException;
     String getFileExtension(File file);
     String getFileExtension(String filePath);
     InputStream getStdIn();

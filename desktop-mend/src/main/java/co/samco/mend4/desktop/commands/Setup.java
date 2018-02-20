@@ -39,6 +39,7 @@ public class Setup extends Command {
     private final Lazy<Settings> settings;
 
     private String password;
+
     private List<Function<List<String>, List<String>>> behaviourChain = Arrays.asList(
             a -> checkAlreadySetup(a),
             a -> checkArgNum(a),

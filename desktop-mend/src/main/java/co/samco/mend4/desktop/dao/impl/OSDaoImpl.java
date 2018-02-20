@@ -41,12 +41,19 @@ public class OSDaoImpl implements OSDao {
 
     @Override
     public boolean fileExists(File file) {
-        return file.exists();
+        return file.exists() && file.isFile();
     }
 
     @Override
     public boolean fileIsFile(File file) {
         return file.isFile();
+    }
+
+    @Override
+    public void writeDataToFile(byte[] data, File outputFile) throws IOException {
+        try (FileOutputStream fos = new FileOutputStream(outputFile)) {
+            fos.write(data);
+        }
     }
 
     @Override
