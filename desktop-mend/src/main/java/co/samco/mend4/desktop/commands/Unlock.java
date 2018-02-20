@@ -1,21 +1,19 @@
 package co.samco.mend4.desktop.commands;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
-import java.security.spec.KeySpec;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
 
-import javax.crypto.*;
-import javax.crypto.spec.PBEKeySpec;
-import javax.crypto.spec.SecretKeySpec;
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 import javax.inject.Inject;
 
 import co.samco.mend4.core.Settings;
@@ -111,8 +109,7 @@ public class Unlock extends Command {
             osDao.writeDataToFile(privateKey, privateKeyFile);
             osDao.writeDataToFile(publicKey, publicKeyFile);
             log.out().println(strings.get("Unlock.unlocked"));
-        }
-        catch (CorruptSettingsException | InvalidSettingNameException | NoSuchAlgorithmException
+        } catch (CorruptSettingsException | InvalidSettingNameException | NoSuchAlgorithmException
                 | InvalidKeyException | InvalidAlgorithmParameterException | NoSuchPaddingException
                 | InvalidKeySpecException | IOException | BadPaddingException | IllegalBlockSizeException e) {
             log.err().println(e.getMessage());

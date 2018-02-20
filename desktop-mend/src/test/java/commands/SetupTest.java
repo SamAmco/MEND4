@@ -2,6 +2,8 @@ package commands;
 
 import co.samco.mend4.core.Config;
 import co.samco.mend4.core.Settings;
+import co.samco.mend4.core.Settings.CorruptSettingsException;
+import co.samco.mend4.core.Settings.InvalidSettingNameException;
 import co.samco.mend4.desktop.commands.Setup;
 import co.samco.mend4.desktop.core.I18N;
 import co.samco.mend4.desktop.dao.OSDao;
@@ -31,7 +33,6 @@ import java.util.Collections;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.contains;
 import static org.mockito.Mockito.*;
 
 public class SetupTest {
@@ -89,7 +90,7 @@ public class SetupTest {
     @Test
     public void passwordsDontMatch() throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException,
             UnsupportedEncodingException, IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException,
-            InvalidKeySpecException, Settings.InvalidSettingNameException, TransformerException, Settings.CorruptSettingsException {
+            InvalidKeySpecException, InvalidSettingNameException, TransformerException, CorruptSettingsException {
         String passOne = "passOne";
         String passTwo = "passTwo";
         when(osDao.readPassword(anyString())).thenAnswer(new Answer<char[]>() {
@@ -113,8 +114,8 @@ public class SetupTest {
     }
 
     @Test
-    public void setupFromKeyFiles() throws Settings.InvalidSettingNameException, TransformerException,
-            Settings.CorruptSettingsException, NoSuchPaddingException, IOException,
+    public void setupFromKeyFiles() throws InvalidSettingNameException, TransformerException,
+            CorruptSettingsException, NoSuchPaddingException, IOException,
             InvalidKeyException, NoSuchAlgorithmException, IllegalBlockSizeException, BadPaddingException,
             InvalidAlgorithmParameterException, InvalidKeySpecException {
         when(osDao.readPassword(anyString())).thenReturn("password".toCharArray());
@@ -139,22 +140,22 @@ public class SetupTest {
     }
 
     @Test
-    public void setupSettingsThrowsException () throws Settings.InvalidSettingNameException, TransformerException,
-            Settings.CorruptSettingsException, NoSuchPaddingException, UnsupportedEncodingException,
+    public void setupSettingsThrowsException () throws InvalidSettingNameException, TransformerException,
+            CorruptSettingsException, NoSuchPaddingException, UnsupportedEncodingException,
             InvalidKeyException, NoSuchAlgorithmException, IllegalBlockSizeException, BadPaddingException,
             InvalidAlgorithmParameterException, InvalidKeySpecException {
         String exception = "exception";
         when(osDao.readPassword(anyString())).thenReturn("password".toCharArray());
         CryptoHelper.EncodedKeyInfo keyInfo = new CryptoHelper.EncodedKeyInfo("a", "b", "c");
         when(cryptoHelper.getEncodedKeyInfo(anyString(), any(KeyPair.class))).thenReturn(keyInfo);
-        doThrow(new Settings.CorruptSettingsException(exception)).when(settings).setValue(any(Settings.Name.class), anyString());
+        doThrow(new CorruptSettingsException(exception)).when(settings).setValue(any(Settings.Name.class), anyString());
         setup.execute(Arrays.asList("x", "y"));
         verify(err).println(errCaptor.capture());
         Assert.assertEquals(exception, errCaptor.getValue());
     }
 
-    private void verifySettingsSetup(CryptoHelper.EncodedKeyInfo keyInfo) throws Settings.InvalidSettingNameException,
-            TransformerException, Settings.CorruptSettingsException {
+    private void verifySettingsSetup(CryptoHelper.EncodedKeyInfo keyInfo) throws InvalidSettingNameException,
+            TransformerException, CorruptSettingsException {
         verify(settings).setValue(eq(Settings.Name.PREFERREDAES), eq(Config.PREFERRED_AES_ALG));
         verify(settings).setValue(eq(Settings.Name.PREFERREDRSA), eq(Config.PREFERRED_RSA_ALG));
         verify(settings).setValue(eq(Settings.Name.AESKEYSIZE), eq(Integer.toString(Config.AES_KEY_SIZE)));

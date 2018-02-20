@@ -7,6 +7,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import co.samco.mend4.core.Settings;
+import co.samco.mend4.core.Settings.CorruptSettingsException;
+import co.samco.mend4.core.Settings.InvalidSettingNameException;
 import co.samco.mend4.desktop.core.I18N;
 import co.samco.mend4.desktop.dao.OSDao;
 import co.samco.mend4.desktop.helper.FileResolveHelper;
@@ -72,7 +74,7 @@ public class StatePrinter extends Command {
                 printEncs();
                 return null;
             }
-        } catch (FileNotFoundException | Settings.InvalidSettingNameException | Settings.CorruptSettingsException e) {
+        } catch (FileNotFoundException | InvalidSettingNameException | CorruptSettingsException e) {
             log.err().println(e.getMessage());
         }
         return args;
@@ -95,8 +97,8 @@ public class StatePrinter extends Command {
         return null;
     }
 
-    private void printEncs() throws Settings.InvalidSettingNameException,
-            Settings.CorruptSettingsException, FileNotFoundException {
+    private void printEncs() throws InvalidSettingNameException,
+            CorruptSettingsException, FileNotFoundException {
         File encDir = new File(fileResolveHelper.getEncDir());
         String encs = Arrays.stream(osDao.getDirectoryListing(encDir))
                 .filter(f -> osDao.getFileExtension(f).equals(Config.ENC_FILE_EXTENSION))
@@ -105,8 +107,8 @@ public class StatePrinter extends Command {
         log.out().println(encs);
     }
 
-    private void printLogs() throws Settings.InvalidSettingNameException,
-            Settings.CorruptSettingsException, FileNotFoundException {
+    private void printLogs() throws InvalidSettingNameException,
+            CorruptSettingsException, FileNotFoundException {
         File logDir = new File(fileResolveHelper.getLogDir());
         String logs = Arrays.stream(osDao.getDirectoryListing(logDir))
                 .filter(f -> osDao.getFileExtension(f).equals(Config.LOG_FILE_EXTENSION))

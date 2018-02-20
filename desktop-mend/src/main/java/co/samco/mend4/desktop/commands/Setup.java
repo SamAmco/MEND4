@@ -2,11 +2,7 @@ package co.samco.mend4.desktop.commands;
 
 import java.io.*;
 import java.security.*;
-import java.security.interfaces.RSAPrivateKey;
-import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
-import java.security.spec.PKCS8EncodedKeySpec;
-import java.security.spec.X509EncodedKeySpec;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
@@ -20,6 +16,8 @@ import javax.xml.transform.TransformerException;
 import co.samco.mend4.core.Config;
 
 import co.samco.mend4.core.Settings;
+import co.samco.mend4.core.Settings.InvalidSettingNameException;
+import co.samco.mend4.core.Settings.CorruptSettingsException;
 import co.samco.mend4.desktop.core.I18N;
 import co.samco.mend4.desktop.dao.OSDao;
 import co.samco.mend4.desktop.helper.CryptoHelper;
@@ -109,8 +107,8 @@ public class Setup extends Command {
                 setKeysGenerated(password);
             }
         } catch (InvalidKeyException | InvalidAlgorithmParameterException | NoSuchAlgorithmException
-                | TransformerException | Settings.CorruptSettingsException | InvalidKeySpecException
-                | IllegalBlockSizeException | Settings.InvalidSettingNameException | BadPaddingException
+                | TransformerException | CorruptSettingsException | InvalidKeySpecException
+                | IllegalBlockSizeException | InvalidSettingNameException | BadPaddingException
                 | NoSuchPaddingException | IOException e) {
             log.err().println(e.getMessage());
             return null;
@@ -124,7 +122,7 @@ public class Setup extends Command {
             settings.get().setValue(Settings.Name.PREFERREDRSA, Config.PREFERRED_RSA_ALG);
             settings.get().setValue(Settings.Name.AESKEYSIZE, Integer.toString(Config.AES_KEY_SIZE));
             settings.get().setValue(Settings.Name.RSAKEYSIZE, Integer.toString(Config.RSA_KEY_SIZE));
-        } catch (TransformerException | Settings.CorruptSettingsException | Settings.InvalidSettingNameException e) {
+        } catch (TransformerException | CorruptSettingsException | InvalidSettingNameException e) {
             log.err().println(e.getMessage());
             return null;
         }
@@ -144,7 +142,7 @@ public class Setup extends Command {
     private void setKeysFromInputFile(String password, String privateKeyFilePath, String publicKeyFilePath) throws
             NoSuchAlgorithmException, IOException, InvalidKeySpecException, NoSuchPaddingException,
             InvalidAlgorithmParameterException, TransformerException, IllegalBlockSizeException,
-            Settings.CorruptSettingsException, BadPaddingException, Settings.InvalidSettingNameException,
+            CorruptSettingsException, BadPaddingException, InvalidSettingNameException,
             InvalidKeyException {
         File privateKeyFile = fileResolveHelper.resolveFile(privateKeyFilePath);
         File publicKeyFile = fileResolveHelper.resolveFile(publicKeyFilePath);
@@ -153,7 +151,7 @@ public class Setup extends Command {
 
     private void setKeysGenerated(String password) throws NoSuchAlgorithmException, TransformerException,
             InvalidKeyException, InvalidAlgorithmParameterException, NoSuchPaddingException, BadPaddingException,
-            Settings.InvalidSettingNameException, UnsupportedEncodingException, Settings.CorruptSettingsException,
+            InvalidSettingNameException, UnsupportedEncodingException, CorruptSettingsException,
             InvalidKeySpecException, IllegalBlockSizeException {
         setKeys(password, cryptoHelper.generateKeyPair());
     }
@@ -161,7 +159,7 @@ public class Setup extends Command {
     private void setKeys(String password, KeyPair keyPair) throws NoSuchPaddingException,
             UnsupportedEncodingException, InvalidKeyException, NoSuchAlgorithmException, IllegalBlockSizeException,
             BadPaddingException, InvalidAlgorithmParameterException, InvalidKeySpecException,
-            Settings.InvalidSettingNameException, TransformerException, Settings.CorruptSettingsException {
+            InvalidSettingNameException, TransformerException, CorruptSettingsException {
         CryptoHelper.EncodedKeyInfo keyInfo = cryptoHelper.getEncodedKeyInfo(password, keyPair);
         settings.get().setValue(Settings.Name.PRIVATEKEY, keyInfo.getPrivateKey());
         settings.get().setValue(Settings.Name.PUBLICKEY, keyInfo.getPublicKey());

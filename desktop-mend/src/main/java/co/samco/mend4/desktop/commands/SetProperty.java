@@ -6,13 +6,13 @@ import java.util.function.Function;
 import javax.inject.Inject;
 import javax.xml.transform.TransformerException;
 
-import co.samco.mend4.core.Config;
 import co.samco.mend4.core.Settings;
+import co.samco.mend4.core.Settings.CorruptSettingsException;
+import co.samco.mend4.core.Settings.InvalidSettingNameException;
 import co.samco.mend4.desktop.core.I18N;
 import co.samco.mend4.desktop.helper.SettingsHelper;
 import co.samco.mend4.desktop.output.PrintStreamProvider;
 import dagger.Lazy;
-import org.apache.commons.lang3.EnumUtils;
 
 public class SetProperty extends Command {
     public static final String COMMAND_NAME = "set";
@@ -68,7 +68,7 @@ public class SetProperty extends Command {
                     .get();
             settings.get().setValue(name, value);
             log.err().println(strings.getf("SetProperty.successful", propertyName, value));
-        } catch (TransformerException | Settings.CorruptSettingsException | Settings.InvalidSettingNameException e) {
+        } catch (TransformerException | CorruptSettingsException | InvalidSettingNameException e) {
             log.err().println(e.getMessage());
         }
         return args;
