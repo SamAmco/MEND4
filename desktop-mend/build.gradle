@@ -1,4 +1,5 @@
 plugins {
+    id "java"
     id "net.ltgt.apt" version "0.10"
     id "idea"
 }
@@ -14,10 +15,12 @@ dependencies {
     testCompile group: 'org.mockito', name: 'mockito-all', version: '1.10.19'
 }
 
+version = 'DESKT0.3.0'
+
 jar {
     manifest {
-        attributes 'Implementation-Title': 'MEND4',
-                'Implementation-Version': '1.0.0',
+        attributes 'Implementation-Title': 'MEND',
+                'Implementation-Version': project.version,
                 'Main-Class': 'co.samco.mend4.desktop.Main'
     }
 

@@ -54,7 +54,7 @@ public class Help extends Command {
     }
 
     private void appendMendUsage(StringBuilder sb) {
-        sb.append(strings.getf("Help.usage", Version.VERSION_FLAG, HELP_FLAG, HELP_FLAG));
+        sb.append(strings.getf("Help.usage", Version.COMMAND_NAME, HELP_FLAG, HELP_FLAG));
         sb.append(strings.getNewLine());
         sb.append(strings.getNewLine());
     }
