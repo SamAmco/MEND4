@@ -5,6 +5,7 @@ import java.nio.file.CopyOption;
 import java.nio.file.Path;
 
 public interface OSDao {
+    String getUserHome();
     void mkdirs(File file);
     File[] getDirectoryListing(File dirFile) throws FileNotFoundException;
     String getAbsolutePath(File file);

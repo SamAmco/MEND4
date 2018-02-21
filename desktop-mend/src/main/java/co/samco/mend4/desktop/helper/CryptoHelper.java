@@ -1,6 +1,6 @@
 package co.samco.mend4.desktop.helper;
 
-import co.samco.mend4.core.Config;
+import co.samco.mend4.core.AppProperties;
 import co.samco.mend4.core.EncryptionUtils;
 import co.samco.mend4.core.impl.SettingsImpl;
 import co.samco.mend4.desktop.core.ApacheCommonsEncoder;
@@ -175,7 +175,7 @@ public class CryptoHelper {
         FileOutputStream fos = null;
         CipherOutputStream cos = null;
         try {
-            File privateKeyFile = new File(Config.CONFIG_PATH + Config.PRIVATE_KEY_FILE_DEC);
+            File privateKeyFile = new File(fileResolveHelper.getPrivateKeyPath());
             RSAPrivateKey privateKey = EncryptionUtils.getPrivateKeyFromFile(privateKeyFile);
             //TODO only commented to compile
             String decLocation = "";//SettingsImpl.instance().getValue(Config.Settings.DECDIR);
@@ -202,7 +202,7 @@ public class CryptoHelper {
 
             //now decrypt the aes key
             //TODO Should be getting this from settings not config
-            Cipher rsaCipher = Cipher.getInstance(Config.PREFERRED_RSA_ALG);
+            Cipher rsaCipher = Cipher.getInstance(AppProperties.PREFERRED_RSA_ALG);
             rsaCipher.init(Cipher.DECRYPT_MODE, privateKey);
             byte[] aesKeyBytes = rsaCipher.doFinal(encAesKey);
             SecretKey aesKey = new SecretKeySpec(aesKeyBytes, 0, aesKeyBytes.length, "AES");
@@ -235,8 +235,8 @@ public class CryptoHelper {
 
             //now decrypt the file
             //TODO Should be getting this from settings not config
-            Cipher aesCipher = Cipher.getInstance(Config.PREFERRED_AES_ALG);
-            aesCipher.init(Cipher.DECRYPT_MODE, aesKey, Config.STANDARD_IV);
+            Cipher aesCipher = Cipher.getInstance(AppProperties.PREFERRED_AES_ALG);
+            aesCipher.init(Cipher.DECRYPT_MODE, aesKey, AppProperties.STANDARD_IV);
             cos = new CipherOutputStream(fos, aesCipher);
 
             System.err.println("Decrypting the file to: " + outputFile.getAbsolutePath());
@@ -274,20 +274,20 @@ public class CryptoHelper {
             BadPaddingException, IllegalBlockSizeException {
         //generate an aes key from the password
         SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
-        KeySpec spec = new PBEKeySpec(password, Config.PASSCHECK_SALT, Config.AES_KEY_GEN_ITERATIONS, Config.AES_KEY_SIZE);
+        KeySpec spec = new PBEKeySpec(password, AppProperties.PASSCHECK_SALT, AppProperties.AES_KEY_GEN_ITERATIONS, AppProperties.PREFERRED_AES_KEY_SIZE);
         SecretKey tmp = factory.generateSecret(spec);
         SecretKey aesKey = new SecretKeySpec(tmp.getEncoded(), "AES");
 
         //use it to decrypt the text
-        Cipher aesCipher = Cipher.getInstance(Config.PREFERRED_AES_ALG);
-        aesCipher.init(Cipher.DECRYPT_MODE, aesKey, Config.STANDARD_IV);
+        Cipher aesCipher = Cipher.getInstance(AppProperties.PREFERRED_AES_ALG);
+        aesCipher.init(Cipher.DECRYPT_MODE, aesKey, AppProperties.STANDARD_IV);
         return aesCipher.doFinal(ciphertext);
     }
 
     public KeyPair generateKeyPair() throws NoSuchAlgorithmException {
         KeyPairGenerator keyGen;
         keyGen = KeyPairGenerator.getInstance("RSA");
-        keyGen.initialize(Config.RSA_KEY_SIZE);
+        keyGen.initialize(AppProperties.PREFERRED_RSA_KEY_SIZE);
         return keyGen.genKeyPair();
     }
 
@@ -327,17 +327,17 @@ public class CryptoHelper {
             InvalidKeySpecException, NoSuchPaddingException, InvalidAlgorithmParameterException, InvalidKeyException,
             BadPaddingException, IllegalBlockSizeException, UnsupportedEncodingException {
         SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
-        KeySpec spec = new PBEKeySpec(password.toCharArray(), Config.PASSCHECK_SALT,
-                Config.AES_KEY_GEN_ITERATIONS, Config.AES_KEY_SIZE);
+        KeySpec spec = new PBEKeySpec(password.toCharArray(), AppProperties.PASSCHECK_SALT,
+                AppProperties.AES_KEY_GEN_ITERATIONS, AppProperties.PREFERRED_AES_KEY_SIZE);
         SecretKey tmp = factory.generateSecret(spec);
         SecretKey aesKey = new SecretKeySpec(tmp.getEncoded(), "AES");
-        Cipher aesCipher = Cipher.getInstance(Config.PREFERRED_AES_ALG);
-        aesCipher.init(Cipher.ENCRYPT_MODE, aesKey, Config.STANDARD_IV);
+        Cipher aesCipher = Cipher.getInstance(AppProperties.PREFERRED_AES_ALG);
+        aesCipher.init(Cipher.ENCRYPT_MODE, aesKey, AppProperties.STANDARD_IV);
 
         //Encrypt the private key with the password.
         byte[] encryptedPrivateKey = aesCipher.doFinal(keyPair.getPrivate().getEncoded());
         //encrypt the text
-        byte[] cipherText = aesCipher.doFinal(Config.PASSCHECK_TEXT.getBytes("UTF-8"));
+        byte[] cipherText = aesCipher.doFinal(AppProperties.PASSCHECK_TEXT.getBytes("UTF-8"));
 
         return new EncodedKeyInfo(Base64.encodeBase64URLSafeString(encryptedPrivateKey),
                 Base64.encodeBase64URLSafeString(keyPair.getPublic().getEncoded()),

@@ -1,6 +1,6 @@
 package commands;
 
-import co.samco.mend4.core.Config;
+import co.samco.mend4.core.AppProperties;
 import co.samco.mend4.core.Settings;
 import co.samco.mend4.core.Settings.InvalidSettingNameException;
 import co.samco.mend4.core.Settings.CorruptSettingsException;
@@ -8,6 +8,7 @@ import co.samco.mend4.desktop.commands.Unlock;
 import co.samco.mend4.desktop.core.I18N;
 import co.samco.mend4.desktop.dao.OSDao;
 import co.samco.mend4.desktop.helper.CryptoHelper;
+import co.samco.mend4.desktop.helper.FileResolveHelper;
 import co.samco.mend4.desktop.helper.ShredHelper;
 import co.samco.mend4.desktop.output.PrintStreamProvider;
 import org.junit.Before;
@@ -41,8 +42,12 @@ public class UnlockTest {
     private PrintStreamProvider log;
     private CryptoHelper cryptoHelper;
     private ShredHelper shredHelper;
+    private FileResolveHelper fileResolveHelper;
 
     private ArgumentCaptor<String> errCaptor;
+
+    private String privateKeyPath = "privateKeyPath";
+    private String publicKeyPath = "publicKeyPath";
 
     @Before
     public void setup() {
@@ -57,7 +62,10 @@ public class UnlockTest {
         cryptoHelper = mock(CryptoHelper.class);
         osDao = mock(OSDao.class);
         shredHelper = mock(ShredHelper.class);
-        unlock = new Unlock(strings, osDao, new FakeLazy<>(settings), log, cryptoHelper, shredHelper);
+        fileResolveHelper = mock(FileResolveHelper.class);
+        when(fileResolveHelper.getPrivateKeyPath()).thenReturn(privateKeyPath);
+        when(fileResolveHelper.getPublicKeyPath()).thenReturn(publicKeyPath);
+        unlock = new Unlock(strings, osDao, new FakeLazy<>(settings), log, cryptoHelper, shredHelper, fileResolveHelper);
     }
 
     @Test
@@ -97,7 +105,7 @@ public class UnlockTest {
         String password = "password";
         when(osDao.readPassword(anyString())).thenReturn(password.toCharArray());
         when(cryptoHelper.decryptBytesWithPassword(any(byte[].class), any(char[].class)))
-                .thenReturn(Config.PASSCHECK_TEXT.getBytes("UTF-8"));
+                .thenReturn(AppProperties.PASSCHECK_TEXT.getBytes("UTF-8"));
         unlock.execute(Collections.emptyList());
         verify(osDao, times(2)).writeDataToFile(any(), any());
     }

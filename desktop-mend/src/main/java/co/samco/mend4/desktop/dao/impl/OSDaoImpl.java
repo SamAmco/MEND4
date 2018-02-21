@@ -11,7 +11,18 @@ import java.nio.file.Path;
 //TODO clean this up, take strings out etc
 public class OSDaoImpl implements OSDao {
 
+
+    private String userHomeCached;
+
     public OSDaoImpl() {}
+
+    @Override
+    public String getUserHome() {
+        if (userHomeCached == null) {
+            userHomeCached = System.getProperty("user.home");
+        }
+        return userHomeCached;
+    }
 
     @Override
     public void mkdirs(File file) {

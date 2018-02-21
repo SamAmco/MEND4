@@ -1,6 +1,6 @@
 package commands;
 
-import co.samco.mend4.core.Config;
+import co.samco.mend4.core.AppProperties;
 import co.samco.mend4.core.Settings;
 import co.samco.mend4.core.Settings.InvalidSettingNameException;
 import co.samco.mend4.core.Settings.CorruptSettingsException;
@@ -37,7 +37,6 @@ public class StatePrinterTest {
     private PrintStream out;
     private OSDao osDao;
     private FileResolveHelper fileResolveHelper;
-    private Settings settings;
     private SettingsHelper settingsHelper;
 
     @Before
@@ -50,10 +49,8 @@ public class StatePrinterTest {
         when(log.out()).thenReturn(out);
         osDao = mock(OSDao.class);
         fileResolveHelper = mock(FileResolveHelper.class);
-        settings = mock(Settings.class);
         settingsHelper = mock(SettingsHelper.class);
-        statePrinter = new StatePrinter(strings, log, osDao, fileResolveHelper,
-                new FakeLazy<>(settings), settingsHelper);
+        statePrinter = new StatePrinter(strings, log, osDao, fileResolveHelper, settingsHelper);
     }
 
     @Test
@@ -83,14 +80,14 @@ public class StatePrinterTest {
     public void logFlag() throws InvalidSettingNameException, CorruptSettingsException, FileNotFoundException {
         String logDir = "dir";
         when(fileResolveHelper.getLogDir()).thenReturn(logDir);
-        filePrintTest(StatePrinter.LOGS_FLAG, Config.LOG_FILE_EXTENSION);
+        filePrintTest(StatePrinter.LOGS_FLAG, AppProperties.LOG_FILE_EXTENSION);
     }
 
     @Test
     public void encFlag() throws InvalidSettingNameException, CorruptSettingsException, FileNotFoundException {
         String encDir = "dir";
         when(fileResolveHelper.getEncDir()).thenReturn(encDir);
-        filePrintTest(StatePrinter.ENCS_FLAG, Config.ENC_FILE_EXTENSION);
+        filePrintTest(StatePrinter.ENCS_FLAG, AppProperties.ENC_FILE_EXTENSION);
     }
 
     @Test

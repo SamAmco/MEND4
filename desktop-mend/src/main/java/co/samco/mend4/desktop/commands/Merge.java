@@ -1,6 +1,6 @@
 package co.samco.mend4.desktop.commands;
 
-import co.samco.mend4.core.Config;
+import co.samco.mend4.core.AppProperties;
 import co.samco.mend4.core.impl.SettingsImpl;
 import co.samco.mend4.desktop.core.I18N;
 import co.samco.mend4.desktop.dao.OSDao;
@@ -82,8 +82,8 @@ public class Merge extends Command {
             throws SettingsImpl.InvalidSettingNameException, SettingsImpl.CorruptSettingsException, FileNotFoundException {
         File firstLog = fileResolveHelper.resolveLogFilePath(file1);
         File secondLog = fileResolveHelper.resolveLogFilePath(file2);
-        fileResolveHelper.assertFileExistsAndHasExtension(file1, Config.LOG_FILE_EXTENSION, firstLog);
-        fileResolveHelper.assertFileExistsAndHasExtension(file2, Config.LOG_FILE_EXTENSION, secondLog);
+        fileResolveHelper.assertFileExistsAndHasExtension(file1, AppProperties.LOG_FILE_EXTENSION, firstLog);
+        fileResolveHelper.assertFileExistsAndHasExtension(file2, AppProperties.LOG_FILE_EXTENSION, secondLog);
         return new ImmutablePair<>(firstLog, secondLog);
     }
 

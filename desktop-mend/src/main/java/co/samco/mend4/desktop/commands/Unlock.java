@@ -22,12 +22,13 @@ import co.samco.mend4.core.Settings.InvalidSettingNameException;
 import co.samco.mend4.desktop.core.I18N;
 import co.samco.mend4.desktop.dao.OSDao;
 import co.samco.mend4.desktop.helper.CryptoHelper;
+import co.samco.mend4.desktop.helper.FileResolveHelper;
 import co.samco.mend4.desktop.helper.ShredHelper;
 import co.samco.mend4.desktop.output.PrintStreamProvider;
 import dagger.Lazy;
 import org.apache.commons.codec.binary.Base64;
 
-import co.samco.mend4.core.Config;
+import co.samco.mend4.core.AppProperties;
 
 public class Unlock extends Command {
     public static final String COMMAND_NAME = "unlock";
@@ -38,11 +39,12 @@ public class Unlock extends Command {
     private final PrintStreamProvider log;
     private final CryptoHelper cryptoHelper;
     private final ShredHelper shredHelper;
+    private final FileResolveHelper fileResolveHelper;
 
     char[] password;
 
-    private final File privateKeyFile = new File(Config.CONFIG_PATH + Config.PRIVATE_KEY_FILE_DEC);
-    private final File publicKeyFile = new File(Config.CONFIG_PATH + Config.PUBLIC_KEY_FILE);
+    private final File privateKeyFile;// = new File(Config.CONFIG_DIR_NAME + Config.PRIVATE_KEY_FILE_NAME);
+    private final File publicKeyFile;// = new File(Config.CONFIG_DIR_NAME + Config.PUBLIC_KEY_FILE_NAME);
     private List<Function<List<String>, List<String>>> behaviourChain = Arrays.asList(
             a -> readPassword(a),
             a -> checkPassword(a),
@@ -52,13 +54,16 @@ public class Unlock extends Command {
 
     @Inject
     public Unlock(I18N strings, OSDao osDao, Lazy<Settings> settings, PrintStreamProvider log,
-                  CryptoHelper cryptoHelper, ShredHelper shredHelper) {
+                  CryptoHelper cryptoHelper, ShredHelper shredHelper, FileResolveHelper fileResolveHelper) {
         this.strings = strings;
         this.osDao = osDao;
         this.settings = settings;
         this.log = log;
         this.cryptoHelper = cryptoHelper;
         this.shredHelper = shredHelper;
+        this.fileResolveHelper = fileResolveHelper;
+        privateKeyFile = new File(fileResolveHelper.getPrivateKeyPath());
+        publicKeyFile = new File(fileResolveHelper.getPublicKeyPath());
     }
 
     private List<String> readPassword(List<String> args) {
@@ -71,7 +76,7 @@ public class Unlock extends Command {
             byte[] cipherText = Base64.decodeBase64(settings.get().getValue(Settings.Name.PASSCHECK));
             byte[] plainText = cryptoHelper.decryptBytesWithPassword(cipherText, password);
 
-            if (!Config.PASSCHECK_TEXT.equals(new String(plainText, "UTF-8"))) {
+            if (!AppProperties.PASSCHECK_TEXT.equals(new String(plainText, "UTF-8"))) {
                 log.err().println(strings.get("Unlock.incorrectPassword"));
                 return null;
             }

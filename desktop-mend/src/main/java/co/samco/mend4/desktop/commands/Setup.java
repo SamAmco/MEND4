@@ -13,7 +13,7 @@ import javax.crypto.NoSuchPaddingException;
 import javax.inject.Inject;
 import javax.xml.transform.TransformerException;
 
-import co.samco.mend4.core.Config;
+import co.samco.mend4.core.AppProperties;
 
 import co.samco.mend4.core.Settings;
 import co.samco.mend4.core.Settings.InvalidSettingNameException;
@@ -25,6 +25,7 @@ import co.samco.mend4.desktop.helper.FileResolveHelper;
 import co.samco.mend4.desktop.output.PrintStreamProvider;
 import dagger.Lazy;
 
+//TODO allow people to call setup with different flags to modify things like key sizes etc
 public class Setup extends Command {
     public static final String COMMAND_NAME = "setup";
     public static final String FORCE_FLAG = "-f";
@@ -62,9 +63,9 @@ public class Setup extends Command {
     private List<String> checkAlreadySetup(List<String> args) {
         if (args.contains(FORCE_FLAG)) {
             args.remove(FORCE_FLAG);
-        } else if (osDao.fileExists(new File(Config.CONFIG_PATH + Config.SETTINGS_FILE))) {
+        } else if (osDao.fileExists(new File(fileResolveHelper.getSettingsPath()))) {
             log.err().println(strings.getf("SetupMend.alreadySetup",
-                    Config.CONFIG_PATH + Config.SETTINGS_FILE, FORCE_FLAG));
+                    fileResolveHelper.getSettingsPath(), FORCE_FLAG));
             return null;
         }
         return args;
@@ -94,8 +95,8 @@ public class Setup extends Command {
     }
 
     private List<String> ensureSettingsPathExists(List<String> args) {
-        log.out().println(strings.getf("SetupMend.creating", Config.CONFIG_PATH));
-        osDao.mkdirs(new File(Config.CONFIG_PATH));
+        log.out().println(strings.getf("SetupMend.creating", fileResolveHelper.getSettingsPath()));
+        osDao.mkdirs(new File(fileResolveHelper.getSettingsPath()));
         return args;
     }
 
@@ -118,10 +119,10 @@ public class Setup extends Command {
 
     private List<String> setEncryptionProperties(List<String> args) {
         try {
-            settings.get().setValue(Settings.Name.PREFERREDAES, Config.PREFERRED_AES_ALG);
-            settings.get().setValue(Settings.Name.PREFERREDRSA, Config.PREFERRED_RSA_ALG);
-            settings.get().setValue(Settings.Name.AESKEYSIZE, Integer.toString(Config.AES_KEY_SIZE));
-            settings.get().setValue(Settings.Name.RSAKEYSIZE, Integer.toString(Config.RSA_KEY_SIZE));
+            settings.get().setValue(Settings.Name.PREFERREDAES, AppProperties.PREFERRED_AES_ALG);
+            settings.get().setValue(Settings.Name.PREFERREDRSA, AppProperties.PREFERRED_RSA_ALG);
+            settings.get().setValue(Settings.Name.AESKEYSIZE, Integer.toString(AppProperties.PREFERRED_AES_KEY_SIZE));
+            settings.get().setValue(Settings.Name.RSAKEYSIZE, Integer.toString(AppProperties.PREFERRED_RSA_KEY_SIZE));
         } catch (TransformerException | CorruptSettingsException | InvalidSettingNameException e) {
             log.err().println(e.getMessage());
             return null;

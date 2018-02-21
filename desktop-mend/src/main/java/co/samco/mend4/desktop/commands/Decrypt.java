@@ -16,7 +16,7 @@ import co.samco.mend4.desktop.helper.FileResolveHelper;
 import co.samco.mend4.desktop.output.PrintStreamProvider;
 import dagger.Lazy;
 
-import co.samco.mend4.core.Config;
+import co.samco.mend4.core.AppProperties;
 import co.samco.mend4.core.Settings.CorruptSettingsException;
 import co.samco.mend4.core.Settings.InvalidSettingNameException;
 
@@ -74,7 +74,7 @@ public class Decrypt extends Command {
     private List<String> tryResolveFileAsEncId(List<String> args) {
         try {
             File file = fileResolveHelper.resolveEncFilePath(fileIdentifier);
-            if (fileResolveHelper.fileExistsAndHasExtension(Config.ENC_FILE_EXTENSION, file)) {
+            if (fileResolveHelper.fileExistsAndHasExtension(AppProperties.ENC_FILE_EXTENSION, file)) {
                 cryptoHelper.decryptFile(file, silent);
                 return null;
             } else return args;
@@ -87,7 +87,7 @@ public class Decrypt extends Command {
     private List<String> tryResolveFileAsLog() {
         try {
             File file = fileResolveHelper.resolveLogFilePath(fileIdentifier);
-            fileResolveHelper.assertFileExistsAndHasExtension(fileIdentifier, Config.LOG_FILE_EXTENSION, file);
+            fileResolveHelper.assertFileExistsAndHasExtension(fileIdentifier, AppProperties.LOG_FILE_EXTENSION, file);
             cryptoHelper.decryptLog(file);
         } catch (CorruptSettingsException | InvalidSettingNameException | FileNotFoundException e) {
             log.err().println(e.getMessage());

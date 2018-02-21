@@ -5,10 +5,10 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
-import co.samco.mend4.core.Config;
 import co.samco.mend4.core.impl.SettingsImpl;
 import co.samco.mend4.desktop.core.I18N;
 import co.samco.mend4.desktop.dao.OSDao;
+import co.samco.mend4.desktop.helper.FileResolveHelper;
 import co.samco.mend4.desktop.helper.ShredHelper;
 import co.samco.mend4.desktop.output.PrintStreamProvider;
 
@@ -20,13 +20,16 @@ public class Lock extends Command {
     private final PrintStreamProvider log;
     private final ShredHelper shredHelper;
     private final I18N strings;
+    private final FileResolveHelper fileResolveHelper;
 
     @Inject
-    public Lock(I18N strings, PrintStreamProvider log, OSDao OSDao, ShredHelper shredHelper) {
+    public Lock(I18N strings, PrintStreamProvider log, OSDao OSDao,
+                ShredHelper shredHelper, FileResolveHelper fileResolveHelper) {
         this.osDao = OSDao;
         this.log = log;
         this.shredHelper = shredHelper;
         this.strings = strings;
+        this.fileResolveHelper = fileResolveHelper;
     }
 
     private void printIfNotNull(String message) {
@@ -36,7 +39,7 @@ public class Lock extends Command {
     }
 
     private void printLockStatus(String messageIfUnlocked, String messageIfLocked) {
-        File privateKeyFile = new File(Config.CONFIG_PATH + Config.PRIVATE_KEY_FILE_DEC);
+        File privateKeyFile = new File(fileResolveHelper.getPrivateKeyPath());
         boolean locked = !osDao.fileExists(privateKeyFile);
         printIfNotNull(locked ? messageIfLocked : messageIfUnlocked);
     }
@@ -45,8 +48,8 @@ public class Lock extends Command {
     public void execute(List<String> args) {
         try {
             printLockStatus(null, strings.get("Lock.notUnlocked"));
-            shredHelper.tryShredFile(Config.CONFIG_PATH + Config.PRIVATE_KEY_FILE_DEC);
-            shredHelper.tryShredFile(Config.CONFIG_PATH + Config.PUBLIC_KEY_FILE);
+            shredHelper.tryShredFile(fileResolveHelper.getPrivateKeyPath());
+            shredHelper.tryShredFile(fileResolveHelper.getPublicKeyPath());
             printLockStatus(strings.get("Lock.lockFailed"), strings.get("Lock.locked"));
         } catch (IOException | SettingsImpl.CorruptSettingsException | SettingsImpl.InvalidSettingNameException e) {
             log.err().println(e.getMessage());

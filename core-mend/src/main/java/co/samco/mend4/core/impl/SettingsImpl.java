@@ -2,9 +2,6 @@ package co.samco.mend4.core.impl;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -15,7 +12,6 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
-import co.samco.mend4.core.Config;
 import co.samco.mend4.core.Settings;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -23,15 +19,12 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
-//This class provides the singleton for the global ISettings implementation, as well as providing a default
-// implementation
-//for an xml based settings file
-public abstract class SettingsImpl implements Settings {
+public class SettingsImpl implements Settings {
     protected Document doc;
     protected Element rootElement;
     protected File settingsFile;
 
-    protected SettingsImpl(File settingsFile) throws ParserConfigurationException, SAXException, IOException {
+    public SettingsImpl(File settingsFile) throws ParserConfigurationException, SAXException, IOException {
         System.err.println(settingsFile.getAbsolutePath());
         this.settingsFile = settingsFile;
         DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();

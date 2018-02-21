@@ -1,12 +1,12 @@
 package commands;
 
-import co.samco.mend4.core.Config;
 import co.samco.mend4.core.Settings;
 import co.samco.mend4.core.Settings.CorruptSettingsException;
 import co.samco.mend4.core.Settings.InvalidSettingNameException;
 import co.samco.mend4.desktop.commands.Lock;
 import co.samco.mend4.desktop.core.I18N;
 import co.samco.mend4.desktop.dao.OSDao;
+import co.samco.mend4.desktop.helper.FileResolveHelper;
 import co.samco.mend4.desktop.helper.ShredHelper;
 import co.samco.mend4.desktop.output.PrintStreamProvider;
 import testutils.FakeLazy;
@@ -34,6 +34,9 @@ public class LockTest {
    private PrintStream out;
    private ShredHelper shredHelper;
    private I18N strings;
+   private FileResolveHelper fileResolveHelper;
+   private String privateKeyPath = "privpath";
+   private String publicKeyPath = "pubpath";
 
    @Before
    public void setup() {
@@ -45,8 +48,12 @@ public class LockTest {
       when(printStreamProvider.out()).thenReturn(out);
       settings = mock(Settings.class);
       osDao = mock(OSDao.class);
+      fileResolveHelper = mock(FileResolveHelper.class);
       shredHelper = new ShredHelper(strings, osDao, new FakeLazy<>(settings), printStreamProvider);
-      lock = new Lock(strings, printStreamProvider, osDao, shredHelper);
+
+      when(fileResolveHelper.getPrivateKeyPath()).thenReturn(privateKeyPath);
+      when(fileResolveHelper.getPublicKeyPath()).thenReturn(publicKeyPath);
+      lock = new Lock(strings, printStreamProvider, osDao, shredHelper, fileResolveHelper);
    }
 
    private ArgumentCaptor<String> getOutputOfLockTest() throws IOException, InvalidSettingNameException,
@@ -61,10 +68,8 @@ public class LockTest {
    }
 
    private void assertCleaning(ArgumentCaptor<String> stdErr, int startInd) {
-      Assert.assertEquals(stdErr.getAllValues().get(startInd), strings.getf("Shred.cleaning",
-              Config.CONFIG_PATH + Config.PRIVATE_KEY_FILE_DEC));
-      Assert.assertEquals(stdErr.getAllValues().get(startInd + 1), strings.getf("Shred.cleaning",
-              Config.CONFIG_PATH + Config.PUBLIC_KEY_FILE));
+      Assert.assertEquals(strings.getf("Shred.cleaning", privateKeyPath), stdErr.getAllValues().get(startInd));
+      Assert.assertEquals(strings.getf("Shred.cleaning", publicKeyPath), stdErr.getAllValues().get(startInd + 1));
    }
 
    @Test

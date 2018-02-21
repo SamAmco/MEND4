@@ -1,6 +1,6 @@
 package co.samco.mend4.desktop.helper;
 
-import co.samco.mend4.core.Config;
+import co.samco.mend4.core.AppProperties;
 import co.samco.mend4.core.Settings;
 import co.samco.mend4.core.Settings.CorruptSettingsException;
 import co.samco.mend4.core.Settings.InvalidSettingNameException;
@@ -85,9 +85,27 @@ public class FileResolveHelper {
         return encDir;
     }
 
+    public String getSettingsPath() {
+        return osDao.getUserHome() + File.pathSeparator
+                + AppProperties.CONFIG_DIR_NAME + File.pathSeparator
+                + AppProperties.SETTINGS_FILE_NAME;
+    }
+
+    public String getPublicKeyPath() {
+        return osDao.getUserHome() + File.pathSeparator
+                + AppProperties.CONFIG_DIR_NAME + File.pathSeparator
+                + AppProperties.PUBLIC_KEY_FILE_NAME;
+    }
+
+    public String getPrivateKeyPath() {
+        return osDao.getUserHome() + File.pathSeparator
+                + AppProperties.CONFIG_DIR_NAME + File.pathSeparator
+                + AppProperties.PRIVATE_KEY_FILE_NAME;
+    }
+
     public RSAPrivateKey getPrivateKey() {
         //TODO implement this cached
-        //File privateKeyFile = new File(Config.CONFIG_PATH + Config.PRIVATE_KEY_FILE_DEC);
+        //File privateKeyFile = new File(Config.CONFIG_DIR_NAME + Config.PRIVATE_KEY_FILE_NAME);
         return null;
     }
 
@@ -97,7 +115,7 @@ public class FileResolveHelper {
 
     public File resolveLogFilePath(String filePath) throws InvalidSettingNameException, CorruptSettingsException {
         if (osDao.getFileExtension(filePath).equals("")) {
-            return FileUtils.getFile(getLogDir(), filePath + "." + Config.LOG_FILE_EXTENSION);
+            return FileUtils.getFile(getLogDir(), filePath + "." + AppProperties.LOG_FILE_EXTENSION);
         } else if (osDao.fileExists(new File(filePath))) {
             return new File(filePath);
         } else {
@@ -108,7 +126,7 @@ public class FileResolveHelper {
     public File resolveEncFilePath(String fileIdentifier)
             throws InvalidSettingNameException, CorruptSettingsException {
         if (filePathIsEncId(fileIdentifier)) {
-            return FileUtils.getFile(getEncDir(), fileIdentifier + "." + Config.ENC_FILE_EXTENSION);
+            return FileUtils.getFile(getEncDir(), fileIdentifier + "." + AppProperties.ENC_FILE_EXTENSION);
         } else {
             return new File(fileIdentifier);
         }
@@ -117,10 +135,10 @@ public class FileResolveHelper {
     public File getTempFile(String dir) {
         String tempName = "tmp";
         int tempSuffix = 0;
-        File currentOutFile = new File(dir + File.separatorChar + tempName + tempSuffix + Config.LOG_FILE_EXTENSION);
+        File currentOutFile = new File(dir + File.separatorChar + tempName + tempSuffix + AppProperties.LOG_FILE_EXTENSION);
         while (osDao.fileExists(currentOutFile)) {
             tempSuffix++;
-            currentOutFile = new File(dir + tempName + tempSuffix + Config.LOG_FILE_EXTENSION);
+            currentOutFile = new File(dir + tempName + tempSuffix + AppProperties.LOG_FILE_EXTENSION);
         }
         return currentOutFile;
     }

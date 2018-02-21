@@ -3,8 +3,6 @@ package co.samco.mend4.core;
 import javax.xml.transform.TransformerException;
 
 public interface Settings {
-    String getPlatformDependentHeader();
-
     void setValue(Name name, String value) throws TransformerException,
             CorruptSettingsException, InvalidSettingNameException;
 

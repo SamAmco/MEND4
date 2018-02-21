@@ -1,6 +1,6 @@
 package commands;
 
-import co.samco.mend4.core.Config;
+import co.samco.mend4.core.AppProperties;
 import co.samco.mend4.core.Settings;
 import co.samco.mend4.core.impl.SettingsImpl;
 import co.samco.mend4.desktop.commands.Decrypt;
@@ -55,25 +55,25 @@ public class DecryptTest {
 
     @Test
     public void decryptLog() throws SettingsImpl.InvalidSettingNameException, SettingsImpl.CorruptSettingsException {
-        String logFileName = "logFile." + Config.LOG_FILE_EXTENSION;
+        String logFileName = "logFile." + AppProperties.LOG_FILE_EXTENSION;
         decryptLog(logFileName, false);
     }
 
     @Test
     public void decryptLogWithSilentFlag() throws SettingsImpl.InvalidSettingNameException, SettingsImpl.CorruptSettingsException {
-        String logFileName = "logFile." + Config.LOG_FILE_EXTENSION;
+        String logFileName = "logFile." + AppProperties.LOG_FILE_EXTENSION;
         decryptLog(logFileName, true);
     }
 
     @Test
     public void decryptEnc() throws SettingsImpl.InvalidSettingNameException, SettingsImpl.CorruptSettingsException {
-        String encFileName = "sam." + Config.ENC_FILE_EXTENSION;
+        String encFileName = "sam." + AppProperties.ENC_FILE_EXTENSION;
         decryptEnc(encFileName, Arrays.asList(encFileName), false);
     }
 
     @Test
     public void decryptEncSilent() throws SettingsImpl.InvalidSettingNameException, SettingsImpl.CorruptSettingsException {
-        String encFileName = "sam." + Config.ENC_FILE_EXTENSION;
+        String encFileName = "sam." + AppProperties.ENC_FILE_EXTENSION;
         decryptEnc(encFileName, Arrays.asList(encFileName, Decrypt.SILENT_FLAG), true);
     }
 
@@ -110,10 +110,10 @@ public class DecryptTest {
     private void decryptEnc(String encFileName, List<String> args, boolean silentFlag)
             throws SettingsImpl.InvalidSettingNameException, SettingsImpl.CorruptSettingsException {
         when(fileResolveHelper.resolveEncFilePath(encFileName)).thenReturn(new File(encFileName));
-        when(fileResolveHelper.fileExistsAndHasExtension(eq(Config.ENC_FILE_EXTENSION), any(File.class))).thenReturn(true);
+        when(fileResolveHelper.fileExistsAndHasExtension(eq(AppProperties.ENC_FILE_EXTENSION), any(File.class))).thenReturn(true);
         decrypt.execute(args);
         ArgumentCaptor<File> fileCaptor = ArgumentCaptor.forClass(File.class);
-        verify(fileResolveHelper).fileExistsAndHasExtension(eq(Config.ENC_FILE_EXTENSION), any(File.class));
+        verify(fileResolveHelper).fileExistsAndHasExtension(eq(AppProperties.ENC_FILE_EXTENSION), any(File.class));
         verify(cryptoHelper).decryptFile(fileCaptor.capture(), eq(silentFlag));
         Assert.assertEquals(encFileName, fileCaptor.getValue().getName());
     }

@@ -15,7 +15,7 @@ import co.samco.mend4.desktop.helper.FileResolveHelper;
 import co.samco.mend4.desktop.helper.SettingsHelper;
 import co.samco.mend4.desktop.output.PrintStreamProvider;
 
-import co.samco.mend4.core.Config;
+import co.samco.mend4.core.AppProperties;
 import dagger.Lazy;
 
 import javax.inject.Inject;
@@ -30,7 +30,6 @@ public class StatePrinter extends Command {
     private final PrintStreamProvider log;
     private final OSDao osDao;
     private final FileResolveHelper fileResolveHelper;
-    private final Lazy<Settings> settings;
     private final SettingsHelper settingsHelper;
 
     private String arg;
@@ -43,13 +42,12 @@ public class StatePrinter extends Command {
     );
 
     @Inject
-    public StatePrinter(I18N strings, PrintStreamProvider log, OSDao osDao, FileResolveHelper fileResolveHelper,
-                        Lazy<Settings> settings, SettingsHelper settingsHelper) {
+    public StatePrinter(I18N strings, PrintStreamProvider log, OSDao osDao,
+                        FileResolveHelper fileResolveHelper, SettingsHelper settingsHelper) {
         this.strings = strings;
         this.log = log;
         this.osDao = osDao;
         this.fileResolveHelper = fileResolveHelper;
-        this.settings = settings;
         this.settingsHelper = settingsHelper;
     }
 
@@ -101,7 +99,7 @@ public class StatePrinter extends Command {
             CorruptSettingsException, FileNotFoundException {
         File encDir = new File(fileResolveHelper.getEncDir());
         String encs = Arrays.stream(osDao.getDirectoryListing(encDir))
-                .filter(f -> osDao.getFileExtension(f).equals(Config.ENC_FILE_EXTENSION))
+                .filter(f -> osDao.getFileExtension(f).equals(AppProperties.ENC_FILE_EXTENSION))
                 .map(f -> osDao.getBaseName(f))
                 .collect(Collectors.joining(strings.getNewLine()));
         log.out().println(encs);
@@ -111,7 +109,7 @@ public class StatePrinter extends Command {
             CorruptSettingsException, FileNotFoundException {
         File logDir = new File(fileResolveHelper.getLogDir());
         String logs = Arrays.stream(osDao.getDirectoryListing(logDir))
-                .filter(f -> osDao.getFileExtension(f).equals(Config.LOG_FILE_EXTENSION))
+                .filter(f -> osDao.getFileExtension(f).equals(AppProperties.LOG_FILE_EXTENSION))
                 .map(f -> osDao.getBaseName(f))
                 .collect(Collectors.joining(strings.getNewLine()));
         log.out().println(logs);

@@ -1,6 +1,6 @@
 package commands;
 
-import co.samco.mend4.core.Config;
+import co.samco.mend4.core.AppProperties;
 import co.samco.mend4.core.Settings;
 import co.samco.mend4.core.Settings.CorruptSettingsException;
 import co.samco.mend4.core.Settings.InvalidSettingNameException;
@@ -48,6 +48,8 @@ public class SetupTest {
     private Settings settings;
     private ArgumentCaptor<String> errCaptor;
 
+    private final String settingsPath = "settingspath";
+
     @Before
     public void setup() {
         errCaptor = ArgumentCaptor.forClass(String.class);
@@ -61,6 +63,8 @@ public class SetupTest {
         settings = mock(Settings.class);
         cryptoHelper = mock(CryptoHelper.class);
         osDao = mock(OSDao.class);
+
+        when(fileResolveHelper.getSettingsPath()).thenReturn(settingsPath);
         setup = new Setup(log, strings, osDao, cryptoHelper, fileResolveHelper, new FakeLazy<>(settings));
     }
 
@@ -69,8 +73,8 @@ public class SetupTest {
         when(osDao.fileExists(any(File.class))).thenReturn(true);
         setup.execute(Collections.emptyList());
         verify(err).println(errCaptor.capture());
-        Assert.assertEquals(strings.getf("SetupMend.alreadySetup",
-                Config.CONFIG_PATH + Config.SETTINGS_FILE, Setup.FORCE_FLAG), errCaptor.getValue());
+        Assert.assertEquals(strings.getf("SetupMend.alreadySetup", settingsPath, Setup.FORCE_FLAG),
+                errCaptor.getValue());
     }
 
     @Test
@@ -156,10 +160,10 @@ public class SetupTest {
 
     private void verifySettingsSetup(CryptoHelper.EncodedKeyInfo keyInfo) throws InvalidSettingNameException,
             TransformerException, CorruptSettingsException {
-        verify(settings).setValue(eq(Settings.Name.PREFERREDAES), eq(Config.PREFERRED_AES_ALG));
-        verify(settings).setValue(eq(Settings.Name.PREFERREDRSA), eq(Config.PREFERRED_RSA_ALG));
-        verify(settings).setValue(eq(Settings.Name.AESKEYSIZE), eq(Integer.toString(Config.AES_KEY_SIZE)));
-        verify(settings).setValue(eq(Settings.Name.RSAKEYSIZE), eq(Integer.toString(Config.RSA_KEY_SIZE)));
+        verify(settings).setValue(eq(Settings.Name.PREFERREDAES), eq(AppProperties.PREFERRED_AES_ALG));
+        verify(settings).setValue(eq(Settings.Name.PREFERREDRSA), eq(AppProperties.PREFERRED_RSA_ALG));
+        verify(settings).setValue(eq(Settings.Name.AESKEYSIZE), eq(Integer.toString(AppProperties.PREFERRED_AES_KEY_SIZE)));
+        verify(settings).setValue(eq(Settings.Name.RSAKEYSIZE), eq(Integer.toString(AppProperties.PREFERRED_RSA_KEY_SIZE)));
         verify(settings).setValue(eq(Settings.Name.PRIVATEKEY), eq(keyInfo.getPrivateKey()));
         verify(settings).setValue(eq(Settings.Name.PUBLICKEY), eq(keyInfo.getPublicKey()));
         verify(settings).setValue(eq(Settings.Name.PASSCHECK), eq(keyInfo.getCipherText()));
