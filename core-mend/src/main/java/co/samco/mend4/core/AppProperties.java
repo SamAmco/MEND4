@@ -13,9 +13,9 @@ public class AppProperties {
     public static final String PASSCHECK_TEXT = "How much wood could a wood chuck chuck if a wood chuck could chuck wood?";
     public static final String PREFERRED_AES_ALG = "AES/CTR/NoPadding";
     public static final String PREFERRED_RSA_ALG = "RSA/ECB/PKCS1Padding";
-    public static int PREFERRED_RSA_KEY_SIZE = 4096;
-    public static int PREFERRED_AES_KEY_SIZE = 256;
-    public static int AES_KEY_GEN_ITERATIONS = 65536;
+    public static final int PREFERRED_RSA_KEY_SIZE = 4096;
+    public static final int PREFERRED_AES_KEY_SIZE = 256;
+    public static final int AES_KEY_GEN_ITERATIONS = 65536;
     public static final byte[] PASSCHECK_SALT = new byte[] {
             (byte) 0xd7, (byte) 0x73, (byte) 0x31, (byte) 0x8a,
             (byte) 0x2e, (byte) 0xc8, (byte) 0xef, (byte) 0x99

@@ -30,7 +30,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class StatePrinterTest {
-    StatePrinter statePrinter;
+    private StatePrinter statePrinter;
     private I18N strings;
     private PrintStreamProvider log;
     private PrintStream err;
