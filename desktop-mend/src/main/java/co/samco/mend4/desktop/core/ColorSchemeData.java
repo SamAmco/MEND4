@@ -1,7 +1,6 @@
 package co.samco.mend4.desktop.core;
 
-import java.awt.Color;
-import java.awt.Font;
+import java.awt.*;
 
 public class ColorSchemeData {
     public static Font getConsoleFont() {

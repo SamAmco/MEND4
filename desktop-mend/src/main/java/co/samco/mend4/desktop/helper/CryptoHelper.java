@@ -2,7 +2,6 @@ package co.samco.mend4.desktop.helper;
 
 import co.samco.mend4.core.AppProperties;
 import co.samco.mend4.core.EncryptionUtils;
-import co.samco.mend4.core.impl.SettingsImpl;
 import co.samco.mend4.desktop.core.ApacheCommonsEncoder;
 import co.samco.mend4.desktop.output.PrintStreamProvider;
 import org.apache.commons.codec.binary.Base64;
@@ -80,10 +79,9 @@ public class CryptoHelper {
                 if (fos != null)
                     fos.close();
             }
-        } catch (SettingsImpl.CorruptSettingsException | SettingsImpl.InvalidSettingNameException
-                | SettingsImpl.UnInitializedSettingsException | IOException | InvalidKeyException
-                | NoSuchAlgorithmException | NoSuchPaddingException | InvalidAlgorithmParameterException
-                | InvalidKeySpecException | IllegalBlockSizeException | BadPaddingException e) {
+        } catch (IOException | InvalidKeyException | NoSuchAlgorithmException | NoSuchPaddingException
+                | InvalidAlgorithmParameterException | InvalidKeySpecException | IllegalBlockSizeException
+                | BadPaddingException e) {
             System.err.println(e.getMessage());
         } catch (EncryptionUtils.MissingPublicKeyException e) {
             System.err.println("Failed to find your public key. Please ensure you have run \"mend setup\" "
@@ -134,11 +132,9 @@ public class CryptoHelper {
             DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
             Date date = new Date();
             System.out.println("Successfully Logged entry at: " + dateFormat.format(date));
-        } catch (NoSuchAlgorithmException | IOException | InvalidKeyException
-                | IllegalBlockSizeException | BadPaddingException
-                | InvalidKeySpecException | SettingsImpl.CorruptSettingsException
-                | SettingsImpl.InvalidSettingNameException | NoSuchPaddingException | InvalidAlgorithmParameterException
-                | SettingsImpl.UnInitializedSettingsException e) {
+        } catch (NoSuchAlgorithmException | IOException | InvalidKeyException | IllegalBlockSizeException
+                | BadPaddingException | InvalidKeySpecException | NoSuchPaddingException
+                | InvalidAlgorithmParameterException e) {
             System.err.println(e.getMessage());
         } catch (EncryptionUtils.MissingPublicKeyException e) {
             System.err.println("Failed to find your public key. Please ensure you have run \"mend setup\" "
@@ -159,12 +155,9 @@ public class CryptoHelper {
         try {
             EncryptionUtils.decryptLog(file, fileResolveHelper.getPrivateKey(), System.out);
         }
-        catch (IOException | EncryptionUtils.MalformedLogFileException
-                | SettingsImpl.InvalidSettingNameException | SettingsImpl.CorruptSettingsException
-                | SettingsImpl.UnInitializedSettingsException | InvalidKeyException
-                | BadPaddingException | IllegalBlockSizeException | NoSuchPaddingException
-                | NoSuchAlgorithmException | InvalidAlgorithmParameterException
-                | InvalidKeySpecException e) {
+        catch (IOException | EncryptionUtils.MalformedLogFileException | InvalidKeyException | BadPaddingException
+                | IllegalBlockSizeException | NoSuchPaddingException | NoSuchAlgorithmException
+                | InvalidAlgorithmParameterException e) {
             log.err().println(e.getMessage());
         }
     }

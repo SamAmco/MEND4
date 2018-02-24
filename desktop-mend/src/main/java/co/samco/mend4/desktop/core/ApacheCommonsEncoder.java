@@ -1,8 +1,7 @@
 package co.samco.mend4.desktop.core;
 
-import org.apache.commons.codec.binary.Base64;
-
 import co.samco.mend4.core.IBase64EncodingProvider;
+import org.apache.commons.codec.binary.Base64;
 
 public class ApacheCommonsEncoder implements IBase64EncodingProvider {
     public ApacheCommonsEncoder() {

@@ -1,24 +1,20 @@
 package co.samco.mend4.desktop.commands;
 
-import java.io.*;
+import co.samco.mend4.core.AppProperties;
+import co.samco.mend4.core.CorruptSettingsException;
+import co.samco.mend4.core.OSDao;
+import co.samco.mend4.desktop.core.I18N;
+import co.samco.mend4.desktop.helper.CryptoHelper;
+import co.samco.mend4.desktop.helper.FileResolveHelper;
+import co.samco.mend4.desktop.output.PrintStreamProvider;
+
+import javax.inject.Inject;
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
-
-import javax.inject.Inject;
-
-import co.samco.mend4.core.Settings;
-import co.samco.mend4.desktop.core.I18N;
-import co.samco.mend4.desktop.dao.OSDao;
-import co.samco.mend4.desktop.helper.CryptoHelper;
-import co.samco.mend4.desktop.helper.FileResolveHelper;
-import co.samco.mend4.desktop.output.PrintStreamProvider;
-import dagger.Lazy;
-
-import co.samco.mend4.core.AppProperties;
-import co.samco.mend4.core.Settings.CorruptSettingsException;
-import co.samco.mend4.core.Settings.InvalidSettingNameException;
 
 public class Decrypt extends Command {
     public static final String COMMAND_NAME = "dec";
@@ -28,7 +24,6 @@ public class Decrypt extends Command {
     private final PrintStreamProvider log;
     private final OSDao osDao;
     private final I18N strings;
-    private final Lazy<Settings> settings;
     private final FileResolveHelper fileResolveHelper;
 
     private boolean silent;
@@ -42,13 +37,12 @@ public class Decrypt extends Command {
     );
 
     @Inject
-    public Decrypt(PrintStreamProvider log, I18N strings, Lazy<Settings> settings,
-                   CryptoHelper cryptoHelper, OSDao osDao, FileResolveHelper fileResolveHelper) {
+    public Decrypt(PrintStreamProvider log, I18N strings, CryptoHelper cryptoHelper, OSDao osDao,
+                   FileResolveHelper fileResolveHelper) {
         this.cryptoHelper = cryptoHelper;
         this.log = log;
         this.osDao = osDao;
         this.strings = strings;
-        this.settings = settings;
         this.fileResolveHelper = fileResolveHelper;
     }
 
@@ -78,7 +72,7 @@ public class Decrypt extends Command {
                 cryptoHelper.decryptFile(file, silent);
                 return null;
             } else return args;
-        } catch (InvalidSettingNameException | CorruptSettingsException e) {
+        } catch (IOException | CorruptSettingsException e) {
             log.err().println(e.getMessage());
         }
         return null;
@@ -89,7 +83,7 @@ public class Decrypt extends Command {
             File file = fileResolveHelper.resolveLogFilePath(fileIdentifier);
             fileResolveHelper.assertFileExistsAndHasExtension(fileIdentifier, AppProperties.LOG_FILE_EXTENSION, file);
             cryptoHelper.decryptLog(file);
-        } catch (CorruptSettingsException | InvalidSettingNameException | FileNotFoundException e) {
+        } catch (IOException | CorruptSettingsException e) {
             log.err().println(e.getMessage());
         }
         return null;

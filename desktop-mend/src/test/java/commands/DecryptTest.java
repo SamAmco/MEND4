@@ -1,15 +1,14 @@
 package commands;
 
 import co.samco.mend4.core.AppProperties;
+import co.samco.mend4.core.CorruptSettingsException;
+import co.samco.mend4.core.OSDao;
 import co.samco.mend4.core.Settings;
-import co.samco.mend4.core.impl.SettingsImpl;
 import co.samco.mend4.desktop.commands.Decrypt;
 import co.samco.mend4.desktop.core.I18N;
-import co.samco.mend4.desktop.dao.OSDao;
 import co.samco.mend4.desktop.helper.CryptoHelper;
 import co.samco.mend4.desktop.helper.FileResolveHelper;
 import co.samco.mend4.desktop.output.PrintStreamProvider;
-import testutils.FakeLazy;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -17,6 +16,7 @@ import org.mockito.ArgumentCaptor;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -50,29 +50,29 @@ public class DecryptTest {
         osDao = mock(OSDao.class);
         cryptoHelper = mock(CryptoHelper.class);
         fileResolveHelper = mock(FileResolveHelper.class);
-        decrypt = new Decrypt(log, strings, new FakeLazy<>(settings), cryptoHelper, osDao, fileResolveHelper);
+        decrypt = new Decrypt(log, strings, cryptoHelper, osDao, fileResolveHelper);
     }
 
     @Test
-    public void decryptLog() throws SettingsImpl.InvalidSettingNameException, SettingsImpl.CorruptSettingsException {
+    public void decryptLog() throws IOException, CorruptSettingsException {
         String logFileName = "logFile." + AppProperties.LOG_FILE_EXTENSION;
         decryptLog(logFileName, false);
     }
 
     @Test
-    public void decryptLogWithSilentFlag() throws SettingsImpl.InvalidSettingNameException, SettingsImpl.CorruptSettingsException {
+    public void decryptLogWithSilentFlag() throws IOException, CorruptSettingsException {
         String logFileName = "logFile." + AppProperties.LOG_FILE_EXTENSION;
         decryptLog(logFileName, true);
     }
 
     @Test
-    public void decryptEnc() throws SettingsImpl.InvalidSettingNameException, SettingsImpl.CorruptSettingsException {
+    public void decryptEnc() throws IOException, CorruptSettingsException {
         String encFileName = "sam." + AppProperties.ENC_FILE_EXTENSION;
         decryptEnc(encFileName, Arrays.asList(encFileName), false);
     }
 
     @Test
-    public void decryptEncSilent() throws SettingsImpl.InvalidSettingNameException, SettingsImpl.CorruptSettingsException {
+    public void decryptEncSilent() throws IOException, CorruptSettingsException {
         String encFileName = "sam." + AppProperties.ENC_FILE_EXTENSION;
         decryptEnc(encFileName, Arrays.asList(encFileName, Decrypt.SILENT_FLAG), true);
     }
@@ -90,7 +90,7 @@ public class DecryptTest {
     }
 
     @Test
-    public void encFileDoesntExist() throws SettingsImpl.InvalidSettingNameException, SettingsImpl.CorruptSettingsException {
+    public void encFileDoesntExist() throws IOException, CorruptSettingsException {
         String fileName = "unkown.extension";
         when(fileResolveHelper.resolveEncFilePath(fileName)).thenReturn(new File(fileName));
         when(fileResolveHelper.fileExistsAndHasExtension(anyString(), any(File.class))).thenReturn(false);
@@ -107,8 +107,7 @@ public class DecryptTest {
         Assert.assertEquals(strings.getf("Decrypt.usage", Decrypt.COMMAND_NAME, Decrypt.SILENT_FLAG), errCapture.getAllValues().get(1));
     }
 
-    private void decryptEnc(String encFileName, List<String> args, boolean silentFlag)
-            throws SettingsImpl.InvalidSettingNameException, SettingsImpl.CorruptSettingsException {
+    private void decryptEnc(String encFileName, List<String> args, boolean silentFlag) throws IOException, CorruptSettingsException {
         when(fileResolveHelper.resolveEncFilePath(encFileName)).thenReturn(new File(encFileName));
         when(fileResolveHelper.fileExistsAndHasExtension(eq(AppProperties.ENC_FILE_EXTENSION), any(File.class))).thenReturn(true);
         decrypt.execute(args);
@@ -118,8 +117,7 @@ public class DecryptTest {
         Assert.assertEquals(encFileName, fileCaptor.getValue().getName());
     }
 
-    private void decryptLog(String logFileName, boolean silentFlag)
-            throws SettingsImpl.InvalidSettingNameException, SettingsImpl.CorruptSettingsException {
+    private void decryptLog(String logFileName, boolean silentFlag) throws IOException, CorruptSettingsException {
         when(fileResolveHelper.resolveLogFilePath(anyString())).thenReturn(new File(logFileName));
         List<String> args = new ArrayList<>();
         args.add(logFileName);

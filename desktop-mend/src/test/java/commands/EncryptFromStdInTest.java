@@ -1,9 +1,9 @@
 package commands;
 
+import co.samco.mend4.core.OSDao;
 import co.samco.mend4.desktop.commands.Encrypt;
 import co.samco.mend4.desktop.commands.EncryptFromStdIn;
 import co.samco.mend4.desktop.core.I18N;
-import co.samco.mend4.desktop.dao.OSDao;
 import co.samco.mend4.desktop.helper.CryptoHelper;
 import co.samco.mend4.desktop.helper.InputHelper;
 import co.samco.mend4.desktop.output.PrintStreamProvider;
@@ -19,9 +19,7 @@ import java.util.Arrays;
 import java.util.Collections;
 
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 public class EncryptFromStdInTest {
     private EncryptFromStdIn encrypt;

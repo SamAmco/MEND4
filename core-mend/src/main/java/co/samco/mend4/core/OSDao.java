@@ -1,4 +1,4 @@
-package co.samco.mend4.desktop.dao;
+package co.samco.mend4.core;
 
 import java.io.*;
 import java.nio.file.CopyOption;
@@ -13,6 +13,8 @@ public interface OSDao {
     String getBaseName(File file);
     boolean fileExists(File file);
     boolean fileIsFile(File file);
+    InputStream getInputStreamForFile(File file) throws FileNotFoundException;
+    OutputStream getOutputStreamForFile(File file) throws FileNotFoundException;
     void writeDataToFile(byte[] data, File outputFile) throws IOException;
     String getFileExtension(File file);
     String getFileExtension(String filePath);

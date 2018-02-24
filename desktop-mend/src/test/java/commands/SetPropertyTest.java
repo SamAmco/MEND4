@@ -1,25 +1,20 @@
 package commands;
 
 import co.samco.mend4.core.Settings;
-import co.samco.mend4.core.Settings.InvalidSettingNameException;
-import co.samco.mend4.core.Settings.CorruptSettingsException;
 import co.samco.mend4.desktop.commands.SetProperty;
 import co.samco.mend4.desktop.core.I18N;
 import co.samco.mend4.desktop.helper.SettingsHelper;
 import co.samco.mend4.desktop.output.PrintStreamProvider;
-import testutils.FakeLazy;
 import org.junit.Before;
 import org.junit.Test;
 
-import javax.xml.transform.TransformerException;
+import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Arrays;
 
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 public class SetPropertyTest {
     private SetProperty setter;
@@ -40,11 +35,11 @@ public class SetPropertyTest {
         when(log.out()).thenReturn(out);
         strings = mock(I18N.class);
         settingsHelper = mock(SettingsHelper.class);
-        setter = new SetProperty(log, strings, new FakeLazy<>(settings), settingsHelper);
+        setter = new SetProperty(log, strings, settings, settingsHelper);
     }
 
     @Test
-    public void setProperty() throws InvalidSettingNameException, TransformerException, CorruptSettingsException {
+    public void setProperty() throws IOException {
         Settings.Name setting = Settings.Name.values()[0];
         String value = "value";
         when(settingsHelper.settingExists(anyString())).thenReturn(true);

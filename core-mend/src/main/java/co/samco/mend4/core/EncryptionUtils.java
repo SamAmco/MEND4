@@ -24,13 +24,10 @@ import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
-import co.samco.mend4.core.Settings.CorruptSettingsException;
-import co.samco.mend4.core.Settings.InvalidSettingNameException;
-import co.samco.mend4.core.Settings.UnInitializedSettingsException;
 
 //TODO this is now a total mess, all needs fixing and refactoring
 public class EncryptionUtils {
-    private static String addHeaderToLogText(char[] logText) throws UnInitializedSettingsException {
+    private static String addHeaderToLogText(char[] logText) {
         StringBuilder sb = new StringBuilder();
         Calendar cal = Calendar.getInstance();
         SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss", Locale.ENGLISH);
@@ -132,10 +129,8 @@ public class EncryptionUtils {
     public static LogDataBlocksAndText getNextLogTextWithDataBlocks(FileInputStream inputStream, RSAPrivateKey
             privateKey,
                                                                     byte[] lc1Bytes) throws IOException,
-            MalformedLogFileException, InvalidSettingNameException,
-            CorruptSettingsException, UnInitializedSettingsException, NoSuchPaddingException,
-            NoSuchAlgorithmException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException,
-            InvalidAlgorithmParameterException {
+            MalformedLogFileException, NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException,
+            BadPaddingException, IllegalBlockSizeException, InvalidAlgorithmParameterException {
         LogDataBlocks ldb = getNextLogBytes(inputStream, lc1Bytes);
 
         //now decrypt the aes key
@@ -151,20 +146,17 @@ public class EncryptionUtils {
         return new LogDataBlocksAndText(ldb, new String(entry, "UTF-8"));
     }
 
-    public static String getNextLogText(FileInputStream inputStream, RSAPrivateKey privateKey,
-                                        byte[] lc1Bytes) throws IOException, MalformedLogFileException,
-            InvalidSettingNameException,
-            CorruptSettingsException, UnInitializedSettingsException, NoSuchPaddingException,
+    public static String getNextLogText(FileInputStream inputStream, RSAPrivateKey privateKey, byte[] lc1Bytes)
+            throws IOException, MalformedLogFileException, NoSuchPaddingException,
             NoSuchAlgorithmException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException,
             InvalidAlgorithmParameterException {
         return getNextLogTextWithDataBlocks(inputStream, privateKey, lc1Bytes).entryText;
     }
 
     public static void decryptLog(File file, RSAPrivateKey privateKey, PrintStream outputStream)
-            throws IOException, MalformedLogFileException, InvalidSettingNameException,
-            CorruptSettingsException, UnInitializedSettingsException, InvalidKeyException,
-            BadPaddingException, IllegalBlockSizeException, NoSuchPaddingException,
-            NoSuchAlgorithmException, InvalidAlgorithmParameterException, InvalidKeySpecException {
+            throws IOException, MalformedLogFileException, InvalidKeyException, BadPaddingException,
+            IllegalBlockSizeException, NoSuchPaddingException, NoSuchAlgorithmException,
+            InvalidAlgorithmParameterException {
         FileInputStream inputStream = null;
         try {
             inputStream = new FileInputStream(file);
@@ -180,12 +172,9 @@ public class EncryptionUtils {
         }
     }
 
-    public static void encryptFileToStream(IBase64EncodingProvider encoder, FileInputStream fis, FileOutputStream
-            fos, String fileExtension)
-            throws CorruptSettingsException, InvalidSettingNameException, UnInitializedSettingsException,
-            MissingPublicKeyException,
-            NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException,
-            InvalidAlgorithmParameterException, InvalidKeySpecException,
+    public static void encryptFileToStream(IBase64EncodingProvider encoder, FileInputStream fis, FileOutputStream fos,
+                                           String fileExtension) throws MissingPublicKeyException, NoSuchAlgorithmException,
+            NoSuchPaddingException, InvalidKeyException, InvalidAlgorithmParameterException, InvalidKeySpecException,
             IllegalBlockSizeException, BadPaddingException, IOException {
         CipherOutputStream cos = null;
         try {
@@ -244,11 +233,8 @@ public class EncryptionUtils {
     }
 
     public static void encryptLogToStream(IBase64EncodingProvider encoder, FileOutputStream fos, char[] text, boolean
-            dropHeader)
-            throws CorruptSettingsException, InvalidSettingNameException, UnInitializedSettingsException,
-            NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, InvalidAlgorithmParameterException,
-            IllegalBlockSizeException, BadPaddingException, InvalidKeySpecException, MissingPublicKeyException,
-            IOException {
+            dropHeader) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, InvalidAlgorithmParameterException,
+            IllegalBlockSizeException, BadPaddingException, InvalidKeySpecException, MissingPublicKeyException, IOException {
         //Lets just do some basic checks first
         //TODO only commented to compile
         String userPublicKeyString = "";//SettingsImpl.instance().getValue(Config.Settings.PUBLICKEY);

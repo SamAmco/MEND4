@@ -4,7 +4,10 @@ import co.samco.mend4.desktop.core.I18N;
 import co.samco.mend4.desktop.output.PrintStreamProvider;
 
 import javax.inject.Inject;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class Help extends Command {

@@ -1,18 +1,17 @@
 package co.samco.mend4.desktop.commands;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
-
-import co.samco.mend4.core.impl.SettingsImpl;
+import co.samco.mend4.core.CorruptSettingsException;
+import co.samco.mend4.core.OSDao;
 import co.samco.mend4.desktop.core.I18N;
-import co.samco.mend4.desktop.dao.OSDao;
 import co.samco.mend4.desktop.helper.FileResolveHelper;
 import co.samco.mend4.desktop.helper.ShredHelper;
 import co.samco.mend4.desktop.output.PrintStreamProvider;
 
 import javax.inject.Inject;
+import java.io.File;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 
 public class Lock extends Command {
     private final String COMMAND_NAME = "lock";
@@ -51,7 +50,7 @@ public class Lock extends Command {
             shredHelper.tryShredFile(fileResolveHelper.getPrivateKeyPath());
             shredHelper.tryShredFile(fileResolveHelper.getPublicKeyPath());
             printLockStatus(strings.get("Lock.lockFailed"), strings.get("Lock.locked"));
-        } catch (IOException | SettingsImpl.CorruptSettingsException | SettingsImpl.InvalidSettingNameException e) {
+        } catch (IOException | CorruptSettingsException e) {
             log.err().println(e.getMessage());
         }
     }

@@ -1,8 +1,9 @@
 package co.samco.mend4.desktop.helper;
 
+import co.samco.mend4.core.CorruptSettingsException;
 import co.samco.mend4.core.EncryptionUtils;
-import co.samco.mend4.core.impl.SettingsImpl;
-import co.samco.mend4.desktop.dao.OSDao;
+import co.samco.mend4.core.OSDao;
+import co.samco.mend4.core.Settings;
 import org.apache.commons.lang3.tuple.Pair;
 
 import javax.crypto.BadPaddingException;
@@ -28,18 +29,20 @@ import java.util.regex.Pattern;
 public class MergeHelper {
     private final FileResolveHelper fileResolveHelper;
     private final OSDao osDao;
+    private final Settings settings;
 
     @Inject
-    public MergeHelper(FileResolveHelper fileResolveHelper, OSDao osDao) {
+    public MergeHelper(FileResolveHelper fileResolveHelper, OSDao osDao, Settings settings) {
         this.fileResolveHelper = fileResolveHelper;
         this.osDao = osDao;
+        this.settings = settings;
     }
 
     public void mergeToFirstOrSecond(Pair<File, File> logFiles, boolean first) {
         try {
             File firstLog = logFiles.getLeft();
             File secondLog = logFiles.getRight();
-            String logDir = fileResolveHelper.getLogDir();
+            String logDir = settings.getValue(Settings.Name.LOGDIR);
             File tempFile = fileResolveHelper.getTempFile(logDir);
             mergeLogFilesToNew(logFiles, tempFile);
             if (first) {
@@ -47,8 +50,7 @@ public class MergeHelper {
             } else {
                 osDao.moveFile(tempFile.toPath(), secondLog.toPath(), StandardCopyOption.REPLACE_EXISTING);
             }
-        } catch (IOException | SettingsImpl.InvalidSettingNameException
-                | SettingsImpl.CorruptSettingsException e) {
+        } catch (IOException | CorruptSettingsException e) {
             System.err.println(e.getMessage());
         }
     }
@@ -66,9 +68,8 @@ public class MergeHelper {
             fOutputStream = new FileOutputStream(outputLog);
             mergeToOutputFile(f1InputStream, f2InputStream, fOutputStream);
         } catch (java.io.IOException | InvalidKeyException | InvalidAlgorithmParameterException | NoSuchAlgorithmException
-                | ParseException | NoSuchPaddingException | SettingsImpl.CorruptSettingsException | IllegalBlockSizeException
-                | SettingsImpl.InvalidSettingNameException | BadPaddingException | EncryptionUtils.MalformedLogFileException
-                | SettingsImpl.UnInitializedSettingsException e) {
+                | ParseException | NoSuchPaddingException |  IllegalBlockSizeException | BadPaddingException
+                | EncryptionUtils.MalformedLogFileException e) {
             System.err.println(e.getMessage());
             e.printStackTrace();
         } finally {
@@ -88,8 +89,7 @@ public class MergeHelper {
     public void mergeToOutputFile(FileInputStream firstLog, FileInputStream secondLog, FileOutputStream outputFile)
             throws IOException, ParseException, NoSuchAlgorithmException, EncryptionUtils.MalformedLogFileException,
             InvalidKeyException, InvalidAlgorithmParameterException, NoSuchPaddingException, BadPaddingException,
-            SettingsImpl.InvalidSettingNameException, SettingsImpl.CorruptSettingsException, IllegalBlockSizeException,
-            SettingsImpl.UnInitializedSettingsException {
+            IllegalBlockSizeException {
         byte[] lc1Bytes = new byte[4];
         byte[] lc2Bytes = new byte[4];
         LogEntry firstLogEntry = parseNextLog(firstLog, lc1Bytes);
@@ -119,9 +119,9 @@ public class MergeHelper {
     }
 
     private LogEntry parseNextLog(FileInputStream inputStream, byte[] lc1Bytes)
-            throws IOException, InvalidKeyException, NoSuchAlgorithmException, SettingsImpl.InvalidSettingNameException,
-            InvalidAlgorithmParameterException, NoSuchPaddingException, SettingsImpl.CorruptSettingsException, BadPaddingException,
-            EncryptionUtils.MalformedLogFileException, IllegalBlockSizeException, SettingsImpl.UnInitializedSettingsException, ParseException {
+            throws IOException, InvalidKeyException, NoSuchAlgorithmException,
+            InvalidAlgorithmParameterException, NoSuchPaddingException, BadPaddingException,
+            EncryptionUtils.MalformedLogFileException, IllegalBlockSizeException, ParseException {
         RSAPrivateKey privateKey = fileResolveHelper.getPrivateKey();
         EncryptionUtils.LogDataBlocksAndText nextLog = EncryptionUtils
                 .getNextLogTextWithDataBlocks(inputStream, privateKey, lc1Bytes);

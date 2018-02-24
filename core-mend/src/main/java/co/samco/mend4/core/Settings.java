@@ -1,12 +1,11 @@
 package co.samco.mend4.core;
 
-import javax.xml.transform.TransformerException;
+import java.io.IOException;
 
 public interface Settings {
-    void setValue(Name name, String value) throws TransformerException,
-            CorruptSettingsException, InvalidSettingNameException;
+    void setValue(Name name, String value) throws IOException;
 
-    String getValue(Name name) throws CorruptSettingsException, InvalidSettingNameException;
+    String getValue(Name name) throws IOException, CorruptSettingsException;
 
     enum Name {
         PUBLICKEY("publickey"),
@@ -31,29 +30,4 @@ public interface Settings {
             return name;
         }
     }
-
-    class UnInitializedSettingsException extends Exception {
-        private static final long serialVersionUID = -1209609585057442380L;
-
-        public UnInitializedSettingsException(String message) {
-            super(message);
-        }
-    }
-
-    class CorruptSettingsException extends Exception {
-        private static final long serialVersionUID = -7872915002684524393L;
-
-        public CorruptSettingsException(String message) {
-            super(message);
-        }
-    }
-
-    class InvalidSettingNameException extends Exception {
-        private static final long serialVersionUID = -396660409805269958L;
-
-        public InvalidSettingNameException(String message) {
-            super(message);
-        }
-    }
-
 }

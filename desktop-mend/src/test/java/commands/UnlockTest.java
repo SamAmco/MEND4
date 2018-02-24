@@ -1,12 +1,11 @@
 package commands;
 
 import co.samco.mend4.core.AppProperties;
+import co.samco.mend4.core.CorruptSettingsException;
+import co.samco.mend4.core.OSDao;
 import co.samco.mend4.core.Settings;
-import co.samco.mend4.core.Settings.InvalidSettingNameException;
-import co.samco.mend4.core.Settings.CorruptSettingsException;
 import co.samco.mend4.desktop.commands.Unlock;
 import co.samco.mend4.desktop.core.I18N;
-import co.samco.mend4.desktop.dao.OSDao;
 import co.samco.mend4.desktop.helper.CryptoHelper;
 import co.samco.mend4.desktop.helper.FileResolveHelper;
 import co.samco.mend4.desktop.helper.ShredHelper;
@@ -14,7 +13,6 @@ import co.samco.mend4.desktop.output.PrintStreamProvider;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
-import testutils.FakeLazy;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
@@ -65,13 +63,13 @@ public class UnlockTest {
         fileResolveHelper = mock(FileResolveHelper.class);
         when(fileResolveHelper.getPrivateKeyPath()).thenReturn(privateKeyPath);
         when(fileResolveHelper.getPublicKeyPath()).thenReturn(publicKeyPath);
-        unlock = new Unlock(strings, osDao, new FakeLazy<>(settings), log, cryptoHelper, shredHelper, fileResolveHelper);
+        unlock = new Unlock(strings, osDao, settings, log, cryptoHelper, shredHelper, fileResolveHelper);
     }
 
     @Test
     public void wrongPassword() throws NoSuchPaddingException, InvalidKeyException, NoSuchAlgorithmException,
             IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException, InvalidKeySpecException,
-            IOException, InvalidSettingNameException, CorruptSettingsException {
+            IOException, CorruptSettingsException {
         when(osDao.readPassword(anyString())).thenReturn(new char[0]);
         when(cryptoHelper.decryptBytesWithPassword(any(byte[].class), any(char[].class)))
                 .thenReturn("Not the passcheck text".getBytes("UTF-8"));
@@ -85,14 +83,14 @@ public class UnlockTest {
     @Test
     public void correctPasswordNoExistingKeys() throws NoSuchPaddingException, InvalidKeyException, NoSuchAlgorithmException,
             IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException, InvalidKeySpecException,
-            IOException, InvalidSettingNameException, CorruptSettingsException {
+            IOException, CorruptSettingsException {
         correctPasswordTest();
         verify(shredHelper, never()).tryShredFile(any());
     }
 
     @Test
     public void correctPasswordExistingKeys() throws IOException, NoSuchAlgorithmException, InvalidKeyException,
-            InvalidAlgorithmParameterException, NoSuchPaddingException, BadPaddingException, InvalidSettingNameException,
+            InvalidAlgorithmParameterException, NoSuchPaddingException, BadPaddingException,
             CorruptSettingsException, InvalidKeySpecException, IllegalBlockSizeException {
         when(osDao.fileExists(any())).thenReturn(true);
         correctPasswordTest();

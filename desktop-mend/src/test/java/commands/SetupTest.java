@@ -1,12 +1,10 @@
 package commands;
 
 import co.samco.mend4.core.AppProperties;
+import co.samco.mend4.core.OSDao;
 import co.samco.mend4.core.Settings;
-import co.samco.mend4.core.Settings.CorruptSettingsException;
-import co.samco.mend4.core.Settings.InvalidSettingNameException;
 import co.samco.mend4.desktop.commands.Setup;
 import co.samco.mend4.desktop.core.I18N;
-import co.samco.mend4.desktop.dao.OSDao;
 import co.samco.mend4.desktop.helper.CryptoHelper;
 import co.samco.mend4.desktop.helper.FileResolveHelper;
 import co.samco.mend4.desktop.output.PrintStreamProvider;
@@ -16,13 +14,15 @@ import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
-import testutils.FakeLazy;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.xml.transform.TransformerException;
-import java.io.*;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.PrintStream;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
@@ -65,7 +65,7 @@ public class SetupTest {
         osDao = mock(OSDao.class);
 
         when(fileResolveHelper.getSettingsPath()).thenReturn(settingsPath);
-        setup = new Setup(log, strings, osDao, cryptoHelper, fileResolveHelper, new FakeLazy<>(settings));
+        setup = new Setup(log, strings, osDao, cryptoHelper, fileResolveHelper, settings);
     }
 
     @Test
@@ -93,8 +93,8 @@ public class SetupTest {
 
     @Test
     public void passwordsDontMatch() throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException,
-            UnsupportedEncodingException, IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException,
-            InvalidKeySpecException, InvalidSettingNameException, TransformerException, CorruptSettingsException {
+            IOException, IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException,
+            InvalidKeySpecException  {
         String passOne = "passOne";
         String passTwo = "passTwo";
         when(osDao.readPassword(anyString())).thenAnswer(new Answer<char[]>() {
@@ -118,8 +118,7 @@ public class SetupTest {
     }
 
     @Test
-    public void setupFromKeyFiles() throws InvalidSettingNameException, TransformerException,
-            CorruptSettingsException, NoSuchPaddingException, IOException,
+    public void setupFromKeyFiles() throws TransformerException, NoSuchPaddingException, IOException,
             InvalidKeyException, NoSuchAlgorithmException, IllegalBlockSizeException, BadPaddingException,
             InvalidAlgorithmParameterException, InvalidKeySpecException {
         when(osDao.readPassword(anyString())).thenReturn("password".toCharArray());
@@ -144,22 +143,20 @@ public class SetupTest {
     }
 
     @Test
-    public void setupSettingsThrowsException () throws InvalidSettingNameException, TransformerException,
-            CorruptSettingsException, NoSuchPaddingException, UnsupportedEncodingException,
-            InvalidKeyException, NoSuchAlgorithmException, IllegalBlockSizeException, BadPaddingException,
-            InvalidAlgorithmParameterException, InvalidKeySpecException {
+    public void setupSettingsThrowsException () throws NoSuchPaddingException, IOException, InvalidKeyException,
+            NoSuchAlgorithmException, IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException,
+            InvalidKeySpecException {
         String exception = "exception";
         when(osDao.readPassword(anyString())).thenReturn("password".toCharArray());
         CryptoHelper.EncodedKeyInfo keyInfo = new CryptoHelper.EncodedKeyInfo("a", "b", "c");
         when(cryptoHelper.getEncodedKeyInfo(anyString(), any(KeyPair.class))).thenReturn(keyInfo);
-        doThrow(new CorruptSettingsException(exception)).when(settings).setValue(any(Settings.Name.class), anyString());
+        doThrow(new IOException(exception)).when(settings).setValue(any(Settings.Name.class), anyString());
         setup.execute(Arrays.asList("x", "y"));
         verify(err).println(errCaptor.capture());
         Assert.assertEquals(exception, errCaptor.getValue());
     }
 
-    private void verifySettingsSetup(CryptoHelper.EncodedKeyInfo keyInfo) throws InvalidSettingNameException,
-            TransformerException, CorruptSettingsException {
+    private void verifySettingsSetup(CryptoHelper.EncodedKeyInfo keyInfo) throws IOException {
         verify(settings).setValue(eq(Settings.Name.PREFERREDAES), eq(AppProperties.PREFERRED_AES_ALG));
         verify(settings).setValue(eq(Settings.Name.PREFERREDRSA), eq(AppProperties.PREFERRED_RSA_ALG));
         verify(settings).setValue(eq(Settings.Name.AESKEYSIZE), eq(Integer.toString(AppProperties.PREFERRED_AES_KEY_SIZE)));

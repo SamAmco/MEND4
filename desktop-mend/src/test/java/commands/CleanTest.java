@@ -1,17 +1,18 @@
 package commands;
 
-import co.samco.mend4.core.Settings.CorruptSettingsException;
-import co.samco.mend4.core.Settings.InvalidSettingNameException;
+import co.samco.mend4.core.CorruptSettingsException;
+import co.samco.mend4.core.OSDao;
+import co.samco.mend4.core.Settings;
 import co.samco.mend4.desktop.commands.Clean;
 import co.samco.mend4.desktop.core.I18N;
-import co.samco.mend4.desktop.dao.OSDao;
 import co.samco.mend4.desktop.helper.FileResolveHelper;
 import co.samco.mend4.desktop.helper.ShredHelper;
 import co.samco.mend4.desktop.output.PrintStreamProvider;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.PrintStream;
 import java.util.Collections;
 
 import static org.mockito.Mockito.*;
@@ -25,6 +26,7 @@ public class CleanTest {
     private ShredHelper shredHelper;
     private FileResolveHelper fileResolveHelper;
     private I18N strings;
+    private Settings settings;
 
     @Before
     public void setup() {
@@ -37,22 +39,23 @@ public class CleanTest {
         osDao = mock(OSDao.class);
         shredHelper = mock(ShredHelper.class);
         fileResolveHelper = mock(FileResolveHelper.class);
-        clean = new Clean(strings, printStreamProvider, shredHelper, fileResolveHelper);
+        settings = mock(Settings.class);
+        clean = new Clean(strings, printStreamProvider, shredHelper, settings);
     }
 
     @Test
-    public void executesShredCommand() throws InvalidSettingNameException, CorruptSettingsException, IOException {
+    public void executesShredCommand() throws IOException, CorruptSettingsException {
         String decDir = "dir";
-        when(fileResolveHelper.getDecDir()).thenReturn(decDir);
+        when(settings.getValue(eq(Settings.Name.DECDIR))).thenReturn(decDir);
         clean.execute(Collections.emptyList());
         verify(shredHelper).shredFilesInDirectory(eq(decDir));
         verify(err).println(eq(strings.get("Clean.cleanComplete")));
     }
 
     @Test
-    public void printsException() throws InvalidSettingNameException, CorruptSettingsException, IOException {
+    public void printsException() throws CorruptSettingsException, IOException {
         String exception = "hi";
-        when(fileResolveHelper.getDecDir()).thenThrow(new CorruptSettingsException(exception));
+        when(settings.getValue(eq(Settings.Name.DECDIR))).thenThrow(new CorruptSettingsException(exception, ""));
         clean.execute(Collections.emptyList());
         verify(err).println(eq(exception));
     }

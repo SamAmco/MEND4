@@ -1,9 +1,9 @@
 package co.samco.mend4.desktop.commands;
 
 import co.samco.mend4.core.AppProperties;
-import co.samco.mend4.core.impl.SettingsImpl;
+import co.samco.mend4.core.CorruptSettingsException;
+import co.samco.mend4.core.OSDao;
 import co.samco.mend4.desktop.core.I18N;
-import co.samco.mend4.desktop.dao.OSDao;
 import co.samco.mend4.desktop.helper.FileResolveHelper;
 import co.samco.mend4.desktop.helper.MergeHelper;
 import co.samco.mend4.desktop.output.PrintStreamProvider;
@@ -11,7 +11,8 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 
 import javax.inject.Inject;
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
@@ -59,8 +60,7 @@ public class Merge extends Command {
                 mergeHelper.mergeToFirstOrSecond(logFiles, args.get(0).equals(FIRST_FLAG));
                 return null;
             }
-        } catch (SettingsImpl.InvalidSettingNameException | SettingsImpl.CorruptSettingsException
-                | FileNotFoundException e) {
+        } catch (IOException | CorruptSettingsException e) {
             e.printStackTrace();
         }
         return args;
@@ -71,15 +71,14 @@ public class Merge extends Command {
             Pair<File, File> logFiles = resolveFiles(args.get(0), args.get(1));
             mergeHelper.mergeLogFilesToNew(logFiles, new File(args.get(2)));
             return null;
-        } catch (SettingsImpl.InvalidSettingNameException | SettingsImpl.CorruptSettingsException
-                | FileNotFoundException e) {
+        } catch (IOException | CorruptSettingsException e) {
             e.printStackTrace();
         }
         return args;
     }
 
     private Pair<File, File> resolveFiles(String file1, String file2)
-            throws SettingsImpl.InvalidSettingNameException, SettingsImpl.CorruptSettingsException, FileNotFoundException {
+            throws IOException, CorruptSettingsException {
         File firstLog = fileResolveHelper.resolveLogFilePath(file1);
         File secondLog = fileResolveHelper.resolveLogFilePath(file2);
         fileResolveHelper.assertFileExistsAndHasExtension(file1, AppProperties.LOG_FILE_EXTENSION, firstLog);

@@ -1,24 +1,21 @@
 package co.samco.mend4.desktop.commands;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
+import co.samco.mend4.core.AppProperties;
+import co.samco.mend4.core.CorruptSettingsException;
+import co.samco.mend4.core.OSDao;
 import co.samco.mend4.core.Settings;
-import co.samco.mend4.core.Settings.CorruptSettingsException;
-import co.samco.mend4.core.Settings.InvalidSettingNameException;
 import co.samco.mend4.desktop.core.I18N;
-import co.samco.mend4.desktop.dao.OSDao;
-import co.samco.mend4.desktop.helper.FileResolveHelper;
 import co.samco.mend4.desktop.helper.SettingsHelper;
 import co.samco.mend4.desktop.output.PrintStreamProvider;
 
-import co.samco.mend4.core.AppProperties;
-import dagger.Lazy;
-
 import javax.inject.Inject;
+import java.io.File;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public class StatePrinter extends Command {
     public static final String COMMAND_NAME = "get";
@@ -29,8 +26,8 @@ public class StatePrinter extends Command {
     private final I18N strings;
     private final PrintStreamProvider log;
     private final OSDao osDao;
-    private final FileResolveHelper fileResolveHelper;
     private final SettingsHelper settingsHelper;
+    private final Settings settings;
 
     private String arg;
 
@@ -42,13 +39,13 @@ public class StatePrinter extends Command {
     );
 
     @Inject
-    public StatePrinter(I18N strings, PrintStreamProvider log, OSDao osDao,
-                        FileResolveHelper fileResolveHelper, SettingsHelper settingsHelper) {
+    public StatePrinter(I18N strings, PrintStreamProvider log, OSDao osDao, SettingsHelper settingsHelper,
+                        Settings settings) {
         this.strings = strings;
         this.log = log;
         this.osDao = osDao;
-        this.fileResolveHelper = fileResolveHelper;
         this.settingsHelper = settingsHelper;
+        this.settings = settings;
     }
 
     private List<String> getArg(List<String> args) {
@@ -72,7 +69,7 @@ public class StatePrinter extends Command {
                 printEncs();
                 return null;
             }
-        } catch (FileNotFoundException | InvalidSettingNameException | CorruptSettingsException e) {
+        } catch (IOException | CorruptSettingsException e) {
             log.err().println(e.getMessage());
         }
         return args;
@@ -95,9 +92,8 @@ public class StatePrinter extends Command {
         return null;
     }
 
-    private void printEncs() throws InvalidSettingNameException,
-            CorruptSettingsException, FileNotFoundException {
-        File encDir = new File(fileResolveHelper.getEncDir());
+    private void printEncs() throws IOException, CorruptSettingsException {
+        File encDir = new File(settings.getValue(Settings.Name.ENCDIR));
         String encs = Arrays.stream(osDao.getDirectoryListing(encDir))
                 .filter(f -> osDao.getFileExtension(f).equals(AppProperties.ENC_FILE_EXTENSION))
                 .map(f -> osDao.getBaseName(f))
@@ -105,9 +101,8 @@ public class StatePrinter extends Command {
         log.out().println(encs);
     }
 
-    private void printLogs() throws InvalidSettingNameException,
-            CorruptSettingsException, FileNotFoundException {
-        File logDir = new File(fileResolveHelper.getLogDir());
+    private void printLogs() throws CorruptSettingsException, IOException {
+        File logDir = new File(settings.getValue(Settings.Name.LOGDIR));
         String logs = Arrays.stream(osDao.getDirectoryListing(logDir))
                 .filter(f -> osDao.getFileExtension(f).equals(AppProperties.LOG_FILE_EXTENSION))
                 .map(f -> osDao.getBaseName(f))

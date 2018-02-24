@@ -1,6 +1,6 @@
 package co.samco.mend4.desktop.dao.impl;
 
-import co.samco.mend4.desktop.dao.OSDao;
+import co.samco.mend4.core.OSDao;
 import org.apache.commons.io.FilenameUtils;
 
 import java.io.*;
@@ -10,8 +10,6 @@ import java.nio.file.Path;
 
 //TODO clean this up, take strings out etc
 public class OSDaoImpl implements OSDao {
-
-
     private String userHomeCached;
 
     public OSDaoImpl() {}
@@ -58,6 +56,16 @@ public class OSDaoImpl implements OSDao {
     @Override
     public boolean fileIsFile(File file) {
         return file.isFile();
+    }
+
+    @Override
+    public InputStream getInputStreamForFile(File file) throws FileNotFoundException {
+        return new FileInputStream(file);
+    }
+
+    @Override
+    public OutputStream getOutputStreamForFile(File file) throws FileNotFoundException {
+        return new FileOutputStream(file);
     }
 
     @Override

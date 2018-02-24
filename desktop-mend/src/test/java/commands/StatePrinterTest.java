@@ -1,16 +1,14 @@
 package commands;
 
 import co.samco.mend4.core.AppProperties;
+import co.samco.mend4.core.CorruptSettingsException;
+import co.samco.mend4.core.OSDao;
 import co.samco.mend4.core.Settings;
-import co.samco.mend4.core.Settings.InvalidSettingNameException;
-import co.samco.mend4.core.Settings.CorruptSettingsException;
 import co.samco.mend4.desktop.commands.StatePrinter;
 import co.samco.mend4.desktop.core.I18N;
-import co.samco.mend4.desktop.dao.OSDao;
 import co.samco.mend4.desktop.helper.FileResolveHelper;
 import co.samco.mend4.desktop.helper.SettingsHelper;
 import co.samco.mend4.desktop.output.PrintStreamProvider;
-import testutils.FakeLazy;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -19,15 +17,14 @@ import org.mockito.stubbing.Answer;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.Collections;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 public class StatePrinterTest {
     private StatePrinter statePrinter;
@@ -38,6 +35,7 @@ public class StatePrinterTest {
     private OSDao osDao;
     private FileResolveHelper fileResolveHelper;
     private SettingsHelper settingsHelper;
+    private Settings settings;
 
     @Before
     public void setup() {
@@ -50,7 +48,8 @@ public class StatePrinterTest {
         osDao = mock(OSDao.class);
         fileResolveHelper = mock(FileResolveHelper.class);
         settingsHelper = mock(SettingsHelper.class);
-        statePrinter = new StatePrinter(strings, log, osDao, fileResolveHelper, settingsHelper);
+        settings = mock(Settings.class);
+        statePrinter = new StatePrinter(strings, log, osDao, settingsHelper, settings);
     }
 
     @Test
@@ -77,16 +76,16 @@ public class StatePrinterTest {
     }
 
     @Test
-    public void logFlag() throws InvalidSettingNameException, CorruptSettingsException, FileNotFoundException {
+    public void logFlag() throws IOException, CorruptSettingsException {
         String logDir = "dir";
-        when(fileResolveHelper.getLogDir()).thenReturn(logDir);
+        when(settings.getValue(eq(Settings.Name.LOGDIR))).thenReturn(logDir);
         filePrintTest(StatePrinter.LOGS_FLAG, AppProperties.LOG_FILE_EXTENSION);
     }
 
     @Test
-    public void encFlag() throws InvalidSettingNameException, CorruptSettingsException, FileNotFoundException {
+    public void encFlag() throws IOException, CorruptSettingsException {
         String encDir = "dir";
-        when(fileResolveHelper.getEncDir()).thenReturn(encDir);
+        when(settings.getValue(eq(Settings.Name.ENCDIR))).thenReturn(encDir);
         filePrintTest(StatePrinter.ENCS_FLAG, AppProperties.ENC_FILE_EXTENSION);
     }
 

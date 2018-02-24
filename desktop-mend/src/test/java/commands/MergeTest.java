@@ -1,9 +1,9 @@
 package commands;
 
-import co.samco.mend4.core.impl.SettingsImpl;
+import co.samco.mend4.core.CorruptSettingsException;
+import co.samco.mend4.core.OSDao;
 import co.samco.mend4.desktop.commands.Merge;
 import co.samco.mend4.desktop.core.I18N;
-import co.samco.mend4.desktop.dao.OSDao;
 import co.samco.mend4.desktop.helper.FileResolveHelper;
 import co.samco.mend4.desktop.helper.MergeHelper;
 import co.samco.mend4.desktop.output.PrintStreamProvider;
@@ -14,22 +14,20 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
-import org.mockito.Matchers;
-import org.mockito.MockitoAnnotations;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.mockito.stubbing.Answer;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static java.lang.System.out;
-import static org.mockito.Matchers.*;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.class)
 public class MergeTest {
@@ -60,17 +58,17 @@ public class MergeTest {
     }
 
     @Test
-    public void mergeToFirst() throws SettingsImpl.InvalidSettingNameException, SettingsImpl.CorruptSettingsException {
+    public void mergeToFirst() throws IOException, CorruptSettingsException {
         mergeInPlaceTest(true);
     }
 
     @Test
-    public void mergeToSecond() throws SettingsImpl.InvalidSettingNameException, SettingsImpl.CorruptSettingsException {
+    public void mergeToSecond() throws IOException, CorruptSettingsException {
         mergeInPlaceTest(false);
     }
 
     @Test
-    public void mergeToNewFile() throws SettingsImpl.InvalidSettingNameException, SettingsImpl.CorruptSettingsException {
+    public void mergeToNewFile() throws IOException, CorruptSettingsException {
         String logA = "logA";
         String logB = "logB";
         String logC = "logC";
@@ -101,7 +99,7 @@ public class MergeTest {
         verify(err).println(strings.getf("General.invalidArgNum", Merge.COMMAND_NAME));
     }
 
-    private void mergeInPlaceTest(boolean first) throws SettingsImpl.InvalidSettingNameException, SettingsImpl.CorruptSettingsException {
+    private void mergeInPlaceTest(boolean first) throws IOException, CorruptSettingsException {
         String logA = "logA";
         String logB = "logB";
         when(osDao.fileExists(any())).thenReturn(true);
@@ -114,7 +112,7 @@ public class MergeTest {
         Assert.assertEquals(logB, logFilesCaptor.getValue().getRight().getName());
     }
 
-    private void resolveAnyFile() throws SettingsImpl.InvalidSettingNameException, SettingsImpl.CorruptSettingsException {
+    private void resolveAnyFile() throws IOException, CorruptSettingsException {
         when(fileResolveHelper.resolveLogFilePath(anyString())).thenAnswer(
                 (Answer<File>) invocation
                         -> new File((String)invocation.getArguments()[0]));

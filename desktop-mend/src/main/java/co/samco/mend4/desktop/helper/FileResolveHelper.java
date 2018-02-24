@@ -1,17 +1,17 @@
 package co.samco.mend4.desktop.helper;
 
 import co.samco.mend4.core.AppProperties;
+import co.samco.mend4.core.CorruptSettingsException;
+import co.samco.mend4.core.OSDao;
 import co.samco.mend4.core.Settings;
-import co.samco.mend4.core.Settings.CorruptSettingsException;
-import co.samco.mend4.core.Settings.InvalidSettingNameException;
 import co.samco.mend4.desktop.core.I18N;
-import co.samco.mend4.desktop.dao.OSDao;
 import dagger.Lazy;
 import org.apache.commons.io.FileUtils;
 
 import javax.inject.Inject;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.security.interfaces.RSAPrivateKey;
 
 public class FileResolveHelper {
@@ -24,24 +24,6 @@ public class FileResolveHelper {
         this.osDao = osDao;
         this.settings = settings;
         this.strings = strings;
-    }
-
-    public String getDecDir() throws CorruptSettingsException, InvalidSettingNameException {
-        String decDir = settings.get().getValue(Settings.Name.DECDIR);
-        if (decDir == null) {
-            throw new CorruptSettingsException(strings.getf("Clean.noDecDir",
-                    Settings.Name.DECDIR.toString()));
-        }
-        return decDir;
-    }
-
-    public String getLogDir() throws CorruptSettingsException, InvalidSettingNameException {
-        String logDir = settings.get().getValue(Settings.Name.LOGDIR);
-        if (logDir == null) {
-            throw new CorruptSettingsException(strings.getf("FileResolve.noLogDir",
-                    Settings.Name.LOGDIR.toString()));
-        }
-        return logDir;
     }
 
     private boolean fileExists(File file) {
@@ -64,25 +46,10 @@ public class FileResolveHelper {
         }
     }
 
-    public File resolveFile(String identifier, String extension) throws FileNotFoundException {
-        File file = new File(identifier);
-        assertFileExistsAndHasExtension(identifier, extension, file);
-        return file;
-    }
-
     public File resolveFile(String identifier) throws FileNotFoundException {
         File file = new File(identifier);
         assertFileExists(file);
         return file;
-    }
-
-    public String getEncDir() throws InvalidSettingNameException, CorruptSettingsException {
-        String encDir = settings.get().getValue(Settings.Name.ENCDIR);
-        if (encDir == null) {
-            throw new CorruptSettingsException(strings.getf("FileResolve.noEncDir",
-                    Settings.Name.ENCDIR.toString()));
-        }
-        return encDir;
     }
 
     public String getSettingsPath() {
@@ -113,20 +80,21 @@ public class FileResolveHelper {
         return filePath.matches("\\d{14}") || filePath.matches("\\d{16}") || filePath.matches("\\d{17}");
     }
 
-    public File resolveLogFilePath(String filePath) throws InvalidSettingNameException, CorruptSettingsException {
+    public File resolveLogFilePath(String filePath) throws CorruptSettingsException, IOException {
         if (osDao.getFileExtension(filePath).equals("")) {
-            return FileUtils.getFile(getLogDir(), filePath + "." + AppProperties.LOG_FILE_EXTENSION);
+            return FileUtils.getFile(settings.get().getValue(Settings.Name.LOGDIR),
+                    filePath + "." + AppProperties.LOG_FILE_EXTENSION);
         } else if (osDao.fileExists(new File(filePath))) {
             return new File(filePath);
         } else {
-            return FileUtils.getFile(getLogDir(), filePath);
+            return FileUtils.getFile(settings.get().getValue(Settings.Name.LOGDIR), filePath);
         }
     }
 
-    public File resolveEncFilePath(String fileIdentifier)
-            throws InvalidSettingNameException, CorruptSettingsException {
+    public File resolveEncFilePath(String fileIdentifier) throws CorruptSettingsException, IOException {
         if (filePathIsEncId(fileIdentifier)) {
-            return FileUtils.getFile(getEncDir(), fileIdentifier + "." + AppProperties.ENC_FILE_EXTENSION);
+            return FileUtils.getFile(settings.get().getValue(Settings.Name.ENCDIR),
+                    fileIdentifier + "." + AppProperties.ENC_FILE_EXTENSION);
         } else {
             return new File(fileIdentifier);
         }

@@ -3,19 +3,13 @@ package co.samco.mend4.desktop.input.impl;
 import co.samco.mend4.desktop.core.ColorSchemeData;
 import co.samco.mend4.desktop.input.InputListener;
 
-import java.awt.Dimension;
-import java.awt.Toolkit;
+import javax.swing.*;
+import javax.swing.text.JTextComponent;
+import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.swing.BorderFactory;
-import javax.swing.JFrame;
-import javax.swing.JPasswordField;
-import javax.swing.JScrollPane;
-import javax.swing.JTextArea;
-import javax.swing.text.JTextComponent;
 
 public class MendInputBox extends JFrame implements KeyListener {
     private static final long serialVersionUID = -7214084221385969252L;

@@ -1,17 +1,16 @@
 package co.samco.mend4.desktop.commands;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.function.Function;
-
-import javax.inject.Inject;
-
 import co.samco.mend4.desktop.core.I18N;
 import co.samco.mend4.desktop.helper.CryptoHelper;
 import co.samco.mend4.desktop.helper.InputHelper;
 import co.samco.mend4.desktop.input.InputListener;
 import co.samco.mend4.desktop.output.PrintStreamProvider;
+
+import javax.inject.Inject;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.function.Function;
 
 public class Encrypt extends Command implements InputListener {
     public static final String COMMAND_NAME = "enc";
