@@ -169,7 +169,7 @@ public class CryptoHelper {
         CipherOutputStream cos = null;
         try {
             File privateKeyFile = new File(fileResolveHelper.getPrivateKeyPath());
-            RSAPrivateKey privateKey = EncryptionUtils.getPrivateKeyFromFile(privateKeyFile);
+            RSAPrivateKey privateKey = getPrivateKeyFromFile(privateKeyFile);
             //TODO only commented to compile
             String decLocation = "";//SettingsImpl.instance().getValue(Config.Settings.DECDIR);
             if (decLocation == null)
@@ -336,6 +336,24 @@ public class CryptoHelper {
                 Base64.encodeBase64URLSafeString(keyPair.getPublic().getEncoded()),
                 Base64.encodeBase64URLSafeString(cipherText));
     }
+
+    private RSAPrivateKey getPrivateKeyFromFile(File privateKeyFile)
+            throws NoSuchAlgorithmException, IOException, InvalidKeySpecException {
+        FileInputStream privateKeyFileInputStream = null;
+        try {
+            //now read in the private rsa key.
+            byte[] keyBytes = new byte[(int) privateKeyFile.length()];
+            privateKeyFileInputStream = new FileInputStream(privateKeyFile);
+            privateKeyFileInputStream.read(keyBytes);
+            PKCS8EncodedKeySpec privateKeySpec = new PKCS8EncodedKeySpec(keyBytes);
+            KeyFactory kf = KeyFactory.getInstance("RSA");
+            return (RSAPrivateKey) kf.generatePrivate(privateKeySpec);
+        } finally {
+            if (privateKeyFileInputStream != null)
+                privateKeyFileInputStream.close();
+        }
+    }
+
 
     public static class EncodedKeyInfo {
         private final String privateKey;

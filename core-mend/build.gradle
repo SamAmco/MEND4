@@ -2,6 +2,10 @@ plugins {
     id 'java-library'
 }
 
+dependencies {
+    compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.7'
+}
+
 clean.doFirst {
     println "deleting core-mend.jar from android project libs"
     delete '../android-mend/app/libs/core-mend.jar'

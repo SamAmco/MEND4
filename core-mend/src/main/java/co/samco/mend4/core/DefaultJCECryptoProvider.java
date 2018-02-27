@@ -1,5 +1,9 @@
 package co.samco.mend4.core;
 
+import co.samco.mend4.core.bean.LogDataBlocks;
+import co.samco.mend4.core.bean.LogDataBlocksAndText;
+import org.apache.commons.lang3.ArrayUtils;
+
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.security.InvalidAlgorithmParameterException;
@@ -9,7 +13,6 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.spec.InvalidKeySpecException;
-import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -26,8 +29,78 @@ import javax.crypto.spec.SecretKeySpec;
 
 
 //TODO this is now a total mess, all needs fixing and refactoring
-public class EncryptionUtils {
-    private static String addHeaderToLogText(char[] logText) {
+public class DefaultJCECryptoProvider implements CryptoProvider {
+
+    public DefaultJCECryptoProvider() {}
+
+    private SecretKey generateAesKey() throws NoSuchAlgorithmException {
+        KeyGenerator keyGen = KeyGenerator.getInstance("AES");
+        keyGen.init(AppProperties.PREFERRED_AES_KEY_SIZE);
+        return keyGen.generateKey();
+    }
+
+    private Cipher getAesEncryptCipher(SecretKey aesKey) throws NoSuchPaddingException, NoSuchAlgorithmException,
+            InvalidAlgorithmParameterException, InvalidKeyException {
+        Cipher aesCipher = Cipher.getInstance(AppProperties.PREFERRED_AES_ALG);
+        aesCipher.init(Cipher.ENCRYPT_MODE, aesKey, AppProperties.STANDARD_IV);
+        return aesCipher;
+    }
+
+    private Cipher getRsaEncrytpCipher(X509EncodedKeySpec publicKey) throws InvalidKeyException,
+            InvalidKeySpecException, NoSuchPaddingException, NoSuchAlgorithmException {
+        Cipher rsaCipher = Cipher.getInstance(AppProperties.PREFERRED_RSA_ALG);
+        KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+        PublicKey publicRsaKey = keyFactory.generatePublic(publicKey);
+        rsaCipher.init(Cipher.ENCRYPT_MODE, publicRsaKey);
+        return rsaCipher;
+    }
+
+    private byte[] getIntAs4Bytes(int number) {
+        return ByteBuffer.allocate(4).putInt(number).array();
+    }
+
+    private void writeToCipherStream(InputStream inputStream, CipherOutputStream cipherOutputStream) throws IOException {
+        byte[] buffer = new byte[8192];
+        int count;
+        while ((count = inputStream.read(buffer)) > 0) {
+            cipherOutputStream.write(buffer, 0, count);
+        }
+    }
+
+    @Override
+    public void encryptEncStream(X509EncodedKeySpec publicKey, InputStream inputStream, OutputStream outputStream) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidAlgorithmParameterException, InvalidKeyException, InvalidKeySpecException, BadPaddingException, IllegalBlockSizeException, IOException {
+        SecretKey aesKey = generateAesKey();
+        Cipher aesCipher = getAesEncryptCipher(aesKey);
+        Cipher rsaCipher = getRsaEncrytpCipher(publicKey);
+
+        byte[] encryptedAesKey = rsaCipher.doFinal(aesKey.getEncoded());
+        byte[] lengthCode1 = ByteBuffer.allocate(4).putInt(encryptedAesKey.length).array();
+        byte[] fileExtensionBytes = rsaCipher.doFinal(AppProperties.ENC_FILE_EXTENSION.getBytes());
+        outputStream.write(lengthCode1);
+        outputStream.write(encryptedAesKey);
+        outputStream.write(getIntAs4Bytes(fileExtensionBytes.length));
+        outputStream.write(fileExtensionBytes);
+
+        CipherOutputStream cipherOutputStream = new CipherOutputStream(outputStream, aesCipher);
+        writeToCipherStream(inputStream, cipherOutputStream);
+    }
+
+    @Override
+    public LogDataBlocksAndText getNextLogTextWithDataBlocks(InputStream inputStream, RSAPrivateKey privateKey, byte[] lc1Bytes) {
+        return null;
+    }
+
+    @Override
+    public void decryptLog(InputStream inputStream, PrintStream outputStream, RSAPrivateKey privateKey) {
+
+    }
+
+    @Override
+    public void encryptLogToStream(IBase64EncodingProvider encoder, OutputStream fos, char[] text, boolean dropHeader) {
+
+    }
+
+    private String addHeaderToLogText(char[] logText) {
         StringBuilder sb = new StringBuilder();
         Calendar cal = Calendar.getInstance();
         SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss", Locale.ENGLISH);
@@ -40,23 +113,6 @@ public class EncryptionUtils {
         return sb.toString();
     }
 
-    public static RSAPrivateKey getPrivateKeyFromFile(File privateKeyFile)
-            throws NoSuchAlgorithmException, IOException, InvalidKeySpecException {
-        FileInputStream privateKeyFileInputStream = null;
-        try {
-            //now read in the private rsa key.
-            byte[] keyBytes = new byte[(int) privateKeyFile.length()];
-            privateKeyFileInputStream = new FileInputStream(privateKeyFile);
-            privateKeyFileInputStream.read(keyBytes);
-            PKCS8EncodedKeySpec privateKeySpec = new PKCS8EncodedKeySpec(keyBytes);
-            KeyFactory kf = KeyFactory.getInstance("RSA");
-            return (RSAPrivateKey) kf.generatePrivate(privateKeySpec);
-        } finally {
-            if (privateKeyFileInputStream != null)
-                privateKeyFileInputStream.close();
-        }
-    }
-
     public static boolean logHasNext(FileInputStream logInputStream, byte[] lc1Bytes)
             throws IOException, InvalidAlgorithmParameterException {
         if (lc1Bytes == null || lc1Bytes.length != 4)
@@ -64,42 +120,13 @@ public class EncryptionUtils {
         return logInputStream.read(lc1Bytes) == 4;
     }
 
-    public static class LogDataBlocks {
-        public byte[] encAesKey;
-        public byte[] lc2Bytes;
-        public byte[] encEntry;
-        public byte[] lc1Bytes;
-
-        public LogDataBlocks(byte[] lc1Bytes, byte[] encAesKey, byte[] lc2Bytes, byte[] encEntry) {
-            this.lc1Bytes = lc1Bytes;
-            this.encAesKey = encAesKey;
-            this.lc2Bytes = lc2Bytes;
-            this.encEntry = encEntry;
-        }
-
-        public byte[] getAsOneBlock() {
-            byte[] combined = new byte[encAesKey.length + lc2Bytes.length + encEntry.length + lc2Bytes.length];
-            byte[][] byteArrays = new byte[][]{lc1Bytes, encAesKey, lc2Bytes, encEntry};
-            int end = 0;
-            for (int i = 0; i < byteArrays.length; ++i) {
-                System.arraycopy(byteArrays[i], 0, combined, end, byteArrays[i].length);
-                end += byteArrays[i].length;
-            }
-            return combined;
-        }
+    public byte[] getAsOneBlock(LogDataBlocks block) {
+        return ArrayUtils.addAll(
+                ArrayUtils.addAll(block.getLc1Bytes(), block.getEncAesKey()),
+                ArrayUtils.addAll(block.getLc2Bytes(), block.getEncEntry()));
     }
 
-    public static class LogDataBlocksAndText {
-        public LogDataBlocks logDataBlocks;
-        public String entryText;
-
-        public LogDataBlocksAndText(LogDataBlocks logDataBlocks, String entryText) {
-            this.logDataBlocks = logDataBlocks;
-            this.entryText = entryText;
-        }
-    }
-
-    public static LogDataBlocks getNextLogBytes(FileInputStream inputStream, byte[] lc1Bytes) throws IOException,
+    private LogDataBlocks getNextLogBytes(FileInputStream inputStream, byte[] lc1Bytes) throws IOException,
             MalformedLogFileException {
         ByteBuffer lc1Buff = ByteBuffer.wrap(lc1Bytes); //big-endian by default
         int lc1 = lc1Buff.getInt();
@@ -127,8 +154,7 @@ public class EncryptionUtils {
     }
 
     public static LogDataBlocksAndText getNextLogTextWithDataBlocks(FileInputStream inputStream, RSAPrivateKey
-            privateKey,
-                                                                    byte[] lc1Bytes) throws IOException,
+            privateKey, byte[] lc1Bytes) throws IOException,
             MalformedLogFileException, NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException,
             BadPaddingException, IllegalBlockSizeException, InvalidAlgorithmParameterException {
         LogDataBlocks ldb = getNextLogBytes(inputStream, lc1Bytes);
@@ -146,7 +172,7 @@ public class EncryptionUtils {
         return new LogDataBlocksAndText(ldb, new String(entry, "UTF-8"));
     }
 
-    public static String getNextLogText(FileInputStream inputStream, RSAPrivateKey privateKey, byte[] lc1Bytes)
+    private String getNextLogText(FileInputStream inputStream, RSAPrivateKey privateKey, byte[] lc1Bytes)
             throws IOException, MalformedLogFileException, NoSuchPaddingException,
             NoSuchAlgorithmException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException,
             InvalidAlgorithmParameterException {
@@ -176,60 +202,6 @@ public class EncryptionUtils {
                                            String fileExtension) throws MissingPublicKeyException, NoSuchAlgorithmException,
             NoSuchPaddingException, InvalidKeyException, InvalidAlgorithmParameterException, InvalidKeySpecException,
             IllegalBlockSizeException, BadPaddingException, IOException {
-        CipherOutputStream cos = null;
-        try {
-            //TODO only commented to compile
-            String userPublicKeyString = "";//SettingsImpl.instance().getValue(Config.Settings.PUBLICKEY);
-            if (userPublicKeyString == null)
-                throw new MissingPublicKeyException();
-
-            //generate an aes key
-            KeyGenerator keyGen = KeyGenerator.getInstance("AES");
-            keyGen.init(AppProperties.PREFERRED_AES_KEY_SIZE);
-            SecretKey aesKey = keyGen.generateKey();
-
-            Cipher aesCipher = Cipher.getInstance(AppProperties.PREFERRED_AES_ALG);
-            aesCipher.init(Cipher.ENCRYPT_MODE, aesKey, AppProperties.STANDARD_IV);
-            cos = new CipherOutputStream(fos, aesCipher);
-
-            //encrypt the aes key with the public rsa key
-            Cipher rsaCipher = Cipher.getInstance(AppProperties.PREFERRED_RSA_ALG);
-
-            //read in the public key
-            X509EncodedKeySpec publicRsaKeySpec = new X509EncodedKeySpec(encoder.decodeBase64(userPublicKeyString));
-            KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-            PublicKey publicRsaKey = keyFactory.generatePublic(publicRsaKeySpec);
-            rsaCipher.init(Cipher.ENCRYPT_MODE, publicRsaKey);
-            byte[] encryptedAesKey = rsaCipher.doFinal(aesKey.getEncoded());
-
-            //generate length codes
-            byte[] lengthCode1 = ByteBuffer.allocate(4).putInt(encryptedAesKey.length).array();
-
-            //create an output byte array
-            ByteBuffer output = ByteBuffer.allocate(lengthCode1.length + encryptedAesKey.length);
-
-            //add the first length code to the output
-            output.put(lengthCode1);
-
-            //add the encrypted aes key to the byte block
-            output.put(encryptedAesKey);
-
-            //write the key length and encrypted key to the file
-            fos.write(output.array());
-
-            byte[] fileExtensionBytes = rsaCipher.doFinal(fileExtension.getBytes());
-            fos.write(ByteBuffer.allocate(4).putInt(fileExtensionBytes.length).array());
-            fos.write(fileExtensionBytes);
-
-            byte[] buffer = new byte[8192];
-            int count;
-            while ((count = fis.read(buffer)) > 0) {
-                cos.write(buffer, 0, count);
-            }
-        } finally {
-            if (cos != null)
-                cos.close();
-        }
     }
 
     public static void encryptLogToStream(IBase64EncodingProvider encoder, FileOutputStream fos, char[] text, boolean
@@ -295,14 +267,6 @@ public class EncryptionUtils {
 
         public MalformedLogFileException(String message) {
             super(message);
-        }
-    }
-
-    public static class MissingPublicKeyException extends Exception {
-        private static final long serialVersionUID = 8041634883751009836L;
-
-        public MissingPublicKeyException() {
-            super("");
         }
     }
 }
