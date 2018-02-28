@@ -6,6 +6,7 @@ import java.nio.file.Path;
 
 public interface OSDao {
     String getUserHome();
+    void desktopOpenFile(File file) throws IOException;
     void mkdirs(File file);
     File[] getDirectoryListing(File dirFile) throws FileNotFoundException;
     String getAbsolutePath(File file);
@@ -21,4 +22,5 @@ public interface OSDao {
     InputStream getStdIn();
     char[] readPassword(String message);
     Path moveFile(Path source, Path target, CopyOption... options) throws IOException;
+    void renameFile(File file, String newName);
 }

@@ -40,8 +40,7 @@ public class SettingsHelper {
         String value;
         try {
             value = settings.getValue(name);
-        }
-        catch (CorruptSettingsException | IOException e) {
+        } catch (CorruptSettingsException | IOException e) {
             value = strings.get("StatePrinter.Error");
         }
         return value;

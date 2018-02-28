@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.function.Function;
 
 //TODO allow people to call setup with different flags to modify things like key sizes etc
+//TODO ensure that current log is set automatically when setup is created
 public class Setup extends Command {
     public static final String COMMAND_NAME = "setup";
     public static final String FORCE_FLAG = "-f";

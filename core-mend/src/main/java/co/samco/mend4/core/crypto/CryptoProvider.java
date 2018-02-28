@@ -26,7 +26,7 @@ public interface CryptoProvider {
             NoSuchAlgorithmException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException,
             InvalidAlgorithmParameterException;
 
-    void encryptLogStream(RSAPublicKey publicRsaKey, char[] text, OutputStream fos) throws NoSuchAlgorithmException,
+    void encryptLogStream(RSAPublicKey publicRsaKey, String text, OutputStream fos) throws NoSuchAlgorithmException,
             NoSuchPaddingException, InvalidAlgorithmParameterException, InvalidKeyException, IOException,
             BadPaddingException, IllegalBlockSizeException;
 

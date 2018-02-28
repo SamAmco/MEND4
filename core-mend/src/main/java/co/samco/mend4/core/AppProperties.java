@@ -12,6 +12,7 @@ public class AppProperties {
     public static final String ENC_FILE_EXTENSION = "enc";
     public static final String LOG_DATE_FORMAT = "dd/MM/yyyy HH:mm:ss";
     public static final String LOG_HEADER = "//MEND%s//%s////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////";
+    public static final String DEFAULT_LOG_FILE_NAME = "Log";
     public static final String PASSCHECK_TEXT = "How much wood could a wood chuck chuck if a wood chuck could chuck wood?";
     public static final String PREFERRED_AES_ALG = "AES/CTR/NoPadding";
     public static final String PREFERRED_RSA_ALG = "RSA/ECB/PKCS1Padding";

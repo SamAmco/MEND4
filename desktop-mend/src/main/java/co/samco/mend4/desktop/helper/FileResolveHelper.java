@@ -12,6 +12,7 @@ import javax.inject.Inject;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.security.InvalidParameterException;
 import java.security.interfaces.RSAPrivateKey;
 
 public class FileResolveHelper {
@@ -36,13 +37,26 @@ public class FileResolveHelper {
 
     public void assertFileExists(File file) throws FileNotFoundException {
         if (!fileExists(file)) {
-            throw new FileNotFoundException(strings.getf("General.unknownIdentifier", file));
+            throw new FileNotFoundException(strings.getf("General.unknownIdentifier", file.getName()));
+        }
+    }
+
+    public void assertFileDoesNotExist(File file) throws IllegalArgumentException {
+        if (fileExists(file)) {
+            throw new IllegalArgumentException(strings.getf("General.fileAlreadyExists", file.getAbsolutePath()));
         }
     }
 
     public void assertFileExistsAndHasExtension(String name, String extension, File file) throws FileNotFoundException {
         if (!fileExistsAndHasExtension(extension, file)) {
             throw new FileNotFoundException(strings.getf("General.unknownIdentifier", name));
+        }
+    }
+
+    public void assertDirWritable(String dir) throws IllegalArgumentException {
+        File file = new File(dir);
+        if (!file.isDirectory() || !file.exists() || !file.canWrite()) {
+            throw new IllegalArgumentException(strings.getf("General.couldNotFindOrWriteDir", file.getAbsolutePath()));
         }
     }
 
@@ -70,10 +84,17 @@ public class FileResolveHelper {
                 + AppProperties.PRIVATE_KEY_FILE_NAME;
     }
 
-    public RSAPrivateKey getPrivateKey() {
-        //TODO implement this cached
-        //File privateKeyFile = new File(Config.CONFIG_DIR_NAME + Config.PRIVATE_KEY_FILE_NAME);
-        return null;
+    private String ensureLogNameHasFileExtension(String logName) {
+        if (!osDao.getFileExtension(logName).equals(AppProperties.LOG_FILE_EXTENSION)) {
+            logName += "." + AppProperties.LOG_FILE_EXTENSION;
+        }
+        return logName;
+    }
+
+    public File getCurrentLogFile() throws IOException, CorruptSettingsException {
+        String currentLog = ensureLogNameHasFileExtension(
+                settings.get().getValue(Settings.Name.CURRENTLOG));
+        return FileUtils.getFile(settings.get().getValue(Settings.Name.LOGDIR), currentLog);
     }
 
     private boolean filePathIsEncId(String filePath) {

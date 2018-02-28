@@ -3,6 +3,7 @@ package co.samco.mend4.desktop.dao.impl;
 import co.samco.mend4.core.OSDao;
 import org.apache.commons.io.FilenameUtils;
 
+import java.awt.*;
 import java.io.*;
 import java.nio.file.CopyOption;
 import java.nio.file.Files;
@@ -20,6 +21,11 @@ public class OSDaoImpl implements OSDao {
             userHomeCached = System.getProperty("user.home");
         }
         return userHomeCached;
+    }
+
+    @Override
+    public void desktopOpenFile(File file) throws IOException {
+        Desktop.getDesktop().open(file);
     }
 
     @Override
@@ -98,6 +104,11 @@ public class OSDaoImpl implements OSDao {
     @Override
     public Path moveFile(Path source, Path target, CopyOption... options) throws IOException {
         return Files.move(source, target, options);
+    }
+
+    @Override
+    public void renameFile(File file, String newName) {
+        file.renameTo(new File(newName));
     }
 
     private void assertDirectoryExists(File file) throws FileNotFoundException {

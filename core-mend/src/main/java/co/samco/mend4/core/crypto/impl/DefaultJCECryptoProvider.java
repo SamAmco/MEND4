@@ -172,14 +172,14 @@ public class DefaultJCECryptoProvider implements CryptoProvider {
     }
 
     @Override
-    public void encryptLogStream(RSAPublicKey publicKey, char[] text, OutputStream outputStream)
+    public void encryptLogStream(RSAPublicKey publicKey, String text, OutputStream outputStream)
             throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidAlgorithmParameterException,
             InvalidKeyException, IOException, BadPaddingException, IllegalBlockSizeException {
         SecretKey aesKey = generateAesKey();
         Cipher aesCipher = getAesEncryptCipher(aesKey);
         Cipher rsaCipher = getRsaEncrytpCipher(publicKey);
 
-        byte[] cipherText = aesCipher.doFinal(new String(text).getBytes(StandardCharsets.UTF_8));
+        byte[] cipherText = aesCipher.doFinal(text.getBytes(StandardCharsets.UTF_8));
         byte[] encryptedAesKey = rsaCipher.doFinal(aesKey.getEncoded());
         byte[] lengthCode1 = ByteBuffer.allocate(LENGTH_CODE_SIZE).putInt(encryptedAesKey.length).array();
         byte[] lengthCode2 = ByteBuffer.allocate(LENGTH_CODE_SIZE).putInt(cipherText.length).array();

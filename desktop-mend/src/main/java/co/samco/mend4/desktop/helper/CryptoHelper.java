@@ -2,9 +2,15 @@ package co.samco.mend4.desktop.helper;
 
 import co.samco.mend4.core.AppProperties;
 import co.samco.mend4.core.EncryptionUtils;
-import co.samco.mend4.desktop.core.ApacheCommonsEncoder;
+import co.samco.mend4.core.OSDao;
+import co.samco.mend4.core.Settings;
+import co.samco.mend4.core.crypto.CryptoProvider;
+import co.samco.mend4.core.exception.CorruptSettingsException;
+import co.samco.mend4.core.exception.MalformedLogFileException;
+import co.samco.mend4.desktop.core.I18N;
 import co.samco.mend4.desktop.output.PrintStreamProvider;
 import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 
 import javax.crypto.*;
@@ -24,261 +30,114 @@ import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
+import java.util.Locale;
 
 //TODO refactor this whole class, it's an un-godly mess
+//TODO more helpful exception handling and throwing, most lower level exceptions should be caught on this layer
+//TODO print some sort of helpful message if mend is not unlocked
 public class CryptoHelper {
 
+    private final I18N strings;
     private final PrintStreamProvider log;
     private final FileResolveHelper fileResolveHelper;
+    private final Settings settings;
+    private final CryptoProvider cryptoProvider;
+    private final KeyHelper keyHelper;
+    private final OSDao osDao;
 
     @Inject
-    public CryptoHelper(PrintStreamProvider log, FileResolveHelper fileResolveHelper) {
+    public CryptoHelper(I18N strings, PrintStreamProvider log, FileResolveHelper fileResolveHelper, Settings settings,
+                        CryptoProvider cryptoProvider, KeyHelper keyHelper, OSDao osDao) {
+        this.strings = strings;
         this.log = log;
         this.fileResolveHelper = fileResolveHelper;
+        this.settings = settings;
+        this.cryptoProvider = cryptoProvider;
+        this.keyHelper = keyHelper;
+        this.osDao = osDao;
     }
 
-    public void encryptFile(String filePath, String name) {
-        //If there isn't a file name given, then let's generate a name for the file using a timestamp (16 digits).
+    public void encryptFile(File file, String name) throws IOException, CorruptSettingsException,
+            InvalidKeySpecException, NoSuchAlgorithmException, IllegalBlockSizeException, InvalidKeyException,
+            BadPaddingException, InvalidAlgorithmParameterException, NoSuchPaddingException {
         if (name == null)
             name = new SimpleDateFormat("yyyyMMddHHmmssSS").format(new Date());
 
-        File fileToEncrypt = new File(filePath);
-        if (!fileToEncrypt.exists()) {
-            System.err.println("Could not find file.");
-            return;
-        }
+        String fileExtension = FilenameUtils.getExtension(file.getAbsolutePath());
+        String encLocation = settings.getValue(Settings.Name.ENCDIR);
+        File outputFile = new File(encLocation + File.separatorChar + name + AppProperties.ENC_FILE_EXTENSION);
+        fileResolveHelper.assertFileDoesNotExist(outputFile);
 
-        FileInputStream fis = null;
-        try {
-            FileOutputStream fos = null;
-            try {
-                //Make sure you're able to set up a file input stream
-                fis = new FileInputStream(fileToEncrypt);
-                //Check that you're able to set up an output stream
-                //TODO only commented to compile
-                String encLocation = "";//SettingsImpl.instance().getValue(Config.Settings.ENCDIR);
-                if (encLocation == null) {
-                    //TODO only commented to compile
-                    throw new IOException("You need to set the " //Config.SETTINGS_NAMES_MAP.get(Config.Settings.ENCDIR.ordinal())
-                            + " property in your settings file before you can encrypt files to it.");
-                }
-                File outputFile = new File(encLocation + File.separatorChar + name + ".enc");
-                if (outputFile.exists()) {
-                    System.err.println("The output file already exists: " + outputFile.getAbsolutePath());
-                }
-                fos = new FileOutputStream(outputFile);
-
-                String fileExtension = FilenameUtils.getExtension(fileToEncrypt.getAbsolutePath());
-
-                //now we can append all the encrypted file bytes
-                System.err.println("Encrypting file to: " + outputFile.getAbsolutePath());
-                EncryptionUtils.encryptFileToStream(new ApacheCommonsEncoder(), fis, fos, fileExtension);
-                System.err.println("Encryption complete. Key: " + name);
-
-            } finally {
-                if (fos != null)
-                    fos.close();
-            }
-        } catch (IOException | InvalidKeyException | NoSuchAlgorithmException | NoSuchPaddingException
-                | InvalidAlgorithmParameterException | InvalidKeySpecException | IllegalBlockSizeException
-                | BadPaddingException e) {
-            System.err.println(e.getMessage());
-        } catch (EncryptionUtils.MissingPublicKeyException e) {
-            System.err.println("Failed to find your public key. Please ensure you have run \"mend setup\" "
-                    + "and that your Settings are not corrupt or in-accessable to mend");
-        } finally {
-            try {
-                if (fis != null)
-                    fis.close();
-            } catch (IOException e1) {
-                System.err.println("MEND encountered an error closing file input stream.");
-                e1.printStackTrace();
-            }
+        try (FileInputStream fis = new FileInputStream(file);
+            FileOutputStream fos = new FileOutputStream(outputFile)) {
+            System.err.println("Encrypting file to: " + outputFile.getAbsolutePath());
+            cryptoProvider.encryptEncStream(keyHelper.getPublicKey(), fis, fos, fileExtension);
+            System.err.println("Encryption complete. Key: " + name);
         }
     }
 
-    //TODO this stuff has been brought out of CryptoProvider layer. It should probably be somewhere core.
-   // private void addingHeaderToText() {
-   //     String logText = new String(text);
-   //     if (platformHeader != null) {
-   //         logText = addHeaderToLogText(logText, platformHeader);
-   //     }
-   // }
-   //
-   // private String addHeaderToLogText(String logText, String platformHeader) {
-   //     StringBuilder sb = new StringBuilder();
-   //     Calendar cal = Calendar.getInstance();
-   //     SimpleDateFormat sdf = new SimpleDateFormat(AppProperties.LOG_DATE_FORMAT, Locale.ENGLISH);
-   //     sb.append(sdf.format(cal.getTime()));
-   //     sb.append(String.format(AppProperties.LOG_HEADER, AppProperties.CORE_VERSION_NUMBER, platformHeader));
-   //     sb.append(newLine);
-   //     sb.append(logText);
-   //     return sb.toString();
-   // }
+    private String addHeaderToLogText(String logText, String platformHeader) {
+        StringBuilder sb = new StringBuilder();
+        Calendar cal = Calendar.getInstance();
+        SimpleDateFormat sdf = new SimpleDateFormat(AppProperties.LOG_DATE_FORMAT, Locale.ENGLISH);
+        sb.append(sdf.format(cal.getTime()));
+        sb.append(String.format(AppProperties.LOG_HEADER, AppProperties.CORE_VERSION_NUMBER, platformHeader));
+        sb.append(strings.getNewLine());
+        sb.append(logText);
+        return sb.toString();
+    }
 
-    public void encryptTextToLog(char[] text, boolean dropHeader) {
+    public void encryptTextToLog(char[] text, boolean dropHeader) throws IOException, CorruptSettingsException,
+            InvalidKeySpecException, NoSuchAlgorithmException, IllegalBlockSizeException, InvalidKeyException,
+            BadPaddingException, InvalidAlgorithmParameterException, NoSuchPaddingException {
         if (text.length <= 0)
             return;
 
-        FileOutputStream fos = null;
-        try {
-            //TODO only commented to compile
-            String logDir = "";//SettingsImpl.instance().getValue(Config.Settings.LOGDIR);
-            //TODO only commented to compile
-            String currentLogName = "";//SettingsImpl.instance().getValue(Config.Settings.CURRENTLOG);
-            if (logDir == null)
-                //TODO only commented to compile
-                throw new IOException("You need to set the " //+ Config.SETTINGS_NAMES_MAP.get(Config.Settings.LOGDIR .ordinal())
-                        + " property in your settings file before you can encrypt logs to it.");
-            if (currentLogName == null) {
-                //TODO only commented to compile
-                //SettingsImpl.instance().setValue(Config.Settings.CURRENTLOG, "Log");
-                currentLogName = "Log";
-            }
+        File currentLogFile = fileResolveHelper.getCurrentLogFile();
+        currentLogFile.createNewFile();
+        String logText = new String(text);
+        if (!dropHeader) {
+            addHeaderToLogText(logText, strings.get("TODO"));
+        }
 
-            if (currentLogName.length() < 1)
-                currentLogName = "Log";
-            if (currentLogName.length() < 6 || !currentLogName.substring(currentLogName.length() - 5, currentLogName
-                    .length()).equals(".mend"))
-                currentLogName += ".mend";
+        try (FileOutputStream fos = new FileOutputStream(currentLogFile, true)) {
+            cryptoProvider.encryptLogStream(keyHelper.getPublicKey(), logText, fos);
+        }
 
-            File currentLogFile = new File(logDir + File.separatorChar + currentLogName);
-            currentLogFile.createNewFile();
-            fos = new FileOutputStream(currentLogFile, true);
+        DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+        Date date = new Date();
+        System.out.println("Successfully Logged entry at: " + dateFormat.format(date));
+    }
 
-            EncryptionUtils.encryptLogToStream(new ApacheCommonsEncoder(), fos, text, dropHeader);
-
-            DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
-            Date date = new Date();
-            System.out.println("Successfully Logged entry at: " + dateFormat.format(date));
-        } catch (NoSuchAlgorithmException | IOException | InvalidKeyException | IllegalBlockSizeException
-                | BadPaddingException | InvalidKeySpecException | NoSuchPaddingException
-                | InvalidAlgorithmParameterException e) {
-            System.err.println(e.getMessage());
-        } catch (EncryptionUtils.MissingPublicKeyException e) {
-            System.err.println("Failed to find your public key. Please ensure you have run \"mend setup\" "
-                    + "and that your Settings are not corrupt or in-accessable to mend");
-        } finally {
-            try {
-                if (fos != null)
-                    fos.close();
-            } catch (IOException e1) {
-                System.err.println("MEND encountered a fatal error.");
-                e1.printStackTrace();
-            }
+    public void decryptLog(File file) throws InvalidKeySpecException, IOException, NoSuchAlgorithmException,
+            MalformedLogFileException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException, NoSuchPaddingException,
+            InvalidAlgorithmParameterException {
+        try (FileInputStream fis = new FileInputStream(file)){
+            cryptoProvider.decryptLogStream(keyHelper.getPrivateKey(), fis, log.out());
         }
     }
 
-    //TODO print some sort of helpful message if mend is not unlocked
-    public void decryptLog(File file) {
-        try {
-            EncryptionUtils.decryptLog(file, fileResolveHelper.getPrivateKey(), System.out);
+    public void decryptFile(File file, boolean silent) throws IOException, CorruptSettingsException,
+            InvalidKeySpecException, NoSuchAlgorithmException, MalformedLogFileException,
+            InvalidAlgorithmParameterException, NoSuchPaddingException, BadPaddingException, IllegalBlockSizeException, InvalidKeyException {
+        String decDir = settings.getValue(Settings.Name.DECDIR);
+        fileResolveHelper.assertDirWritable(decDir);
+        File outputFile = FileUtils.getFile(decDir, FilenameUtils.removeExtension(file.getName()));
+        fileResolveHelper.assertFileDoesNotExist(outputFile);
+        String fileExtension;
+
+        System.err.println("Decrypting the file to: " + outputFile.getAbsolutePath());
+        try (FileInputStream fis = new FileInputStream(file);
+            FileOutputStream fos = new FileOutputStream(outputFile)) {
+            fileExtension = cryptoProvider.decryptEncStream(keyHelper.getPrivateKey(), fis, fos);
         }
-        catch (IOException | EncryptionUtils.MalformedLogFileException | InvalidKeyException | BadPaddingException
-                | IllegalBlockSizeException | NoSuchPaddingException | NoSuchAlgorithmException
-                | InvalidAlgorithmParameterException e) {
-            log.err().println(e.getMessage());
-        }
-    }
+        osDao.renameFile(outputFile, outputFile.getName() + "." + fileExtension);
+        System.err.println("Decryption complete.");
 
-    //TODO print some sort of helpful message if mend is not unlocked
-    public void decryptFile(File file, boolean silent) {
-        FileInputStream fis = null;
-        FileOutputStream fos = null;
-        CipherOutputStream cos = null;
-        try {
-            File privateKeyFile = new File(fileResolveHelper.getPrivateKeyPath());
-            RSAPrivateKey privateKey = getPrivateKeyFromFile(privateKeyFile);
-            //TODO only commented to compile
-            String decLocation = "";//SettingsImpl.instance().getValue(Config.Settings.DECDIR);
-            if (decLocation == null)
-                //TODO only commented to compile
-                throw new FileNotFoundException("You need to set the " //+ Config.SETTINGS_NAMES_MAP.get(Config .Settings.DECDIR.ordinal())
-                        + " property in your settings file before you can decrypt files to it.");
-
-            decLocation += File.separatorChar;
-
-            fis = new FileInputStream(file);
-            byte[] lcBytes = new byte[4];
-            //while there is an initial length code to be read in, read it in
-            if (fis.read(lcBytes) != lcBytes.length)
-                throw new EncryptionUtils.MalformedLogFileException("This enc file is malformed");
-
-            //then convert it to an integer
-            int lc = ByteBuffer.wrap(lcBytes).getInt(); //big-endian by default
-
-            //and read in that many bytes as the encrypted aes key used to encrypt this enc file
-            byte[] encAesKey = new byte[lc];
-            if (fis.read(encAesKey) != encAesKey.length)
-                throw new EncryptionUtils.MalformedLogFileException("This log file is malformed.");
-
-            //now decrypt the aes key
-            //TODO Should be getting this from settings not config
-            Cipher rsaCipher = Cipher.getInstance(AppProperties.PREFERRED_RSA_ALG);
-            rsaCipher.init(Cipher.DECRYPT_MODE, privateKey);
-            byte[] aesKeyBytes = rsaCipher.doFinal(encAesKey);
-            SecretKey aesKey = new SecretKeySpec(aesKeyBytes, 0, aesKeyBytes.length, "AES");
-
-            //first get the file extension
-            byte[] lc2Bytes = new byte[4];
-
-            if (fis.read(lc2Bytes) != lc2Bytes.length)
-                throw new EncryptionUtils.MalformedLogFileException("This enc file is malformed");
-
-            int lc2 = ByteBuffer.wrap(lc2Bytes).getInt(); //big-endian by default
-            byte[] encFileExtension = new byte[lc2];
-
-            if (fis.read(encFileExtension) != encFileExtension.length)
-                throw new EncryptionUtils.MalformedLogFileException("This enc file is malformed");
-
-            String fileExtension = new String(rsaCipher.doFinal(encFileExtension));
-
-            File outputFile = new File(decLocation + FilenameUtils.removeExtension(file.getName()) + '.' +
-                    fileExtension);
-            if (outputFile.getParentFile() == null || !outputFile.getParentFile().exists())
-                throw new FileNotFoundException("Could not write to the decrypt location.");
-
-            if (outputFile.exists()) {
-                System.err.println("The output file already exists at: " + outputFile.getAbsolutePath());
-                return;
-            }
-
-            fos = new FileOutputStream(outputFile);
-
-            //now decrypt the file
-            //TODO Should be getting this from settings not config
-            Cipher aesCipher = Cipher.getInstance(AppProperties.PREFERRED_AES_ALG);
-            aesCipher.init(Cipher.DECRYPT_MODE, aesKey, AppProperties.STANDARD_IV);
-            cos = new CipherOutputStream(fos, aesCipher);
-
-            System.err.println("Decrypting the file to: " + outputFile.getAbsolutePath());
-            //now we can append all the decrypted file bytes
-            byte[] buffer = new byte[8192];
-            int count;
-            while ((count = fis.read(buffer)) > 0) {
-                cos.write(buffer, 0, count);
-            }
-            System.err.println("Decryption complete.");
-
-            if (!silent)
-                Desktop.getDesktop().open(outputFile);
-        } catch (IOException | EncryptionUtils.MalformedLogFileException | NoSuchAlgorithmException
-                | NoSuchPaddingException | InvalidKeyException | IllegalBlockSizeException
-                | BadPaddingException | InvalidAlgorithmParameterException | InvalidKeySpecException e) {
-            System.err.println(e.getMessage());
-        }
-        finally {
-            try {
-                if (fis != null)
-                    fis.close();
-                if (cos != null)
-                    cos.close();
-                if (fos != null)
-                    fos.close();
-            } catch (IOException e) {
-                System.err.println(e.getMessage());
-            }
+        if (!silent) {
+            osDao.desktopOpenFile(outputFile);
         }
     }
 
