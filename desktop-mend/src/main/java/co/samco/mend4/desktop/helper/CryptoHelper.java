@@ -97,6 +97,25 @@ public class CryptoHelper {
         }
     }
 
+    //TODO this stuff has been brought out of CryptoProvider layer. It should probably be somewhere core.
+   // private void addingHeaderToText() {
+   //     String logText = new String(text);
+   //     if (platformHeader != null) {
+   //         logText = addHeaderToLogText(logText, platformHeader);
+   //     }
+   // }
+   //
+   // private String addHeaderToLogText(String logText, String platformHeader) {
+   //     StringBuilder sb = new StringBuilder();
+   //     Calendar cal = Calendar.getInstance();
+   //     SimpleDateFormat sdf = new SimpleDateFormat(AppProperties.LOG_DATE_FORMAT, Locale.ENGLISH);
+   //     sb.append(sdf.format(cal.getTime()));
+   //     sb.append(String.format(AppProperties.LOG_HEADER, AppProperties.CORE_VERSION_NUMBER, platformHeader));
+   //     sb.append(newLine);
+   //     sb.append(logText);
+   //     return sb.toString();
+   // }
+
     public void encryptTextToLog(char[] text, boolean dropHeader) {
         if (text.length <= 0)
             return;

@@ -26,6 +26,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 //TODO clean this up and test it
+//TODO can we remove duplicate logs so we can safely merge the same two logs repeatedly
 public class MergeHelper {
     private final FileResolveHelper fileResolveHelper;
     private final OSDao osDao;
