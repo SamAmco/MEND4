@@ -15,6 +15,7 @@ import org.mockito.ArgumentCaptor;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
 
@@ -49,9 +50,9 @@ public class EncryptFromStdInTest {
         encryptFromStdIn(true);
     }
 
-    public void encryptFromStdIn(boolean appendFlag) throws UnsupportedEncodingException {
+    public void encryptFromStdIn(boolean appendFlag) {
         String input = "hi\rhi again\nhi once more";
-        InputStream inputStream = new ByteArrayInputStream(input.getBytes("UTF-8"));
+        InputStream inputStream = new ByteArrayInputStream(input.getBytes(StandardCharsets.UTF_8));
         when(osDao.getStdIn()).thenReturn(inputStream);
         encrypt.execute(appendFlag ? Arrays.asList(Encrypt.APPEND_FLAG) : Collections.emptyList());
         ArgumentCaptor<char[]> encryptOutput = ArgumentCaptor.forClass(char[].class);

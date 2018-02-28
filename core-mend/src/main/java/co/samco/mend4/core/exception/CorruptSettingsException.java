@@ -1,4 +1,4 @@
-package co.samco.mend4.core;
+package co.samco.mend4.core.exception;
 
 public class CorruptSettingsException extends Exception {
     public CorruptSettingsException(String message, String setting) {

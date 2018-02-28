@@ -1,7 +1,7 @@
 package commands;
 
 import co.samco.mend4.core.AppProperties;
-import co.samco.mend4.core.CorruptSettingsException;
+import co.samco.mend4.core.exception.CorruptSettingsException;
 import co.samco.mend4.core.OSDao;
 import co.samco.mend4.core.Settings;
 import co.samco.mend4.desktop.commands.Unlock;
@@ -19,6 +19,7 @@ import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -72,7 +73,7 @@ public class UnlockTest {
             IOException, CorruptSettingsException {
         when(osDao.readPassword(anyString())).thenReturn(new char[0]);
         when(cryptoHelper.decryptBytesWithPassword(any(byte[].class), any(char[].class)))
-                .thenReturn("Not the passcheck text".getBytes("UTF-8"));
+                .thenReturn("Not the passcheck text".getBytes(StandardCharsets.UTF_8));
         unlock.execute(Collections.emptyList());
         verify(err).println(eq(strings.get("Unlock.incorrectPassword")));
         verify(osDao, never()).fileExists(any());
@@ -103,7 +104,7 @@ public class UnlockTest {
         String password = "password";
         when(osDao.readPassword(anyString())).thenReturn(password.toCharArray());
         when(cryptoHelper.decryptBytesWithPassword(any(byte[].class), any(char[].class)))
-                .thenReturn(AppProperties.PASSCHECK_TEXT.getBytes("UTF-8"));
+                .thenReturn(AppProperties.PASSCHECK_TEXT.getBytes(StandardCharsets.UTF_8));
         unlock.execute(Collections.emptyList());
         verify(osDao, times(2)).writeDataToFile(any(), any());
     }

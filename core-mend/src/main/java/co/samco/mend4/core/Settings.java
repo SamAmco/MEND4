@@ -1,5 +1,7 @@
 package co.samco.mend4.core;
 
+import co.samco.mend4.core.exception.CorruptSettingsException;
+
 import java.io.IOException;
 
 public interface Settings {

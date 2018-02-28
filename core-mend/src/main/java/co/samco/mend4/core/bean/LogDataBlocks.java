@@ -1,5 +1,7 @@
 package co.samco.mend4.core.bean;
 
+import org.apache.commons.lang3.ArrayUtils;
+
 public class LogDataBlocks {
     private final byte[] encAesKey;
     private final byte[] lc2Bytes;
@@ -27,5 +29,13 @@ public class LogDataBlocks {
 
     public byte[] getLc1Bytes() {
         return lc1Bytes;
+    }
+
+    //TODO there is probably a faster way to do this.
+    public byte[] getAsOneBlock() {
+        return ArrayUtils.addAll(
+                ArrayUtils.addAll(lc1Bytes, encAesKey),
+                ArrayUtils.addAll(lc2Bytes, encEntry)
+        );
     }
 }

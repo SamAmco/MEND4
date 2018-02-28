@@ -1,6 +1,6 @@
 package commands;
 
-import co.samco.mend4.core.CorruptSettingsException;
+import co.samco.mend4.core.exception.CorruptSettingsException;
 import co.samco.mend4.core.OSDao;
 import co.samco.mend4.desktop.commands.Merge;
 import co.samco.mend4.desktop.core.I18N;

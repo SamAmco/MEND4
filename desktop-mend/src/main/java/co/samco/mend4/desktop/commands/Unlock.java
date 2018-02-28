@@ -1,7 +1,7 @@
 package co.samco.mend4.desktop.commands;
 
 import co.samco.mend4.core.AppProperties;
-import co.samco.mend4.core.CorruptSettingsException;
+import co.samco.mend4.core.exception.CorruptSettingsException;
 import co.samco.mend4.core.OSDao;
 import co.samco.mend4.core.Settings;
 import co.samco.mend4.desktop.core.I18N;
@@ -17,6 +17,7 @@ import javax.crypto.NoSuchPaddingException;
 import javax.inject.Inject;
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -69,7 +70,7 @@ public class Unlock extends Command {
             byte[] cipherText = Base64.decodeBase64(settings.getValue(Settings.Name.PASSCHECK));
             byte[] plainText = cryptoHelper.decryptBytesWithPassword(cipherText, password);
 
-            if (!AppProperties.PASSCHECK_TEXT.equals(new String(plainText, "UTF-8"))) {
+            if (!AppProperties.PASSCHECK_TEXT.equals(new String(plainText, StandardCharsets.UTF_8))) {
                 log.err().println(strings.get("Unlock.incorrectPassword"));
                 return null;
             }

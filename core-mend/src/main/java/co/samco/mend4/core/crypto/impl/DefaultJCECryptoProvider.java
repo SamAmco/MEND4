@@ -1,16 +1,18 @@
-package co.samco.mend4.core;
+package co.samco.mend4.core.crypto.impl;
 
 import co.samco.mend4.core.bean.LogDataBlocks;
 import co.samco.mend4.core.bean.LogDataBlocksAndText;
+import co.samco.mend4.core.crypto.CryptoProvider;
+import co.samco.mend4.core.exception.MalformedLogFileException;
 
 import java.io.*;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
-import java.security.spec.InvalidKeySpecException;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -87,18 +89,11 @@ public class DefaultJCECryptoProvider implements CryptoProvider {
         return aesCipher.doFinal(ldb.getEncEntry());
     }
 
-    private byte[] readBytes(InputStream inputStream, int number) throws MalformedLogFileException, IOException {
-        byte[] bytes = new byte[number];
-        if (inputStream.read(bytes) != number)
-            throw new MalformedLogFileException();
-        return bytes;
+    private byte[] getIntAsLengthCode(int number) {
+        return ByteBuffer.allocate(LENGTH_CODE_SIZE).putInt(number).array();
     }
 
-    private byte[] getIntAs4Bytes(int number) {
-        return ByteBuffer.allocate(4).putInt(number).array();
-    }
-
-    private int get4BytesAsInt(byte[] bytes) {
+    private int getLengthCodeAsInt(byte[] bytes) {
         //big-endian by default
         return ByteBuffer.wrap(bytes).getInt();
     }
@@ -111,31 +106,43 @@ public class DefaultJCECryptoProvider implements CryptoProvider {
         }
     }
 
+    private byte[] readMendFileBytes(InputStream inputStream, int number) throws MalformedLogFileException, IOException {
+        byte[] bytes = new byte[number];
+        if (inputStream.read(bytes) != number)
+            throw new MalformedLogFileException();
+        return bytes;
+    }
+
     @Override
-    public void encryptEncStream(RSAPublicKey publicKey, InputStream inputStream, OutputStream outputStream) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidAlgorithmParameterException, InvalidKeyException, InvalidKeySpecException, BadPaddingException, IllegalBlockSizeException, IOException {
+    public void encryptEncStream(RSAPublicKey publicKey, InputStream inputStream,
+                                 OutputStream outputStream, String fileExtension)
+            throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidAlgorithmParameterException,
+            InvalidKeyException, BadPaddingException, IllegalBlockSizeException, IOException {
         SecretKey aesKey = generateAesKey();
         Cipher rsaCipher = getRsaEncrytpCipher(publicKey);
 
         byte[] encryptedAesKey = rsaCipher.doFinal(aesKey.getEncoded());
-        byte[] lengthCode1 = ByteBuffer.allocate(4).putInt(encryptedAesKey.length).array();
-        byte[] fileExtensionBytes = rsaCipher.doFinal(AppProperties.ENC_FILE_EXTENSION.getBytes());
+        byte[] lengthCode1 = getIntAsLengthCode(encryptedAesKey.length);
+        byte[] fileExtensionBytes = rsaCipher.doFinal(fileExtension.getBytes());
 
         outputStream.write(lengthCode1);
         outputStream.write(encryptedAesKey);
-        outputStream.write(getIntAs4Bytes(fileExtensionBytes.length));
+        outputStream.write(getIntAsLengthCode(fileExtensionBytes.length));
         outputStream.write(fileExtensionBytes);
 
         writeToCipherStream(inputStream, new CipherOutputStream(outputStream, getAesEncryptCipher(aesKey)));
     }
 
     @Override
-    public String decryptEncStream(RSAPrivateKey privateKey, InputStream inputStream, OutputStream outputStream) throws MalformedLogFileException, IOException, NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException, InvalidAlgorithmParameterException {
+    public String decryptEncStream(RSAPrivateKey privateKey, InputStream inputStream, OutputStream outputStream)
+            throws MalformedLogFileException, IOException, NoSuchPaddingException, NoSuchAlgorithmException,
+            InvalidKeyException, BadPaddingException, IllegalBlockSizeException, InvalidAlgorithmParameterException {
         Cipher rsaCipher = getRsaDecryptCipher(privateKey);
 
-        byte[] encAesKey = readBytes(inputStream, get4BytesAsInt(readBytes(inputStream, 4)));
+        byte[] encAesKey = readMendFileBytes(inputStream, getLengthCodeAsInt(readMendFileBytes(inputStream, LENGTH_CODE_SIZE)));
         byte[] aesKeyBytes = rsaCipher.doFinal(encAesKey);
         SecretKey aesKey = getAesKeyFromBytes(aesKeyBytes);
-        byte[] encFileExtension = readBytes(inputStream, get4BytesAsInt(readBytes(inputStream, 4)));
+        byte[] encFileExtension = readMendFileBytes(inputStream, getLengthCodeAsInt(readMendFileBytes(inputStream, LENGTH_CODE_SIZE)));
         String fileExtension = new String(rsaCipher.doFinal(encFileExtension));
 
         writeToCipherStream(inputStream, new CipherOutputStream(outputStream, getAesDecryptCipher(aesKey)));
@@ -143,18 +150,21 @@ public class DefaultJCECryptoProvider implements CryptoProvider {
     }
 
     @Override
-    public LogDataBlocksAndText getNextLogTextWithDataBlocks(InputStream inputStream, RSAPrivateKey privateKey, byte[] lc1Bytes) throws IOException, MalformedLogFileException, IllegalBlockSizeException, InvalidKeyException, BadPaddingException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidAlgorithmParameterException {
+    public LogDataBlocksAndText getNextLogTextWithDataBlocks(InputStream inputStream,
+                                                             RSAPrivateKey privateKey, byte[] lc1Bytes)
+            throws IOException, MalformedLogFileException, IllegalBlockSizeException, InvalidKeyException,
+            BadPaddingException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidAlgorithmParameterException {
         LogDataBlocks ldb = getNextLogBytes(inputStream, lc1Bytes);
         SecretKey aesKey = decryptAesKeyFromLog(ldb, privateKey);
         byte[] entry = decryptEntryFromLog(ldb, aesKey);
-        return new LogDataBlocksAndText(ldb, new String(entry, "UTF-8"));
+        return new LogDataBlocksAndText(ldb, new String(entry, StandardCharsets.UTF_8));
     }
 
     @Override
-    public void decryptLog(InputStream inputStream, PrintStream outputStream, RSAPrivateKey privateKey) throws
+    public void decryptLogStream(RSAPrivateKey privateKey, InputStream inputStream, PrintStream outputStream) throws
             IOException, InvalidAlgorithmParameterException, MalformedLogFileException, NoSuchAlgorithmException,
             IllegalBlockSizeException, BadPaddingException, NoSuchPaddingException, InvalidKeyException {
-        byte[] lc1Bytes = new byte[4];
+        byte[] lc1Bytes = new byte[LENGTH_CODE_SIZE];
         while (logHasNext(inputStream, lc1Bytes)) {
             outputStream.println(getNextLogTextWithDataBlocks(inputStream, privateKey, lc1Bytes).getEntryText());
             outputStream.println();
@@ -162,15 +172,17 @@ public class DefaultJCECryptoProvider implements CryptoProvider {
     }
 
     @Override
-    public void encryptLogToStream(RSAPublicKey publicKey, OutputStream outputStream, char[] text) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidAlgorithmParameterException, InvalidKeyException, IOException, BadPaddingException, IllegalBlockSizeException {
+    public void encryptLogStream(RSAPublicKey publicKey, char[] text, OutputStream outputStream)
+            throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidAlgorithmParameterException,
+            InvalidKeyException, IOException, BadPaddingException, IllegalBlockSizeException {
         SecretKey aesKey = generateAesKey();
         Cipher aesCipher = getAesEncryptCipher(aesKey);
         Cipher rsaCipher = getRsaEncrytpCipher(publicKey);
 
-        byte[] cipherText = aesCipher.doFinal(new String(text).getBytes("UTF-8"));
+        byte[] cipherText = aesCipher.doFinal(new String(text).getBytes(StandardCharsets.UTF_8));
         byte[] encryptedAesKey = rsaCipher.doFinal(aesKey.getEncoded());
-        byte[] lengthCode1 = ByteBuffer.allocate(4).putInt(encryptedAesKey.length).array();
-        byte[] lengthCode2 = ByteBuffer.allocate(4).putInt(cipherText.length).array();
+        byte[] lengthCode1 = ByteBuffer.allocate(LENGTH_CODE_SIZE).putInt(encryptedAesKey.length).array();
+        byte[] lengthCode2 = ByteBuffer.allocate(LENGTH_CODE_SIZE).putInt(cipherText.length).array();
 
         ByteBuffer output = ByteBuffer.allocate(
                 lengthCode1.length
@@ -186,27 +198,21 @@ public class DefaultJCECryptoProvider implements CryptoProvider {
     }
 
 
-    public static boolean logHasNext(InputStream logInputStream, byte[] lc1Bytes)
+    @Override
+    public boolean logHasNext(InputStream logInputStream, byte[] lc1Bytes)
             throws IOException, InvalidAlgorithmParameterException {
-        if (lc1Bytes == null || lc1Bytes.length != 4)
-            throw new InvalidAlgorithmParameterException("Expected lc1Bytes to be initialized and have length 4");
-        return logInputStream.read(lc1Bytes) == 4;
+        if (lc1Bytes == null || lc1Bytes.length != LENGTH_CODE_SIZE)
+            throw new InvalidAlgorithmParameterException("Expected lc1Bytes to be initialized and have length "
+                    + LENGTH_CODE_SIZE);
+        return logInputStream.read(lc1Bytes) == LENGTH_CODE_SIZE;
     }
 
     private LogDataBlocks getNextLogBytes(InputStream inputStream, byte[] lc1Bytes) throws IOException,
             MalformedLogFileException {
-        byte[] encAesKey = readBytes(inputStream, get4BytesAsInt(lc1Bytes));
-        byte[] lc2Bytes = readBytes(inputStream, 4);
-        byte[] encEntry = readBytes(inputStream, get4BytesAsInt(lc2Bytes));
+        byte[] encAesKey = readMendFileBytes(inputStream, getLengthCodeAsInt(lc1Bytes));
+        byte[] lc2Bytes = readMendFileBytes(inputStream, LENGTH_CODE_SIZE);
+        byte[] encEntry = readMendFileBytes(inputStream, getLengthCodeAsInt(lc2Bytes));
         return new LogDataBlocks(lc1Bytes, encAesKey, lc2Bytes, encEntry);
-    }
-
-    public static class MalformedLogFileException extends Exception {
-        private static final long serialVersionUID = 9219333934024822210L;
-
-        public MalformedLogFileException() {
-            super("Log file is malformed.");
-        }
     }
 }
 

@@ -14,6 +14,7 @@ import javax.inject.Inject;
 import java.awt.*;
 import java.io.*;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.security.*;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
@@ -349,7 +350,7 @@ public class CryptoHelper {
         //Encrypt the private key with the password.
         byte[] encryptedPrivateKey = aesCipher.doFinal(keyPair.getPrivate().getEncoded());
         //encrypt the text
-        byte[] cipherText = aesCipher.doFinal(AppProperties.PASSCHECK_TEXT.getBytes("UTF-8"));
+        byte[] cipherText = aesCipher.doFinal(AppProperties.PASSCHECK_TEXT.getBytes(StandardCharsets.UTF_8));
 
         return new EncodedKeyInfo(Base64.encodeBase64URLSafeString(encryptedPrivateKey),
                 Base64.encodeBase64URLSafeString(keyPair.getPublic().getEncoded()),

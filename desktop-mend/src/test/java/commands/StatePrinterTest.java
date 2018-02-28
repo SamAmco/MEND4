@@ -1,7 +1,7 @@
 package commands;
 
 import co.samco.mend4.core.AppProperties;
-import co.samco.mend4.core.CorruptSettingsException;
+import co.samco.mend4.core.exception.CorruptSettingsException;
 import co.samco.mend4.core.OSDao;
 import co.samco.mend4.core.Settings;
 import co.samco.mend4.desktop.commands.StatePrinter;
