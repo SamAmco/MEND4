@@ -111,6 +111,11 @@ public class OSDaoImpl implements OSDao {
         file.renameTo(new File(newName));
     }
 
+    @Override
+    public byte[] readAllFileBytes(Path path) {
+        return Files.readAllBytes()
+    }
+
     private void assertDirectoryExists(File file) throws FileNotFoundException {
         if (!file.exists() || !file.isDirectory() || file.listFiles() == null) {
             throw new FileNotFoundException("Could not find the directory: " + file.getAbsolutePath());

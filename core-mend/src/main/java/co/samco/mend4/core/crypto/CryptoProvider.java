@@ -1,5 +1,6 @@
 package co.samco.mend4.core.crypto;
 
+import co.samco.mend4.core.bean.EncodedKeyInfo;
 import co.samco.mend4.core.bean.LogDataBlocksAndText;
 import co.samco.mend4.core.exception.MalformedLogFileException;
 
@@ -9,6 +10,7 @@ import javax.crypto.NoSuchPaddingException;
 import java.io.*;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
+import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
@@ -40,4 +42,25 @@ public interface CryptoProvider {
             throws IOException, MalformedLogFileException, IllegalBlockSizeException,
             InvalidKeyException, BadPaddingException, NoSuchAlgorithmException, NoSuchPaddingException,
             InvalidAlgorithmParameterException;
+
+    RSAPublicKey getPublicKeyFromBytes(byte[] publicKey) throws NoSuchAlgorithmException, InvalidKeySpecException;
+
+    RSAPrivateKey getPrivateKeyFromBytes(byte[] privateKey) throws NoSuchAlgorithmException, InvalidKeySpecException;
+
+    KeyPair generateKeyPair() throws NoSuchAlgorithmException;
+
+    KeyPair getKeyPairFromBytes(byte[] privateKey, byte[] publicKey) throws NoSuchAlgorithmException,
+            InvalidKeySpecException;
+
+    boolean checkPassword(char[] password, String passCheck, String encryptedPassCheck)
+            throws NoSuchAlgorithmException, InvalidKeySpecException, NoSuchPaddingException, InvalidAlgorithmParameterException,
+            InvalidKeyException, BadPaddingException, IllegalBlockSizeException;
+
+    byte[] decryptEncodedKey(char[] password, String encodedKey) throws InvalidKeySpecException,
+            InvalidAlgorithmParameterException, NoSuchAlgorithmException, InvalidKeyException, NoSuchPaddingException,
+            BadPaddingException, IllegalBlockSizeException;
+
+    EncodedKeyInfo getEncodedKeyInfo(char[] password, String passCheck, KeyPair keyPair)
+            throws NoSuchAlgorithmException, InvalidKeySpecException, NoSuchPaddingException,
+            InvalidAlgorithmParameterException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException;
 }

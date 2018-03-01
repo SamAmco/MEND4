@@ -1,5 +1,7 @@
 package co.samco.mend4.core.crypto.impl;
 
+import co.samco.mend4.core.IBase64EncodingProvider;
+import co.samco.mend4.core.bean.EncodedKeyInfo;
 import co.samco.mend4.core.bean.LogDataBlocks;
 import co.samco.mend4.core.bean.LogDataBlocksAndText;
 import co.samco.mend4.core.crypto.CryptoProvider;
@@ -8,33 +10,40 @@ import co.samco.mend4.core.exception.MalformedLogFileException;
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
+import java.security.*;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.KeySpec;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.X509EncodedKeySpec;
 
-import javax.crypto.BadPaddingException;
-import javax.crypto.Cipher;
-import javax.crypto.CipherOutputStream;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.KeyGenerator;
-import javax.crypto.NoSuchPaddingException;
-import javax.crypto.SecretKey;
+import javax.crypto.*;
 import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 
 public class DefaultJCECryptoProvider implements CryptoProvider {
     private final IvParameterSpec iv;
     private final int aesKeySize;
+    private final int rsaKeySize;
     private final String aesAlgorithm;
     private final String rsaAlgorithm;
+    private final byte[] passcheckSalt;
+    private final int aesKeyGenIterations;
+    private final IBase64EncodingProvider encoder;
 
-    public DefaultJCECryptoProvider(IvParameterSpec iv, int aesKeySize, String aesAlgorithm, String rsaAlgorithm) {
+    public DefaultJCECryptoProvider(IvParameterSpec iv, int aesKeySize, int rsaKeySize, String aesAlgorithm,
+                                    String rsaAlgorithm, byte[] passcheckSalt, int aesKeyGenIterations,
+                                    IBase64EncodingProvider encoder) {
         this.iv = iv;
         this.aesKeySize = aesKeySize;
+        this.rsaKeySize = rsaKeySize;
         this.aesAlgorithm = aesAlgorithm;
         this.rsaAlgorithm = rsaAlgorithm;
+        this.passcheckSalt = passcheckSalt;
+        this.aesKeyGenIterations = aesKeyGenIterations;
+        this.encoder = encoder;
     }
 
     private SecretKey generateAesKey() throws NoSuchAlgorithmException {
@@ -45,6 +54,17 @@ public class DefaultJCECryptoProvider implements CryptoProvider {
 
     private SecretKey getAesKeyFromBytes(byte[] aesKeyBytes) {
         return new SecretKeySpec(aesKeyBytes, 0, aesKeyBytes.length, "AES");
+    }
+
+    private Cipher getAesCipherFromPassword(char[] password, int mode) throws NoSuchPaddingException, NoSuchAlgorithmException,
+            InvalidKeySpecException, InvalidAlgorithmParameterException, InvalidKeyException {
+        SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
+        KeySpec spec = new PBEKeySpec(password, passcheckSalt, aesKeyGenIterations, aesKeySize);
+        SecretKey tmp = factory.generateSecret(spec);
+        SecretKey aesKey = new SecretKeySpec(tmp.getEncoded(), "AES");
+        Cipher aesCipher = Cipher.getInstance(aesAlgorithm);
+        aesCipher.init(mode, aesKey, iv);
+        return aesCipher;
     }
 
     private Cipher getAesEncryptCipher(SecretKey aesKey) throws NoSuchPaddingException, NoSuchAlgorithmException,
@@ -113,6 +133,14 @@ public class DefaultJCECryptoProvider implements CryptoProvider {
         return bytes;
     }
 
+    private LogDataBlocks getNextLogBytes(InputStream inputStream, byte[] lc1Bytes) throws IOException,
+            MalformedLogFileException {
+        byte[] encAesKey = readMendFileBytes(inputStream, getLengthCodeAsInt(lc1Bytes));
+        byte[] lc2Bytes = readMendFileBytes(inputStream, LENGTH_CODE_SIZE);
+        byte[] encEntry = readMendFileBytes(inputStream, getLengthCodeAsInt(lc2Bytes));
+        return new LogDataBlocks(lc1Bytes, encAesKey, lc2Bytes, encEntry);
+    }
+
     @Override
     public void encryptEncStream(RSAPublicKey publicKey, InputStream inputStream,
                                  OutputStream outputStream, String fileExtension)
@@ -158,6 +186,20 @@ public class DefaultJCECryptoProvider implements CryptoProvider {
         SecretKey aesKey = decryptAesKeyFromLog(ldb, privateKey);
         byte[] entry = decryptEntryFromLog(ldb, aesKey);
         return new LogDataBlocksAndText(ldb, new String(entry, StandardCharsets.UTF_8));
+    }
+
+    @Override
+    public RSAPublicKey getPublicKeyFromBytes(byte[] publicKey) throws NoSuchAlgorithmException,
+            InvalidKeySpecException {
+        KeyFactory kf = KeyFactory.getInstance("RSA");
+        return (RSAPublicKey) kf.generatePublic(new X509EncodedKeySpec(publicKey));
+    }
+
+    @Override
+    public RSAPrivateKey getPrivateKeyFromBytes(byte[] privateKey) throws NoSuchAlgorithmException,
+            InvalidKeySpecException {
+        KeyFactory kf = KeyFactory.getInstance("RSA");
+        return (RSAPrivateKey) kf.generatePrivate(new PKCS8EncodedKeySpec(privateKey));
     }
 
     @Override
@@ -207,12 +249,49 @@ public class DefaultJCECryptoProvider implements CryptoProvider {
         return logInputStream.read(lc1Bytes) == LENGTH_CODE_SIZE;
     }
 
-    private LogDataBlocks getNextLogBytes(InputStream inputStream, byte[] lc1Bytes) throws IOException,
-            MalformedLogFileException {
-        byte[] encAesKey = readMendFileBytes(inputStream, getLengthCodeAsInt(lc1Bytes));
-        byte[] lc2Bytes = readMendFileBytes(inputStream, LENGTH_CODE_SIZE);
-        byte[] encEntry = readMendFileBytes(inputStream, getLengthCodeAsInt(lc2Bytes));
-        return new LogDataBlocks(lc1Bytes, encAesKey, lc2Bytes, encEntry);
+    @Override
+    public KeyPair generateKeyPair() throws NoSuchAlgorithmException {
+        KeyPairGenerator keyGen;
+        keyGen = KeyPairGenerator.getInstance("RSA");
+        keyGen.initialize(rsaKeySize);
+        return keyGen.genKeyPair();
+    }
+
+    @Override
+    public KeyPair getKeyPairFromBytes(byte[] privateKey, byte[] publicKey) throws NoSuchAlgorithmException,
+            InvalidKeySpecException {
+        KeyFactory kf = KeyFactory.getInstance("RSA");
+        RSAPrivateKey rsaPrivateKey = (RSAPrivateKey) kf.generatePrivate(new PKCS8EncodedKeySpec(privateKey));
+        RSAPublicKey rsaPublicKey = (RSAPublicKey) kf.generatePublic(new X509EncodedKeySpec(publicKey));
+        return new KeyPair(rsaPublicKey, rsaPrivateKey);
+    }
+
+    @Override
+    public EncodedKeyInfo getEncodedKeyInfo(char[] password, String passCheck, KeyPair keyPair)
+            throws NoSuchAlgorithmException, InvalidKeySpecException, NoSuchPaddingException,
+            InvalidAlgorithmParameterException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException {
+        Cipher aesCipher = getAesCipherFromPassword(password, Cipher.ENCRYPT_MODE);
+        byte[] encryptedPrivateKey = aesCipher.doFinal(keyPair.getPrivate().getEncoded());
+        byte[] cipherText = aesCipher.doFinal(passCheck.getBytes(StandardCharsets.UTF_8));
+        return new EncodedKeyInfo(encoder.encodeBase64URLSafeString(encryptedPrivateKey),
+                encoder.encodeBase64URLSafeString(keyPair.getPublic().getEncoded()),
+                encoder.encodeBase64URLSafeString(cipherText));
+    }
+
+    @Override
+    public boolean checkPassword(char[] password, String passCheck, String encryptedPassCheck)
+            throws InvalidKeySpecException, NoSuchPaddingException, InvalidAlgorithmParameterException, InvalidKeyException,
+            BadPaddingException, IllegalBlockSizeException, NoSuchAlgorithmException {
+        byte[] cipherTextBytes = encoder.decodeBase64(encryptedPassCheck);
+        byte[] plainText = getAesCipherFromPassword(password, Cipher.DECRYPT_MODE).doFinal(cipherTextBytes);
+        return passCheck.equals(new String(plainText, StandardCharsets.UTF_8));
+    }
+
+    @Override
+    public byte[] decryptEncodedKey(char[] password, String encodedKey) throws InvalidKeySpecException,
+            InvalidAlgorithmParameterException, NoSuchAlgorithmException, InvalidKeyException, NoSuchPaddingException,
+            BadPaddingException, IllegalBlockSizeException {
+        return getAesCipherFromPassword(password, Cipher.DECRYPT_MODE).doFinal(encoder.decodeBase64(encodedKey));
     }
 }
 

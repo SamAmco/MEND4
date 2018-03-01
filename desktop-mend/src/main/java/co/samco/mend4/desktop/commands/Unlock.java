@@ -1,6 +1,7 @@
 package co.samco.mend4.desktop.commands;
 
 import co.samco.mend4.core.AppProperties;
+import co.samco.mend4.core.crypto.CryptoProvider;
 import co.samco.mend4.core.exception.CorruptSettingsException;
 import co.samco.mend4.core.OSDao;
 import co.samco.mend4.core.Settings;
@@ -17,7 +18,6 @@ import javax.crypto.NoSuchPaddingException;
 import javax.inject.Inject;
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -34,6 +34,7 @@ public class Unlock extends Command {
     private final Settings settings;
     private final PrintStreamProvider log;
     private final CryptoHelper cryptoHelper;
+    private final CryptoProvider cryptoProvider;
     private final ShredHelper shredHelper;
 
     char[] password;
@@ -48,13 +49,14 @@ public class Unlock extends Command {
     );
 
     @Inject
-    public Unlock(I18N strings, OSDao osDao, Settings settings, PrintStreamProvider log,
-                  CryptoHelper cryptoHelper, ShredHelper shredHelper, FileResolveHelper fileResolveHelper) {
+    public Unlock(I18N strings, OSDao osDao, Settings settings, PrintStreamProvider log, CryptoHelper cryptoHelper,
+                  CryptoProvider cryptoProvider, ShredHelper shredHelper, FileResolveHelper fileResolveHelper) {
         this.strings = strings;
         this.osDao = osDao;
         this.settings = settings;
         this.log = log;
         this.cryptoHelper = cryptoHelper;
+        this.cryptoProvider = cryptoProvider;
         this.shredHelper = shredHelper;
         privateKeyFile = new File(fileResolveHelper.getPrivateKeyPath());
         publicKeyFile = new File(fileResolveHelper.getPublicKeyPath());
@@ -67,10 +69,8 @@ public class Unlock extends Command {
 
     private List<String> checkPassword(List<String> args) {
         try {
-            byte[] cipherText = Base64.decodeBase64(settings.getValue(Settings.Name.PASSCHECK));
-            byte[] plainText = cryptoHelper.decryptBytesWithPassword(cipherText, password);
-
-            if (!AppProperties.PASSCHECK_TEXT.equals(new String(plainText, StandardCharsets.UTF_8))) {
+            if (cryptoProvider.checkPassword(password, AppProperties.PASSCHECK_TEXT,
+                    settings.getValue(Settings.Name.PASSCHECK))) {
                 log.err().println(strings.get("Unlock.incorrectPassword"));
                 return null;
             }
@@ -100,8 +100,7 @@ public class Unlock extends Command {
 
     private List<String> decryptAndWriteKeys(List<String> args) {
         try {
-            byte[] encryptedPrivateKey = Base64.decodeBase64(settings.getValue(Settings.Name.PRIVATEKEY));
-            byte[] privateKey = cryptoHelper.decryptBytesWithPassword(encryptedPrivateKey, password);
+            byte[] privateKey = cryptoProvider.decryptEncodedKey(password, settings.getValue(Settings.Name.PRIVATEKEY));
             byte[] publicKey = Base64.decodeBase64(settings.getValue(Settings.Name.PUBLICKEY));
             osDao.writeDataToFile(privateKey, privateKeyFile);
             osDao.writeDataToFile(publicKey, publicKeyFile);

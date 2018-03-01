@@ -1,11 +1,11 @@
 package co.samco.mend4.desktop.helper;
 
+import co.samco.mend4.core.OSDao;
 import co.samco.mend4.core.Settings;
 import co.samco.mend4.core.exception.CorruptSettingsException;
 import org.apache.commons.codec.binary.Base64;
 
 import javax.inject.Inject;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -20,16 +20,18 @@ import java.security.spec.X509EncodedKeySpec;
 public class KeyHelper {
     private final Settings settings;
     private final FileResolveHelper fileResolveHelper;
+    private final OSDao osDao;
 
     @Inject
-    public KeyHelper(Settings settings, FileResolveHelper fileResolveHelper) {
+    public KeyHelper(Settings settings, FileResolveHelper fileResolveHelper, OSDao osDao) {
         this.settings = settings;
         this.fileResolveHelper = fileResolveHelper;
+        this.osDao = osDao;
     }
 
     public RSAPrivateKey getPrivateKey() throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
         KeyFactory kf = KeyFactory.getInstance("RSA");
-        byte[] keyBytes = Files.readAllBytes(Paths.get(fileResolveHelper.getPrivateKeyPath()));
+        byte[] keyBytes = osDao.readAllFileBytes(Paths.get(fileResolveHelper.getPrivateKeyPath()));
         PKCS8EncodedKeySpec privateKeySpec = new PKCS8EncodedKeySpec(keyBytes);
         return (RSAPrivateKey) kf.generatePrivate(privateKeySpec);
     }
