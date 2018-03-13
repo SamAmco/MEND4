@@ -112,8 +112,8 @@ public class OSDaoImpl implements OSDao {
     }
 
     @Override
-    public byte[] readAllFileBytes(Path path) {
-        return Files.readAllBytes()
+    public byte[] readAllFileBytes(Path path) throws IOException {
+        return Files.readAllBytes(path);
     }
 
     private void assertDirectoryExists(File file) throws FileNotFoundException {

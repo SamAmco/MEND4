@@ -1,14 +1,27 @@
 package co.samco.mend4.desktop.commands;
 
+import co.samco.mend4.core.exception.CorruptSettingsException;
 import co.samco.mend4.desktop.core.I18N;
 import co.samco.mend4.desktop.helper.CryptoHelper;
+import co.samco.mend4.desktop.helper.FileResolveHelper;
 import co.samco.mend4.desktop.helper.InputHelper;
 import co.samco.mend4.desktop.input.InputListener;
 import co.samco.mend4.desktop.output.PrintStreamProvider;
 
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 import javax.inject.Inject;
+import java.io.IOException;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.spec.InvalidKeySpecException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.function.Function;
 
@@ -19,6 +32,7 @@ public class Encrypt extends Command implements InputListener {
 
     protected final CryptoHelper cryptoHelper;
     protected final InputHelper inputHelper;
+    protected final FileResolveHelper fileResolveHelper;
     protected final PrintStreamProvider log;
     protected final I18N strings;
 
@@ -34,16 +48,28 @@ public class Encrypt extends Command implements InputListener {
     );
 
     @Inject
-    public Encrypt(PrintStreamProvider log, I18N strings, CryptoHelper cryptoHelper, InputHelper inputHelper) {
+    public Encrypt(PrintStreamProvider log, I18N strings, CryptoHelper cryptoHelper,
+                   InputHelper inputHelper, FileResolveHelper fileResolveHelper) {
         this.log = log;
         this.cryptoHelper = cryptoHelper;
         this.inputHelper = inputHelper;
+        this.fileResolveHelper = fileResolveHelper;
         this.strings = strings;
     }
 
     @Override
     public void execute(List<String> args) {
         executeBehaviourChain(behaviourChain, args);
+    }
+
+    private void encryptTextToLog(char[] text) {
+        try {
+            cryptoHelper.encryptTextToLog(text, dropHeader);
+        } catch (IOException | CorruptSettingsException | InvalidKeySpecException | NoSuchAlgorithmException
+                | IllegalBlockSizeException | InvalidKeyException | BadPaddingException
+                | InvalidAlgorithmParameterException | NoSuchPaddingException e) {
+            log.err().println(e.getMessage());
+        }
     }
 
     protected List<String> shouldDropHeader(List<String> args) {
@@ -69,7 +95,10 @@ public class Encrypt extends Command implements InputListener {
             if (args.size() != index + 2) {
                 log.err().println(strings.getf("Encrypt.badDataArgs", FROM_ARG_FLAG));
             }
-            cryptoHelper.encryptTextToLog(args.get(index + 1).toCharArray(), dropHeader);
+            encryptTextToLog(args.get(index + 1).toCharArray());
+            DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+            Date date = new Date();
+            log.out().println("Successfully Logged entry at: " + dateFormat.format(date));
             return null;
         }
         return args;
@@ -88,7 +117,13 @@ public class Encrypt extends Command implements InputListener {
         if (args.size() > 1) {
             name = args.get(1);
         }
-        cryptoHelper.encryptFile(args.get(0), name);
+        try {
+            cryptoHelper.encryptFile(fileResolveHelper.resolveFile(args.get(0)), name);
+        } catch (IOException | CorruptSettingsException | InvalidKeySpecException | NoSuchAlgorithmException
+                | IllegalBlockSizeException | InvalidKeyException | BadPaddingException
+                | InvalidAlgorithmParameterException | NoSuchPaddingException e) {
+            log.err().println(e.getMessage());
+        }
         return null;
     }
 
@@ -114,6 +149,6 @@ public class Encrypt extends Command implements InputListener {
 
     @Override
     public void onWrite(char[] text) {
-        cryptoHelper.encryptTextToLog(text, dropHeader);
+        encryptTextToLog(text);
     }
 }

@@ -152,16 +152,21 @@ public class Setup extends Command {
     private void setKeysGenerated(String password) throws NoSuchAlgorithmException, TransformerException,
             InvalidKeyException, InvalidAlgorithmParameterException, NoSuchPaddingException, BadPaddingException,
             IOException, InvalidKeySpecException, IllegalBlockSizeException {
-        setKeys(password, cryptoHelper.generateKeyPair());
+        //TODO ONLY COMMENTED TO COMPILE
+        //setKeys(password, cryptoHelper.generateKeyPair());
     }
 
     private void setKeys(String password, KeyPair keyPair) throws NoSuchPaddingException,
             IOException, InvalidKeyException, NoSuchAlgorithmException, IllegalBlockSizeException,
             BadPaddingException, InvalidAlgorithmParameterException, InvalidKeySpecException, TransformerException {
-        CryptoHelper.EncodedKeyInfo keyInfo = cryptoHelper.getEncodedKeyInfo(password, keyPair);
-        settings.setValue(Settings.Name.PRIVATEKEY, keyInfo.getPrivateKey());
-        settings.setValue(Settings.Name.PUBLICKEY, keyInfo.getPublicKey());
-        settings.setValue(Settings.Name.PASSCHECK, keyInfo.getCipherText());
+        //TODO ONLY COMMENTED TO COMPILE
+        //CryptoHelper.EncodedKeyInfo keyInfo = cryptoHelper.getEncodedKeyInfo(password, keyPair);
+        //TODO ONLY COMMENTED TO COMPILE
+        //settings.setValue(Settings.Name.PRIVATEKEY, keyInfo.getPrivateKey());
+        //TODO ONLY COMMENTED TO COMPILE
+        //settings.setValue(Settings.Name.PUBLICKEY, keyInfo.getPublicKey());
+        //TODO ONLY COMMENTED TO COMPILE
+        //settings.setValue(Settings.Name.PASSCHECK, keyInfo.getCipherText());
     }
 
     @Override

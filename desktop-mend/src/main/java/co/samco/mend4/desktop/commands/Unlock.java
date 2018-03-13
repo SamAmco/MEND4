@@ -24,6 +24,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
 
 public class Unlock extends Command {
@@ -33,7 +34,6 @@ public class Unlock extends Command {
     private final OSDao osDao;
     private final Settings settings;
     private final PrintStreamProvider log;
-    private final CryptoHelper cryptoHelper;
     private final CryptoProvider cryptoProvider;
     private final ShredHelper shredHelper;
 
@@ -49,13 +49,12 @@ public class Unlock extends Command {
     );
 
     @Inject
-    public Unlock(I18N strings, OSDao osDao, Settings settings, PrintStreamProvider log, CryptoHelper cryptoHelper,
+    public Unlock(I18N strings, OSDao osDao, Settings settings, PrintStreamProvider log,
                   CryptoProvider cryptoProvider, ShredHelper shredHelper, FileResolveHelper fileResolveHelper) {
         this.strings = strings;
         this.osDao = osDao;
         this.settings = settings;
         this.log = log;
-        this.cryptoHelper = cryptoHelper;
         this.cryptoProvider = cryptoProvider;
         this.shredHelper = shredHelper;
         privateKeyFile = new File(fileResolveHelper.getPrivateKeyPath());

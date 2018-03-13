@@ -16,14 +16,12 @@ import javax.inject.Inject;
 import java.io.*;
 import java.security.*;
 import java.security.spec.InvalidKeySpecException;
-import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
+import java.util.Optional;
 
-//TODO more helpful exception handling and throwing, most lower level exceptions should be caught on this layer
-//TODO print some sort of helpful message if mend is not unlocked
 public class CryptoHelper {
 
     private final I18N strings;
@@ -46,25 +44,6 @@ public class CryptoHelper {
         this.osDao = osDao;
     }
 
-    public void encryptFile(File file, String name) throws IOException, CorruptSettingsException,
-            InvalidKeySpecException, NoSuchAlgorithmException, IllegalBlockSizeException, InvalidKeyException,
-            BadPaddingException, InvalidAlgorithmParameterException, NoSuchPaddingException {
-        if (name == null)
-            name = new SimpleDateFormat(AppProperties.ENC_FILE_NAME_FORMAT).format(new Date());
-
-        String fileExtension = FilenameUtils.getExtension(file.getAbsolutePath());
-        String encLocation = settings.getValue(Settings.Name.ENCDIR);
-        File outputFile = new File(encLocation + File.separatorChar + name + AppProperties.ENC_FILE_EXTENSION);
-        fileResolveHelper.assertFileDoesNotExist(outputFile);
-
-        try (FileInputStream fis = new FileInputStream(file);
-            FileOutputStream fos = new FileOutputStream(outputFile)) {
-            log.err().println("Encrypting file to: " + outputFile.getAbsolutePath());
-            cryptoProvider.encryptEncStream(keyHelper.getPublicKey(), fis, fos, fileExtension);
-            log.err().println("Encryption complete. Key: " + name);
-        }
-    }
-
     private String addHeaderToLogText(String logText, String platformHeader) {
         StringBuilder sb = new StringBuilder();
         Calendar cal = Calendar.getInstance();
@@ -74,6 +53,26 @@ public class CryptoHelper {
         sb.append(strings.getNewLine());
         sb.append(logText);
         return sb.toString();
+    }
+
+    public void encryptFile(File file, String name) throws IOException, CorruptSettingsException,
+            InvalidKeySpecException, NoSuchAlgorithmException, IllegalBlockSizeException, InvalidKeyException,
+            BadPaddingException, InvalidAlgorithmParameterException, NoSuchPaddingException {
+        if (name == null) {
+            name = new SimpleDateFormat(AppProperties.ENC_FILE_NAME_FORMAT).format(new Date());
+        }
+
+        String fileExtension = FilenameUtils.getExtension(file.getAbsolutePath());
+        String encLocation = settings.getValue(Settings.Name.ENCDIR);
+        File outputFile = new File(encLocation + File.separatorChar + name + AppProperties.ENC_FILE_EXTENSION);
+        fileResolveHelper.assertFileDoesNotExist(outputFile);
+
+        try (FileInputStream fis = new FileInputStream(file);
+            FileOutputStream fos = new FileOutputStream(outputFile)) {
+            log.err().println(strings.getf("CryptoHelper.encryptingFile", outputFile.getAbsolutePath()));
+            cryptoProvider.encryptEncStream(keyHelper.getPublicKey(), fis, fos, fileExtension);
+            log.err().println(strings.getf("CryptoHelper.encryptFileComplete", name));
+        }
     }
 
     public void encryptTextToLog(char[] text, boolean dropHeader) throws IOException, CorruptSettingsException,
@@ -86,21 +85,17 @@ public class CryptoHelper {
         currentLogFile.createNewFile();
         String logText = new String(text);
         if (!dropHeader) {
-            addHeaderToLogText(logText, strings.get("TODO"));
+            addHeaderToLogText(logText, strings.get("Platform.header"));
         }
 
         try (FileOutputStream fos = new FileOutputStream(currentLogFile, true)) {
             cryptoProvider.encryptLogStream(keyHelper.getPublicKey(), logText, fos);
         }
-
-        DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
-        Date date = new Date();
-        log.out().println("Successfully Logged entry at: " + dateFormat.format(date));
     }
 
     public void decryptLog(File file) throws InvalidKeySpecException, IOException, NoSuchAlgorithmException,
-            MalformedLogFileException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException, NoSuchPaddingException,
-            InvalidAlgorithmParameterException {
+            MalformedLogFileException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException,
+            NoSuchPaddingException, InvalidAlgorithmParameterException {
         try (FileInputStream fis = new FileInputStream(file)){
             cryptoProvider.decryptLogStream(keyHelper.getPrivateKey(), fis, log.out());
         }
@@ -108,20 +103,21 @@ public class CryptoHelper {
 
     public void decryptFile(File file, boolean silent) throws IOException, CorruptSettingsException,
             InvalidKeySpecException, NoSuchAlgorithmException, MalformedLogFileException,
-            InvalidAlgorithmParameterException, NoSuchPaddingException, BadPaddingException, IllegalBlockSizeException, InvalidKeyException {
+            InvalidAlgorithmParameterException, NoSuchPaddingException, BadPaddingException, IllegalBlockSizeException,
+            InvalidKeyException {
         String decDir = settings.getValue(Settings.Name.DECDIR);
         fileResolveHelper.assertDirWritable(decDir);
         File outputFile = FileUtils.getFile(decDir, FilenameUtils.removeExtension(file.getName()));
         fileResolveHelper.assertFileDoesNotExist(outputFile);
         String fileExtension;
 
-        log.err().println("Decrypting the file to: " + outputFile.getAbsolutePath());
+        log.err().println(strings.getf("CryptoHelper.decryptingFile", outputFile.getAbsolutePath()));
         try (FileInputStream fis = new FileInputStream(file);
             FileOutputStream fos = new FileOutputStream(outputFile)) {
             fileExtension = cryptoProvider.decryptEncStream(keyHelper.getPrivateKey(), fis, fos);
         }
         osDao.renameFile(outputFile, outputFile.getName() + "." + fileExtension);
-        log.err().println("Decryption complete.");
+        log.err().println(strings.get("CryptoHelper.decryptComplete"));
 
         if (!silent) {
             osDao.desktopOpenFile(outputFile);
@@ -129,7 +125,7 @@ public class CryptoHelper {
     }
 
     public KeyPair readKeyPairFromFiles(File privateKeyFile, File publicKeyFile)
-            throws InvalidKeySpecException, NoSuchAlgorithmException {
+            throws InvalidKeySpecException, NoSuchAlgorithmException, IOException {
         return cryptoProvider.getKeyPairFromBytes(
                 osDao.readAllFileBytes(privateKeyFile.toPath()),
                 osDao.readAllFileBytes(publicKeyFile.toPath()));

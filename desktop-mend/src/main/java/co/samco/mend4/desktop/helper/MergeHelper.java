@@ -1,9 +1,10 @@
 package co.samco.mend4.desktop.helper;
 
+import co.samco.mend4.core.bean.LogDataBlocksAndText;
 import co.samco.mend4.core.exception.CorruptSettingsException;
-import co.samco.mend4.core.EncryptionUtils;
 import co.samco.mend4.core.OSDao;
 import co.samco.mend4.core.Settings;
+import co.samco.mend4.core.exception.MalformedLogFileException;
 import org.apache.commons.lang3.tuple.Pair;
 
 import javax.crypto.BadPaddingException;
@@ -57,83 +58,86 @@ public class MergeHelper {
     }
 
     public void mergeLogFilesToNew(Pair<File, File> files, File outputLog) {
-        File firstLog = files.getLeft();
-        File secondLog = files.getRight();
-        FileInputStream f1InputStream = null;
-        FileInputStream f2InputStream = null;
-        FileOutputStream fOutputStream = null;
-        try {
-            f1InputStream = new FileInputStream(firstLog);
-            f2InputStream = new FileInputStream(secondLog);
-            outputLog.createNewFile();
-            fOutputStream = new FileOutputStream(outputLog);
-            mergeToOutputFile(f1InputStream, f2InputStream, fOutputStream);
-        } catch (java.io.IOException | InvalidKeyException | InvalidAlgorithmParameterException | NoSuchAlgorithmException
-                | ParseException | NoSuchPaddingException |  IllegalBlockSizeException | BadPaddingException
-                | EncryptionUtils.MalformedLogFileException e) {
-            System.err.println(e.getMessage());
-            e.printStackTrace();
-        } finally {
-            try {
-                if (f1InputStream != null)
-                    f1InputStream.close();
-                if (f2InputStream != null)
-                    f2InputStream.close();
-                if (fOutputStream != null)
-                    fOutputStream.close();
-            } catch (IOException e) {
-                System.err.println(e.getMessage());
-            }
-        }
+        //TODO ONLY COMMENTED TO COMPILE
+        //File firstLog = files.getLeft();
+        //File secondLog = files.getRight();
+        //FileInputStream f1InputStream = null;
+        //FileInputStream f2InputStream = null;
+        //FileOutputStream fOutputStream = null;
+        //try {
+        //    f1InputStream = new FileInputStream(firstLog);
+        //    f2InputStream = new FileInputStream(secondLog);
+        //    outputLog.createNewFile();
+        //    fOutputStream = new FileOutputStream(outputLog);
+        //    mergeToOutputFile(f1InputStream, f2InputStream, fOutputStream);
+        //} catch (java.io.IOException | InvalidKeyException | InvalidAlgorithmParameterException | NoSuchAlgorithmException
+        //        | ParseException | NoSuchPaddingException |  IllegalBlockSizeException | BadPaddingException
+        //        | EncryptionUtils.MalformedLogFileException e) {
+        //    System.err.println(e.getMessage());
+        //    e.printStackTrace();
+        //} finally {
+        //    try {
+        //        if (f1InputStream != null)
+        //            f1InputStream.close();
+        //        if (f2InputStream != null)
+        //            f2InputStream.close();
+        //        if (fOutputStream != null)
+        //            fOutputStream.close();
+        //    } catch (IOException e) {
+        //        System.err.println(e.getMessage());
+        //    }
+        //}
     }
 
     public void mergeToOutputFile(FileInputStream firstLog, FileInputStream secondLog, FileOutputStream outputFile)
-            throws IOException, ParseException, NoSuchAlgorithmException, EncryptionUtils.MalformedLogFileException,
+            throws IOException, ParseException, NoSuchAlgorithmException, MalformedLogFileException,
             InvalidKeyException, InvalidAlgorithmParameterException, NoSuchPaddingException, BadPaddingException,
             IllegalBlockSizeException {
-        byte[] lc1Bytes = new byte[4];
-        byte[] lc2Bytes = new byte[4];
-        LogEntry firstLogEntry = parseNextLog(firstLog, lc1Bytes);
-        LogEntry secondLogEntry = parseNextLog(secondLog, lc2Bytes);
-        boolean firstLogHasNext = EncryptionUtils.logHasNext(firstLog, lc1Bytes);
-        boolean secondLogHasNext = EncryptionUtils.logHasNext(secondLog, lc2Bytes);
+        //TODO ONLY COMMENTED TO COMPILE
+        //byte[] lc1Bytes = new byte[4];
+        //byte[] lc2Bytes = new byte[4];
+        //LogEntry firstLogEntry = parseNextLog(firstLog, lc1Bytes);
+        //LogEntry secondLogEntry = parseNextLog(secondLog, lc2Bytes);
+        //boolean firstLogHasNext = EncryptionUtils.logHasNext(firstLog, lc1Bytes);
+        //boolean secondLogHasNext = EncryptionUtils.logHasNext(secondLog, lc2Bytes);
 
-        while (firstLogHasNext || secondLogHasNext) {
-            if (firstLogHasNext && firstLogEntry.before(secondLogEntry)) {
-                outputFile.write(firstLogEntry.data);
-                firstLogHasNext = EncryptionUtils.logHasNext(firstLog, lc1Bytes);
-                if (firstLogHasNext) {
-                    firstLogEntry = parseNextLog(firstLog, lc1Bytes);
-                } else {
-                    firstLogEntry = null;
-                }
-            } else if (secondLogHasNext) {
-                outputFile.write(secondLogEntry.data);
-                secondLogHasNext = EncryptionUtils.logHasNext(secondLog, lc2Bytes);
-                if (secondLogHasNext) {
-                    secondLogEntry = parseNextLog(secondLog, lc2Bytes);
-                } else {
-                    secondLogEntry = null;
-                }
-            }
-        }
+        //while (firstLogHasNext || secondLogHasNext) {
+        //    if (firstLogHasNext && firstLogEntry.before(secondLogEntry)) {
+        //        outputFile.write(firstLogEntry.data);
+        //        firstLogHasNext = EncryptionUtils.logHasNext(firstLog, lc1Bytes);
+        //        if (firstLogHasNext) {
+        //            firstLogEntry = parseNextLog(firstLog, lc1Bytes);
+        //        } else {
+        //            firstLogEntry = null;
+        //        }
+        //    } else if (secondLogHasNext) {
+        //        outputFile.write(secondLogEntry.data);
+        //        secondLogHasNext = EncryptionUtils.logHasNext(secondLog, lc2Bytes);
+        //        if (secondLogHasNext) {
+        //            secondLogEntry = parseNextLog(secondLog, lc2Bytes);
+        //        } else {
+        //            secondLogEntry = null;
+        //        }
+        //    }
+        //}
     }
 
     private LogEntry parseNextLog(FileInputStream inputStream, byte[] lc1Bytes)
             throws IOException, InvalidKeyException, NoSuchAlgorithmException,
             InvalidAlgorithmParameterException, NoSuchPaddingException, BadPaddingException,
-            EncryptionUtils.MalformedLogFileException, IllegalBlockSizeException, ParseException {
-        RSAPrivateKey privateKey = fileResolveHelper.getPrivateKey();
-        EncryptionUtils.LogDataBlocksAndText nextLog = EncryptionUtils
-                .getNextLogTextWithDataBlocks(inputStream, privateKey, lc1Bytes);
-        String logText = nextLog.entryText;
-        Date firstDate = null;
-        Pattern pattern = Pattern.compile("(\\d+)\\/(\\d+)\\/(\\d+) (\\d+):(\\d+):(\\d+)");
-        Matcher matcher = pattern.matcher(logText);
-        if (matcher.lookingAt()) {
-            firstDate = (new SimpleDateFormat("dd/MM/yyyy HH:mm:ss")).parse(matcher.group());
-        }
-        return new LogEntry(nextLog.logDataBlocks.getAsOneBlock(), firstDate);
+            MalformedLogFileException, IllegalBlockSizeException, ParseException {
+        //TODO ONLY COMMENTED TO COMPILE
+        //RSAPrivateKey privateKey = fileResolveHelper.getPrivateKey();
+        //LogDataBlocksAndText nextLog = getNextLogTextWithDataBlocks(inputStream, privateKey, lc1Bytes);
+        //String logText = nextLog.entryText;
+        //Date firstDate = null;
+        //Pattern pattern = Pattern.compile("(\\d+)\\/(\\d+)\\/(\\d+) (\\d+):(\\d+):(\\d+)");
+        //Matcher matcher = pattern.matcher(logText);
+        //if (matcher.lookingAt()) {
+        //    firstDate = (new SimpleDateFormat("dd/MM/yyyy HH:mm:ss")).parse(matcher.group());
+        //}
+        //return new LogEntry(nextLog.logDataBlocks.getAsOneBlock(), firstDate);
+        return null;
     }
 
     private static class LogEntry {

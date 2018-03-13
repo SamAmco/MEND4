@@ -1,12 +1,22 @@
 package co.samco.mend4.desktop.commands;
 
 import co.samco.mend4.core.OSDao;
+import co.samco.mend4.core.exception.CorruptSettingsException;
 import co.samco.mend4.desktop.core.I18N;
 import co.samco.mend4.desktop.helper.CryptoHelper;
+import co.samco.mend4.desktop.helper.FileResolveHelper;
 import co.samco.mend4.desktop.helper.InputHelper;
 import co.samco.mend4.desktop.output.PrintStreamProvider;
 
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 import javax.inject.Inject;
+import java.io.IOException;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.spec.InvalidKeySpecException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
@@ -24,8 +34,8 @@ public class EncryptFromStdIn extends Encrypt {
 
     @Inject
     public EncryptFromStdIn(PrintStreamProvider log, I18N strings, CryptoHelper cryptoHelper,
-                            InputHelper inputHelper, OSDao osDao) {
-        super(log, strings, cryptoHelper, inputHelper);
+                            InputHelper inputHelper, OSDao osDao, FileResolveHelper fileResolveHelper) {
+        super(log, strings, cryptoHelper, inputHelper, fileResolveHelper);
         this.osDao = osDao;
     }
 
@@ -41,7 +51,13 @@ public class EncryptFromStdIn extends Encrypt {
         }
         scanner.close();
 
-        cryptoHelper.encryptTextToLog(sb.toString().toCharArray(), dropHeader);
+        try {
+            cryptoHelper.encryptTextToLog(sb.toString().toCharArray(), dropHeader);
+        } catch (IOException | CorruptSettingsException | InvalidKeySpecException | NoSuchAlgorithmException
+                | IllegalBlockSizeException | InvalidKeyException | BadPaddingException
+                | InvalidAlgorithmParameterException | NoSuchPaddingException e) {
+            e.printStackTrace();
+        }
         return null;
     }
 

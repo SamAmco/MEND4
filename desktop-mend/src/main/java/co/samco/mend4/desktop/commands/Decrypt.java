@@ -3,14 +3,22 @@ package co.samco.mend4.desktop.commands;
 import co.samco.mend4.core.AppProperties;
 import co.samco.mend4.core.exception.CorruptSettingsException;
 import co.samco.mend4.core.OSDao;
+import co.samco.mend4.core.exception.MalformedLogFileException;
 import co.samco.mend4.desktop.core.I18N;
 import co.samco.mend4.desktop.helper.CryptoHelper;
 import co.samco.mend4.desktop.helper.FileResolveHelper;
 import co.samco.mend4.desktop.output.PrintStreamProvider;
 
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 import javax.inject.Inject;
 import java.io.File;
 import java.io.IOException;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -72,7 +80,9 @@ public class Decrypt extends Command {
                 cryptoHelper.decryptFile(file, silent);
                 return null;
             } else return args;
-        } catch (IOException | CorruptSettingsException e) {
+        } catch (IOException | CorruptSettingsException | InvalidKeySpecException | NoSuchAlgorithmException
+                | BadPaddingException | MalformedLogFileException | InvalidKeyException
+                | InvalidAlgorithmParameterException | NoSuchPaddingException | IllegalBlockSizeException e) {
             log.err().println(e.getMessage());
         }
         return null;
@@ -83,7 +93,9 @@ public class Decrypt extends Command {
             File file = fileResolveHelper.resolveLogFilePath(fileIdentifier);
             fileResolveHelper.assertFileExistsAndHasExtension(fileIdentifier, AppProperties.LOG_FILE_EXTENSION, file);
             cryptoHelper.decryptLog(file);
-        } catch (IOException | CorruptSettingsException e) {
+        } catch (IOException | CorruptSettingsException | InvalidKeySpecException | NoSuchAlgorithmException
+                | BadPaddingException | MalformedLogFileException | InvalidKeyException
+                | InvalidAlgorithmParameterException | NoSuchPaddingException | IllegalBlockSizeException e) {
             log.err().println(e.getMessage());
         }
         return null;

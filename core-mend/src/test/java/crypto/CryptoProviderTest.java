@@ -6,7 +6,6 @@ import co.samco.mend4.core.crypto.CryptoProvider;
 import co.samco.mend4.core.exception.MalformedLogFileException;
 import org.apache.commons.lang3.ArrayUtils;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -14,7 +13,6 @@ import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import java.io.*;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.*;
 import java.security.interfaces.RSAPrivateKey;
@@ -123,7 +121,7 @@ public abstract class CryptoProviderTest {
             InvalidAlgorithmParameterException {
         byte[] cipherBytes;
         try(ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
-            cryptoProvider.encryptLogStream((RSAPublicKey) rsaKeyPair.getPublic(), plainText.toCharArray(), outputStream);
+            cryptoProvider.encryptLogStream((RSAPublicKey) rsaKeyPair.getPublic(), plainText, outputStream);
             cipherBytes = outputStream.toByteArray();
             String cipherText = outputStream.toString(StandardCharsets.UTF_8.name());
             for (String s : plainText.split(" ")) {

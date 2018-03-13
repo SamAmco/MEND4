@@ -23,5 +23,5 @@ public interface OSDao {
     char[] readPassword(String message);
     Path moveFile(Path source, Path target, CopyOption... options) throws IOException;
     void renameFile(File file, String newName);
-    byte[] readAllFileBytes(Path path);
+    byte[] readAllFileBytes(Path path) throws IOException;
 }

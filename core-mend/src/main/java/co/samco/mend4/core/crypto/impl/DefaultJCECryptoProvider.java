@@ -191,15 +191,13 @@ public class DefaultJCECryptoProvider implements CryptoProvider {
     @Override
     public RSAPublicKey getPublicKeyFromBytes(byte[] publicKey) throws NoSuchAlgorithmException,
             InvalidKeySpecException {
-        KeyFactory kf = KeyFactory.getInstance("RSA");
-        return (RSAPublicKey) kf.generatePublic(new X509EncodedKeySpec(publicKey));
+        return (RSAPublicKey) KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(publicKey));
     }
 
     @Override
     public RSAPrivateKey getPrivateKeyFromBytes(byte[] privateKey) throws NoSuchAlgorithmException,
             InvalidKeySpecException {
-        KeyFactory kf = KeyFactory.getInstance("RSA");
-        return (RSAPrivateKey) kf.generatePrivate(new PKCS8EncodedKeySpec(privateKey));
+        return (RSAPrivateKey) KeyFactory.getInstance("RSA").generatePrivate(new PKCS8EncodedKeySpec(privateKey));
     }
 
     @Override
