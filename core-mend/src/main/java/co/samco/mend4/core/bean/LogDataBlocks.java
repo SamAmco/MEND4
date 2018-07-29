@@ -1,6 +1,6 @@
 package co.samco.mend4.core.bean;
 
-import org.apache.commons.lang3.ArrayUtils;
+import java.nio.ByteBuffer;
 
 public class LogDataBlocks {
     private final byte[] encAesKey;
@@ -31,11 +31,13 @@ public class LogDataBlocks {
         return lc1Bytes;
     }
 
-    //TODO there is probably a faster way to do this.
     public byte[] getAsOneBlock() {
-        return ArrayUtils.addAll(
-                ArrayUtils.addAll(lc1Bytes, encAesKey),
-                ArrayUtils.addAll(lc2Bytes, encEntry)
-        );
+        byte[] block = new byte[lc1Bytes.length + encAesKey.length + lc2Bytes.length + encEntry.length];
+        ByteBuffer buffer = ByteBuffer.wrap(block);
+        buffer.put(lc1Bytes);
+        buffer.put(encAesKey);
+        buffer.put(lc2Bytes);
+        buffer.put(encEntry);
+        return block;
     }
 }

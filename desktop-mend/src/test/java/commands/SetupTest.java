@@ -3,6 +3,7 @@ package commands;
 import co.samco.mend4.core.AppProperties;
 import co.samco.mend4.core.OSDao;
 import co.samco.mend4.core.Settings;
+import co.samco.mend4.core.bean.EncodedKeyInfo;
 import co.samco.mend4.desktop.commands.Setup;
 import co.samco.mend4.desktop.core.I18N;
 import co.samco.mend4.desktop.helper.CryptoHelper;
@@ -108,7 +109,7 @@ public class SetupTest {
                 }
             }
         });
-        CryptoHelper.EncodedKeyInfo keyInfo = new CryptoHelper.EncodedKeyInfo("a", "b", "c");
+        EncodedKeyInfo keyInfo = new EncodedKeyInfo("a", "b", "c");
         when(cryptoHelper.getEncodedKeyInfo(anyString(), any(KeyPair.class))).thenReturn(keyInfo);
         setup.execute(Collections.emptyList());
         verify(err, times(2)).println(errCaptor.capture());
@@ -122,7 +123,7 @@ public class SetupTest {
             InvalidKeyException, NoSuchAlgorithmException, IllegalBlockSizeException, BadPaddingException,
             InvalidAlgorithmParameterException, InvalidKeySpecException {
         when(osDao.readPassword(anyString())).thenReturn("password".toCharArray());
-        CryptoHelper.EncodedKeyInfo keyInfo = new CryptoHelper.EncodedKeyInfo("a", "b", "c");
+        EncodedKeyInfo keyInfo = new EncodedKeyInfo("a", "b", "c");
         when(cryptoHelper.getEncodedKeyInfo(anyString(), any(KeyPair.class))).thenReturn(keyInfo);
         when(fileResolveHelper.resolveFile(anyString())).thenReturn(new File(""));
         setup.execute(Arrays.asList("x", "y"));
@@ -148,7 +149,7 @@ public class SetupTest {
             InvalidKeySpecException {
         String exception = "exception";
         when(osDao.readPassword(anyString())).thenReturn("password".toCharArray());
-        CryptoHelper.EncodedKeyInfo keyInfo = new CryptoHelper.EncodedKeyInfo("a", "b", "c");
+        EncodedKeyInfo keyInfo = new EncodedKeyInfo("a", "b", "c");
         when(cryptoHelper.getEncodedKeyInfo(anyString(), any(KeyPair.class))).thenReturn(keyInfo);
         doThrow(new IOException(exception)).when(settings).setValue(any(Settings.Name.class), anyString());
         setup.execute(Arrays.asList("x", "y"));
@@ -156,7 +157,7 @@ public class SetupTest {
         Assert.assertEquals(exception, errCaptor.getValue());
     }
 
-    private void verifySettingsSetup(CryptoHelper.EncodedKeyInfo keyInfo) throws IOException {
+    private void verifySettingsSetup(EncodedKeyInfo keyInfo) throws IOException {
         verify(settings).setValue(eq(Settings.Name.PREFERREDAES), eq(AppProperties.PREFERRED_AES_ALG));
         verify(settings).setValue(eq(Settings.Name.PREFERREDRSA), eq(AppProperties.PREFERRED_RSA_ALG));
         verify(settings).setValue(eq(Settings.Name.AESKEYSIZE), eq(Integer.toString(AppProperties.PREFERRED_AES_KEY_SIZE)));

@@ -1,10 +1,12 @@
 package commands;
 
 import co.samco.mend4.core.OSDao;
+import co.samco.mend4.core.exception.CorruptSettingsException;
 import co.samco.mend4.desktop.commands.Encrypt;
 import co.samco.mend4.desktop.commands.EncryptFromStdIn;
 import co.samco.mend4.desktop.core.I18N;
 import co.samco.mend4.desktop.helper.CryptoHelper;
+import co.samco.mend4.desktop.helper.FileResolveHelper;
 import co.samco.mend4.desktop.helper.InputHelper;
 import co.samco.mend4.desktop.output.PrintStreamProvider;
 import org.junit.Assert;
@@ -12,10 +14,18 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.spec.InvalidKeySpecException;
 import java.util.Arrays;
 import java.util.Collections;
 
@@ -26,6 +36,7 @@ public class EncryptFromStdInTest {
     private EncryptFromStdIn encrypt;
     private InputHelper inputHelper;
     private CryptoHelper cryptoHelper;
+    private FileResolveHelper fileResolveHelper;
     private PrintStreamProvider printStreamProvider;
     private I18N strings;
     private OSDao osDao;
@@ -36,21 +47,28 @@ public class EncryptFromStdInTest {
         strings = new I18N("en", "UK");
         printStreamProvider = mock(PrintStreamProvider.class);
         cryptoHelper = mock(CryptoHelper.class);
+        fileResolveHelper = mock(FileResolveHelper.class);
         inputHelper = mock(InputHelper.class);
-        encrypt = new EncryptFromStdIn(printStreamProvider, strings, cryptoHelper, inputHelper, osDao);
+        encrypt = new EncryptFromStdIn(printStreamProvider, strings, cryptoHelper, inputHelper, osDao, fileResolveHelper);
     }
 
     @Test
-    public void encryptFromStdIn() throws UnsupportedEncodingException {
+    public void encryptFromStdIn() throws IOException, NoSuchAlgorithmException, InvalidKeyException,
+            InvalidAlgorithmParameterException, NoSuchPaddingException, BadPaddingException, CorruptSettingsException,
+            InvalidKeySpecException, IllegalBlockSizeException {
         encryptFromStdIn(false);
     }
 
     @Test
-    public void encryptFromStdInAppend() throws UnsupportedEncodingException {
+    public void encryptFromStdInAppend() throws IOException, NoSuchAlgorithmException, InvalidKeyException,
+            InvalidAlgorithmParameterException, NoSuchPaddingException, BadPaddingException, CorruptSettingsException,
+            InvalidKeySpecException, IllegalBlockSizeException {
         encryptFromStdIn(true);
     }
 
-    public void encryptFromStdIn(boolean appendFlag) {
+    public void encryptFromStdIn(boolean appendFlag) throws IOException, NoSuchPaddingException, NoSuchAlgorithmException,
+            InvalidKeyException, InvalidAlgorithmParameterException, IllegalBlockSizeException, BadPaddingException,
+            CorruptSettingsException, InvalidKeySpecException {
         String input = "hi\rhi again\nhi once more";
         InputStream inputStream = new ByteArrayInputStream(input.getBytes(StandardCharsets.UTF_8));
         when(osDao.getStdIn()).thenReturn(inputStream);

@@ -1,12 +1,12 @@
 package commands;
 
 import co.samco.mend4.core.AppProperties;
+import co.samco.mend4.core.crypto.CryptoProvider;
 import co.samco.mend4.core.exception.CorruptSettingsException;
 import co.samco.mend4.core.OSDao;
 import co.samco.mend4.core.Settings;
 import co.samco.mend4.desktop.commands.Unlock;
 import co.samco.mend4.desktop.core.I18N;
-import co.samco.mend4.desktop.helper.CryptoHelper;
 import co.samco.mend4.desktop.helper.FileResolveHelper;
 import co.samco.mend4.desktop.helper.ShredHelper;
 import co.samco.mend4.desktop.output.PrintStreamProvider;
@@ -39,7 +39,7 @@ public class UnlockTest {
     private PrintStream out;
     private PrintStream err;
     private PrintStreamProvider log;
-    private CryptoHelper cryptoHelper;
+    private CryptoProvider cryptoProvider;
     private ShredHelper shredHelper;
     private FileResolveHelper fileResolveHelper;
 
@@ -58,13 +58,13 @@ public class UnlockTest {
         when(log.out()).thenReturn(out);
         strings = new I18N("en", "UK");
         settings = mock(Settings.class);
-        cryptoHelper = mock(CryptoHelper.class);
+        cryptoProvider = mock(CryptoProvider.class);
         osDao = mock(OSDao.class);
         shredHelper = mock(ShredHelper.class);
         fileResolveHelper = mock(FileResolveHelper.class);
         when(fileResolveHelper.getPrivateKeyPath()).thenReturn(privateKeyPath);
         when(fileResolveHelper.getPublicKeyPath()).thenReturn(publicKeyPath);
-        unlock = new Unlock(strings, osDao, settings, log, cryptoHelper, shredHelper, fileResolveHelper);
+        unlock = new Unlock(strings, osDao, settings, log, cryptoProvider, shredHelper, fileResolveHelper);
     }
 
     @Test
@@ -72,8 +72,8 @@ public class UnlockTest {
             IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException, InvalidKeySpecException,
             IOException, CorruptSettingsException {
         when(osDao.readPassword(anyString())).thenReturn(new char[0]);
-        when(cryptoHelper.decryptBytesWithPassword(any(byte[].class), any(char[].class)))
-                .thenReturn("Not the passcheck text".getBytes(StandardCharsets.UTF_8));
+        when(cryptoProvider.checkPassword(any(char[].class), any(String.class), any(String.class)))
+                .thenReturn(false);
         unlock.execute(Collections.emptyList());
         verify(err).println(eq(strings.get("Unlock.incorrectPassword")));
         verify(osDao, never()).fileExists(any());
@@ -103,8 +103,8 @@ public class UnlockTest {
             IOException {
         String password = "password";
         when(osDao.readPassword(anyString())).thenReturn(password.toCharArray());
-        when(cryptoHelper.decryptBytesWithPassword(any(byte[].class), any(char[].class)))
-                .thenReturn(AppProperties.PASSCHECK_TEXT.getBytes(StandardCharsets.UTF_8));
+        when(cryptoProvider.checkPassword(any(char[].class), any(String.class), any(String.class)))
+                .thenReturn(true);
         unlock.execute(Collections.emptyList());
         verify(osDao, times(2)).writeDataToFile(any(), any());
     }
