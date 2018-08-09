@@ -47,6 +47,13 @@ public class SettingsImpl implements Settings {
     }
 
     @Override
+    public boolean valueSet(Name name) throws IOException {
+        Properties properties = getProperties();
+        String value = properties.getProperty(name.toString());
+        return value != null;
+    }
+
+    @Override
     public String getValue(Name name) throws IOException, CorruptSettingsException {
         Properties properties = getProperties();
         String value = properties.getProperty(name.toString());

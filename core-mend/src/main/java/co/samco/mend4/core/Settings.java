@@ -7,6 +7,8 @@ import java.io.IOException;
 public interface Settings {
     void setValue(Name name, String value) throws IOException;
 
+    boolean valueSet(Name name) throws IOException;
+
     String getValue(Name name) throws IOException, CorruptSettingsException;
 
     enum Name {

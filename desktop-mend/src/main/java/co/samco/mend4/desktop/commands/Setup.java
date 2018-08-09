@@ -119,10 +119,10 @@ public class Setup extends Command {
 
     private List<String> setEncryptionProperties(List<String> args) {
         try {
-            settings.setValue(Settings.Name.PREFERREDAES, AppProperties.PREFERRED_AES_ALG);
-            settings.setValue(Settings.Name.PREFERREDRSA, AppProperties.PREFERRED_RSA_ALG);
-            settings.setValue(Settings.Name.AESKEYSIZE, Integer.toString(AppProperties.PREFERRED_AES_KEY_SIZE));
-            settings.setValue(Settings.Name.RSAKEYSIZE, Integer.toString(AppProperties.PREFERRED_RSA_KEY_SIZE));
+            setIfNull(Settings.Name.PREFERREDAES, AppProperties.PREFERRED_AES_ALG);
+            setIfNull(Settings.Name.PREFERREDRSA, AppProperties.PREFERRED_RSA_ALG);
+            setIfNull(Settings.Name.AESKEYSIZE, Integer.toString(AppProperties.PREFERRED_AES_KEY_SIZE));
+            setIfNull(Settings.Name.RSAKEYSIZE, Integer.toString(AppProperties.PREFERRED_RSA_KEY_SIZE));
         } catch (IOException  e) {
             log.err().println(e.getMessage());
             return null;
@@ -138,6 +138,12 @@ public class Setup extends Command {
     @Override
     public void execute(List<String> args) {
         executeBehaviourChain(behaviourChain, args);
+    }
+
+    private void setIfNull(Settings.Name name, String value) throws IOException {
+        if (!settings.valueSet(name)) {
+            settings.setValue(name, value);
+        }
     }
 
     private void setKeysFromInputFile(char[] password, String privateKeyFilePath, String publicKeyFilePath) throws

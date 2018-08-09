@@ -20,7 +20,6 @@ import org.mockito.stubbing.Answer;
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
-import javax.xml.transform.TransformerException;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -122,16 +121,10 @@ public class SetupTest {
     }
 
     @Test
-    public void setupFromKeyFiles() throws TransformerException, NoSuchPaddingException, IOException,
+    public void setupFromKeyFiles() throws NoSuchPaddingException, IOException,
             InvalidKeyException, NoSuchAlgorithmException, IllegalBlockSizeException, BadPaddingException,
             InvalidAlgorithmParameterException, InvalidKeySpecException {
-        when(osDao.readPassword(anyString())).thenReturn("password".toCharArray());
-        EncodedKeyInfo keyInfo = new EncodedKeyInfo("a", "b", 0);
-        when(cryptoProvider.getEncodedKeyInfo(any(char[].class), any(KeyPair.class))).thenReturn(keyInfo);
-        when(fileResolveHelper.resolveFile(anyString())).thenReturn(new File(""));
-        setup.execute(Arrays.asList("x", "y"));
-        verify(cryptoHelper).readKeyPairFromFiles(any(File.class), any(File.class));
-        verify(err).println(errCaptor.capture());
+        EncodedKeyInfo keyInfo = doSetupFromKeyFiles();
         verifySettingsSetup(keyInfo);
         Assert.assertEquals(strings.get("SetupMend.complete"), errCaptor.getValue());
     }
@@ -160,11 +153,34 @@ public class SetupTest {
         Assert.assertEquals(exception, errCaptor.getValue());
     }
 
+    @Test
+    public void doesntOverrideSettingsAlreadySet() throws NoSuchPaddingException, InvalidAlgorithmParameterException,
+            NoSuchAlgorithmException, IOException, BadPaddingException, IllegalBlockSizeException, InvalidKeyException,
+            InvalidKeySpecException {
+        when(settings.valueSet(eq(Settings.Name.PREFERREDAES))).thenReturn(true);
+        doSetupFromKeyFiles();
+        verify(settings, never()).setValue(eq(Settings.Name.PREFERREDAES), anyString());
+        Assert.assertEquals(strings.get("SetupMend.complete"), errCaptor.getValue());
+    }
+
+    public EncodedKeyInfo doSetupFromKeyFiles() throws NoSuchPaddingException, IOException,
+            InvalidKeyException, NoSuchAlgorithmException, IllegalBlockSizeException, BadPaddingException,
+            InvalidAlgorithmParameterException, InvalidKeySpecException {
+        when(osDao.readPassword(anyString())).thenReturn("password".toCharArray());
+        EncodedKeyInfo keyInfo = new EncodedKeyInfo("a", "b", 0);
+        when(cryptoProvider.getEncodedKeyInfo(any(char[].class), any(KeyPair.class))).thenReturn(keyInfo);
+        when(fileResolveHelper.resolveFile(anyString())).thenReturn(new File(""));
+        setup.execute(Arrays.asList("x", "y"));
+        verify(cryptoHelper).readKeyPairFromFiles(any(File.class), any(File.class));
+        verify(err).println(errCaptor.capture());
+        return keyInfo;
+    }
+
     private void verifySettingsSetup(EncodedKeyInfo keyInfo) throws IOException {
         verify(settings).setValue(eq(Settings.Name.PREFERREDAES), eq(AppProperties.PREFERRED_AES_ALG));
         verify(settings).setValue(eq(Settings.Name.PREFERREDRSA), eq(AppProperties.PREFERRED_RSA_ALG));
         verify(settings).setValue(eq(Settings.Name.AESKEYSIZE), eq(Integer.toString(AppProperties.PREFERRED_AES_KEY_SIZE)));
-        verify(settings).setValue(eq(Settings.Name.RSAKEYSIZE), eq(Integer.toString(AppProperties.PREFERRED_RSA_KEY_SIZE)));
+        verify(settings).setValue(eq(Settings.Name.RSAKEYSIZE), eq(Integer.toString(keyInfo.getKeySize())));
         verify(settings).setValue(eq(Settings.Name.PRIVATEKEY), eq(keyInfo.getPrivateKey()));
         verify(settings).setValue(eq(Settings.Name.PUBLICKEY), eq(keyInfo.getPublicKey()));
     }
