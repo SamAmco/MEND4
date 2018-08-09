@@ -17,6 +17,8 @@ import java.security.spec.InvalidKeySpecException;
 import java.security.spec.KeySpec;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
+import java.util.Arrays;
+import java.util.Random;
 
 import javax.crypto.*;
 import javax.crypto.spec.IvParameterSpec;
@@ -265,24 +267,41 @@ public class DefaultJCECryptoProvider implements CryptoProvider {
     }
 
     @Override
-    public EncodedKeyInfo getEncodedKeyInfo(char[] password, String passCheck, KeyPair keyPair)
+    public EncodedKeyInfo getEncodedKeyInfo(char[] password, KeyPair keyPair)
             throws NoSuchAlgorithmException, InvalidKeySpecException, NoSuchPaddingException,
             InvalidAlgorithmParameterException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException {
         Cipher aesCipher = getAesCipherFromPassword(password, Cipher.ENCRYPT_MODE);
         byte[] encryptedPrivateKey = aesCipher.doFinal(keyPair.getPrivate().getEncoded());
-        byte[] cipherText = aesCipher.doFinal(passCheck.getBytes(StandardCharsets.UTF_8));
         return new EncodedKeyInfo(encoder.encodeBase64URLSafeString(encryptedPrivateKey),
-                encoder.encodeBase64URLSafeString(keyPair.getPublic().getEncoded()),
-                encoder.encodeBase64URLSafeString(cipherText));
+                encoder.encodeBase64URLSafeString(keyPair.getPublic().getEncoded()));
     }
 
     @Override
-    public boolean checkPassword(char[] password, String passCheck, String encryptedPassCheck)
-            throws InvalidKeySpecException, NoSuchPaddingException, InvalidAlgorithmParameterException, InvalidKeyException,
-            BadPaddingException, IllegalBlockSizeException, NoSuchAlgorithmException {
-        byte[] cipherTextBytes = encoder.decodeBase64(encryptedPassCheck);
-        byte[] plainText = getAesCipherFromPassword(password, Cipher.DECRYPT_MODE).doFinal(cipherTextBytes);
-        return passCheck.equals(new String(plainText, StandardCharsets.UTF_8));
+    public boolean checkPassword(char[] password, String encodedPrivateKey, RSAPublicKey publicKey)
+            throws NoSuchPaddingException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException,
+            NoSuchAlgorithmException {
+        //Generate some random set of bytes
+        byte[] passCheck = new byte[20];
+        new Random().nextBytes(passCheck);
+
+        //encrypt them with the public key
+        Cipher encRsaCipher = getRsaEncrytpCipher(publicKey);
+        byte[] cipherTextBytes = encRsaCipher.doFinal(passCheck);
+        byte[] plainText;
+        try {
+            //try to then decrypt the private key with the password
+            byte[] privateKeyBytes = decryptEncodedKey(password, encodedPrivateKey);
+            RSAPrivateKey privateKey = getPrivateKeyFromBytes(privateKeyBytes);
+            //use the decrypted private key to decrypt the encrypted random bytes
+            Cipher decRsaCipher = getRsaDecryptCipher(privateKey);
+            plainText = decRsaCipher.doFinal(cipherTextBytes);
+        } catch (InvalidKeySpecException | InvalidAlgorithmParameterException | NoSuchAlgorithmException
+                | InvalidKeyException | NoSuchPaddingException | BadPaddingException | IllegalBlockSizeException e) {
+            return false;
+        }
+
+        //assert that the two sets of bytes are the same
+        return Arrays.equals(plainText, passCheck);
     }
 
     @Override

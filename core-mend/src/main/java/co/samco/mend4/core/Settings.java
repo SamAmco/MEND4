@@ -16,7 +16,6 @@ public interface Settings {
         LOGDIR("logdir"),
         ENCDIR("encdir"),
         DECDIR("decdir"),
-        PASSCHECK("passcheck"),
         RSAKEYSIZE("rsakeysize"),
         AESKEYSIZE("aeskeysize"),
         PREFERREDRSA("preferredrsa"),

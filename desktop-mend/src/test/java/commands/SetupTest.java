@@ -4,6 +4,7 @@ import co.samco.mend4.core.AppProperties;
 import co.samco.mend4.core.OSDao;
 import co.samco.mend4.core.Settings;
 import co.samco.mend4.core.bean.EncodedKeyInfo;
+import co.samco.mend4.core.crypto.CryptoProvider;
 import co.samco.mend4.desktop.commands.Setup;
 import co.samco.mend4.desktop.core.I18N;
 import co.samco.mend4.desktop.helper.CryptoHelper;
@@ -43,6 +44,7 @@ public class SetupTest {
     private I18N strings;
     private OSDao osDao;
     private CryptoHelper cryptoHelper;
+    private CryptoProvider cryptoProvider;
     private FileResolveHelper fileResolveHelper;
     private PrintStream err;
     private PrintStream out;
@@ -63,10 +65,11 @@ public class SetupTest {
         strings = new I18N("en", "UK");
         settings = mock(Settings.class);
         cryptoHelper = mock(CryptoHelper.class);
+        cryptoProvider = mock(CryptoProvider.class);
         osDao = mock(OSDao.class);
 
         when(fileResolveHelper.getSettingsPath()).thenReturn(settingsPath);
-        setup = new Setup(log, strings, osDao, cryptoHelper, fileResolveHelper, settings);
+        setup = new Setup(log, strings, osDao, cryptoHelper, cryptoProvider, fileResolveHelper, settings);
     }
 
     @Test
@@ -109,8 +112,8 @@ public class SetupTest {
                 }
             }
         });
-        EncodedKeyInfo keyInfo = new EncodedKeyInfo("a", "b", "c");
-        when(cryptoHelper.getEncodedKeyInfo(anyString(), any(KeyPair.class))).thenReturn(keyInfo);
+        EncodedKeyInfo keyInfo = new EncodedKeyInfo("a", "b");
+        when(cryptoProvider.getEncodedKeyInfo(any(char[].class), any(KeyPair.class))).thenReturn(keyInfo);
         setup.execute(Collections.emptyList());
         verify(err, times(2)).println(errCaptor.capture());
         verifySettingsSetup(keyInfo);
@@ -123,8 +126,8 @@ public class SetupTest {
             InvalidKeyException, NoSuchAlgorithmException, IllegalBlockSizeException, BadPaddingException,
             InvalidAlgorithmParameterException, InvalidKeySpecException {
         when(osDao.readPassword(anyString())).thenReturn("password".toCharArray());
-        EncodedKeyInfo keyInfo = new EncodedKeyInfo("a", "b", "c");
-        when(cryptoHelper.getEncodedKeyInfo(anyString(), any(KeyPair.class))).thenReturn(keyInfo);
+        EncodedKeyInfo keyInfo = new EncodedKeyInfo("a", "b");
+        when(cryptoProvider.getEncodedKeyInfo(any(char[].class), any(KeyPair.class))).thenReturn(keyInfo);
         when(fileResolveHelper.resolveFile(anyString())).thenReturn(new File(""));
         setup.execute(Arrays.asList("x", "y"));
         verify(cryptoHelper).readKeyPairFromFiles(any(File.class), any(File.class));
@@ -149,8 +152,8 @@ public class SetupTest {
             InvalidKeySpecException {
         String exception = "exception";
         when(osDao.readPassword(anyString())).thenReturn("password".toCharArray());
-        EncodedKeyInfo keyInfo = new EncodedKeyInfo("a", "b", "c");
-        when(cryptoHelper.getEncodedKeyInfo(anyString(), any(KeyPair.class))).thenReturn(keyInfo);
+        EncodedKeyInfo keyInfo = new EncodedKeyInfo("a", "b");
+        when(cryptoProvider.getEncodedKeyInfo(any(char[].class), any(KeyPair.class))).thenReturn(keyInfo);
         doThrow(new IOException(exception)).when(settings).setValue(any(Settings.Name.class), anyString());
         setup.execute(Arrays.asList("x", "y"));
         verify(err).println(errCaptor.capture());
@@ -164,7 +167,6 @@ public class SetupTest {
         verify(settings).setValue(eq(Settings.Name.RSAKEYSIZE), eq(Integer.toString(AppProperties.PREFERRED_RSA_KEY_SIZE)));
         verify(settings).setValue(eq(Settings.Name.PRIVATEKEY), eq(keyInfo.getPrivateKey()));
         verify(settings).setValue(eq(Settings.Name.PUBLICKEY), eq(keyInfo.getPublicKey()));
-        verify(settings).setValue(eq(Settings.Name.PASSCHECK), eq(keyInfo.getCipherText()));
     }
 
 }

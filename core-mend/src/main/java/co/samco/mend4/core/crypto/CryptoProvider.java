@@ -52,16 +52,15 @@ public interface CryptoProvider {
     KeyPair getKeyPairFromBytes(byte[] privateKey, byte[] publicKey) throws NoSuchAlgorithmException,
             InvalidKeySpecException;
 
-    ///TODO we can and should do away with passcheck all together by generating and encrypting one on the fly
-    boolean checkPassword(char[] password, String passCheck, String encryptedPassCheck)
-            throws NoSuchAlgorithmException, InvalidKeySpecException, NoSuchPaddingException, InvalidAlgorithmParameterException,
-            InvalidKeyException, BadPaddingException, IllegalBlockSizeException;
+    boolean checkPassword(char[] password, String encodedPrivateKey, RSAPublicKey publicKey)
+            throws NoSuchPaddingException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException,
+            NoSuchAlgorithmException;
 
     byte[] decryptEncodedKey(char[] password, String encodedKey) throws InvalidKeySpecException,
             InvalidAlgorithmParameterException, NoSuchAlgorithmException, InvalidKeyException, NoSuchPaddingException,
             BadPaddingException, IllegalBlockSizeException;
 
-    EncodedKeyInfo getEncodedKeyInfo(char[] password, String passCheck, KeyPair keyPair)
+    EncodedKeyInfo getEncodedKeyInfo(char[] password, KeyPair keyPair)
             throws NoSuchAlgorithmException, InvalidKeySpecException, NoSuchPaddingException,
             InvalidAlgorithmParameterException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException;
 }

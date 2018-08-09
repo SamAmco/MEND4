@@ -32,6 +32,7 @@ public class KeyHelper {
 
     public RSAPrivateKey getPrivateKey() throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
         Path privateKeyPath = Paths.get(fileResolveHelper.getPrivateKeyPath());
+        //TODO we should probably wrap the IOException here to provide a more useful message if mend is locked
         byte[] privateKeyBytes = osDao.readAllFileBytes(privateKeyPath);
         return cryptoProvider.getPrivateKeyFromBytes(privateKeyBytes);
     }

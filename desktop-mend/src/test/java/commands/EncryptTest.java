@@ -112,9 +112,10 @@ public class EncryptTest {
             InvalidKeyException, InvalidAlgorithmParameterException, IllegalBlockSizeException, BadPaddingException,
             CorruptSettingsException, InvalidKeySpecException {
         String fileName = "hi";
+        when(fileResolveHelper.resolveFile(eq(fileName))).thenReturn(new File(fileName));
         encrypt.execute(Arrays.asList(fileName));
         ArgumentCaptor<File> outCaptor = ArgumentCaptor.forClass(File.class);
-        verify(cryptoHelper).encryptFile(outCaptor.capture(), null);
+        verify(cryptoHelper).encryptFile(outCaptor.capture(), (String)isNull());
         Assert.assertTrue(outCaptor.getValue().getName().equals(fileName));
     }
 
@@ -124,6 +125,7 @@ public class EncryptTest {
             CorruptSettingsException, InvalidKeySpecException {
         String fileName1 = "hi1";
         String fileName2 = "hi2";
+        when(fileResolveHelper.resolveFile(eq(fileName1))).thenReturn(new File(fileName1));
         encrypt.execute(Arrays.asList(fileName1, fileName2));
         ArgumentCaptor<File> outCaptor = ArgumentCaptor.forClass(File.class);
         verify(cryptoHelper).encryptFile(outCaptor.capture(), eq(fileName2));

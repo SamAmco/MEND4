@@ -3,6 +3,8 @@ package co.samco.mend4.desktop.commands;
 import co.samco.mend4.core.AppProperties;
 import co.samco.mend4.core.OSDao;
 import co.samco.mend4.core.Settings;
+import co.samco.mend4.core.bean.EncodedKeyInfo;
+import co.samco.mend4.core.crypto.CryptoProvider;
 import co.samco.mend4.desktop.core.I18N;
 import co.samco.mend4.desktop.helper.CryptoHelper;
 import co.samco.mend4.desktop.helper.FileResolveHelper;
@@ -34,10 +36,11 @@ public class Setup extends Command {
     private final I18N strings;
     private final OSDao osDao;
     private final CryptoHelper cryptoHelper;
+    private final CryptoProvider cryptoProvider;
     private final FileResolveHelper fileResolveHelper;
     private final Settings settings;
 
-    private String password;
+    private char[] password;
 
     private List<Function<List<String>, List<String>>> behaviourChain = Arrays.asList(
             a -> checkAlreadySetup(a),
@@ -51,11 +54,12 @@ public class Setup extends Command {
 
     @Inject
     public Setup(PrintStreamProvider log, I18N strings, OSDao osDao, CryptoHelper cryptoHelper,
-                 FileResolveHelper fileResolveHelper, Settings settings) {
+                 CryptoProvider cryptoProvider, FileResolveHelper fileResolveHelper, Settings settings) {
         this.log = log;
         this.strings = strings;
         this.osDao = osDao;
         this.cryptoHelper = cryptoHelper;
+        this.cryptoProvider = cryptoProvider;
         this.fileResolveHelper = fileResolveHelper;
         this.settings = settings;
     }
@@ -82,11 +86,9 @@ public class Setup extends Command {
     private List<String> readPassword(List<String> args) {
         while (password == null) {
             char[] passArr1 = osDao.readPassword(strings.get("SetupMend.enterPassword"));
-            String pass1 = new String(passArr1);
             char[] passArr2 = osDao.readPassword(strings.get("SetupMend.reEnterPassword"));
-            String pass2 = new String(passArr2);
-            if (pass1.equals(pass2)) {
-                password = pass1;
+            if (Arrays.equals(passArr1, passArr2)) {
+                password = passArr1;
             } else {
                 log.err().println(strings.get("SetupMend.passwordMismatch"));
             }
@@ -108,9 +110,8 @@ public class Setup extends Command {
                 setKeysGenerated(password);
             }
         } catch (InvalidKeyException | InvalidAlgorithmParameterException | NoSuchAlgorithmException
-                | TransformerException | InvalidKeySpecException
-                | IllegalBlockSizeException | BadPaddingException
-                | NoSuchPaddingException | IOException e) {
+                | InvalidKeySpecException | IllegalBlockSizeException | BadPaddingException | NoSuchPaddingException
+                | IOException e) {
             log.err().println(e.getMessage());
             return null;
         }
@@ -140,33 +141,27 @@ public class Setup extends Command {
         executeBehaviourChain(behaviourChain, args);
     }
 
-    private void setKeysFromInputFile(String password, String privateKeyFilePath, String publicKeyFilePath) throws
+    private void setKeysFromInputFile(char[] password, String privateKeyFilePath, String publicKeyFilePath) throws
             NoSuchAlgorithmException, IOException, InvalidKeySpecException, NoSuchPaddingException,
-            InvalidAlgorithmParameterException, TransformerException, IllegalBlockSizeException, BadPaddingException,
+            InvalidAlgorithmParameterException, IllegalBlockSizeException, BadPaddingException,
             InvalidKeyException {
         File privateKeyFile = fileResolveHelper.resolveFile(privateKeyFilePath);
         File publicKeyFile = fileResolveHelper.resolveFile(publicKeyFilePath);
         setKeys(password, cryptoHelper.readKeyPairFromFiles(privateKeyFile, publicKeyFile));
     }
 
-    private void setKeysGenerated(String password) throws NoSuchAlgorithmException, TransformerException,
+    private void setKeysGenerated(char[] password) throws NoSuchAlgorithmException,
             InvalidKeyException, InvalidAlgorithmParameterException, NoSuchPaddingException, BadPaddingException,
             IOException, InvalidKeySpecException, IllegalBlockSizeException {
-        //TODO ONLY COMMENTED TO COMPILE
-        //setKeys(password, cryptoHelper.generateKeyPair());
+        setKeys(password, cryptoProvider.generateKeyPair());
     }
 
-    private void setKeys(String password, KeyPair keyPair) throws NoSuchPaddingException,
+    private void setKeys(char[] password, KeyPair keyPair) throws NoSuchPaddingException,
             IOException, InvalidKeyException, NoSuchAlgorithmException, IllegalBlockSizeException,
-            BadPaddingException, InvalidAlgorithmParameterException, InvalidKeySpecException, TransformerException {
-        //TODO ONLY COMMENTED TO COMPILE
-        //CryptoHelper.EncodedKeyInfo keyInfo = cryptoHelper.getEncodedKeyInfo(password, keyPair);
-        //TODO ONLY COMMENTED TO COMPILE
-        //settings.setValue(Settings.Name.PRIVATEKEY, keyInfo.getPrivateKey());
-        //TODO ONLY COMMENTED TO COMPILE
-        //settings.setValue(Settings.Name.PUBLICKEY, keyInfo.getPublicKey());
-        //TODO ONLY COMMENTED TO COMPILE
-        //settings.setValue(Settings.Name.PASSCHECK, keyInfo.getCipherText());
+            BadPaddingException, InvalidAlgorithmParameterException, InvalidKeySpecException {
+        EncodedKeyInfo keyInfo = cryptoProvider.getEncodedKeyInfo(password, keyPair);
+        settings.setValue(Settings.Name.PRIVATEKEY, keyInfo.getPrivateKey());
+        settings.setValue(Settings.Name.PUBLICKEY, keyInfo.getPublicKey());
     }
 
     @Override
