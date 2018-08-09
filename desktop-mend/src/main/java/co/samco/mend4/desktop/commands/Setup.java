@@ -26,7 +26,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
 
-//TODO ensure that current log is set automatically when setup is created
 public class Setup extends Command {
     public static final String COMMAND_NAME = "setup";
     public static final String FORCE_FLAG = "-f";
@@ -121,6 +120,7 @@ public class Setup extends Command {
         try {
             setIfNull(Settings.Name.PREFERREDAES, AppProperties.PREFERRED_AES_ALG);
             setIfNull(Settings.Name.PREFERREDRSA, AppProperties.PREFERRED_RSA_ALG);
+            setIfNull(Settings.Name.CURRENTLOG, AppProperties.DEFAULT_LOG_FILE_NAME);
             setIfNull(Settings.Name.AESKEYSIZE, Integer.toString(AppProperties.PREFERRED_AES_KEY_SIZE));
             setIfNull(Settings.Name.RSAKEYSIZE, Integer.toString(AppProperties.PREFERRED_RSA_KEY_SIZE));
         } catch (IOException  e) {
