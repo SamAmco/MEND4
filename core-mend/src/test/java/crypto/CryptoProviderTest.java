@@ -1,6 +1,7 @@
 package crypto;
 
 import co.samco.mend4.core.AppProperties;
+import co.samco.mend4.core.bean.EncodedKeyInfo;
 import co.samco.mend4.core.bean.LogDataBlocksAndText;
 import co.samco.mend4.core.crypto.CryptoProvider;
 import co.samco.mend4.core.exception.MalformedLogFileException;
@@ -104,6 +105,15 @@ public abstract class CryptoProviderTest {
         }
     }
 
+    @Test
+    public void getEncodedKeyInfoCorrectSizeTest() throws NoSuchPaddingException, InvalidKeyException,
+            NoSuchAlgorithmException, IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException,
+            InvalidKeySpecException {
+        char[] pass = "hi".toCharArray();
+        EncodedKeyInfo keyInfo = cryptoProvider.getEncodedKeyInfo(pass, rsaKeyPair);
+        Assert.assertEquals(AppProperties.PREFERRED_RSA_KEY_SIZE, keyInfo.getKeySize());
+    }
+
     private void assertNextLog(InputStream inputStream, String expectedPlainText, byte[] expectedBytes)
             throws IOException, InvalidAlgorithmParameterException, MalformedLogFileException, NoSuchAlgorithmException,
             IllegalBlockSizeException, BadPaddingException, NoSuchPaddingException, InvalidKeyException {
@@ -130,27 +140,4 @@ public abstract class CryptoProviderTest {
         }
         return cipherBytes;
     }
-
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

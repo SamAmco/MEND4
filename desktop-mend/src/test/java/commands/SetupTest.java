@@ -112,7 +112,7 @@ public class SetupTest {
                 }
             }
         });
-        EncodedKeyInfo keyInfo = new EncodedKeyInfo("a", "b");
+        EncodedKeyInfo keyInfo = new EncodedKeyInfo("a", "b", 0);
         when(cryptoProvider.getEncodedKeyInfo(any(char[].class), any(KeyPair.class))).thenReturn(keyInfo);
         setup.execute(Collections.emptyList());
         verify(err, times(2)).println(errCaptor.capture());
@@ -126,7 +126,7 @@ public class SetupTest {
             InvalidKeyException, NoSuchAlgorithmException, IllegalBlockSizeException, BadPaddingException,
             InvalidAlgorithmParameterException, InvalidKeySpecException {
         when(osDao.readPassword(anyString())).thenReturn("password".toCharArray());
-        EncodedKeyInfo keyInfo = new EncodedKeyInfo("a", "b");
+        EncodedKeyInfo keyInfo = new EncodedKeyInfo("a", "b", 0);
         when(cryptoProvider.getEncodedKeyInfo(any(char[].class), any(KeyPair.class))).thenReturn(keyInfo);
         when(fileResolveHelper.resolveFile(anyString())).thenReturn(new File(""));
         setup.execute(Arrays.asList("x", "y"));
@@ -152,7 +152,7 @@ public class SetupTest {
             InvalidKeySpecException {
         String exception = "exception";
         when(osDao.readPassword(anyString())).thenReturn("password".toCharArray());
-        EncodedKeyInfo keyInfo = new EncodedKeyInfo("a", "b");
+        EncodedKeyInfo keyInfo = new EncodedKeyInfo("a", "b", 0);
         when(cryptoProvider.getEncodedKeyInfo(any(char[].class), any(KeyPair.class))).thenReturn(keyInfo);
         doThrow(new IOException(exception)).when(settings).setValue(any(Settings.Name.class), anyString());
         setup.execute(Arrays.asList("x", "y"));

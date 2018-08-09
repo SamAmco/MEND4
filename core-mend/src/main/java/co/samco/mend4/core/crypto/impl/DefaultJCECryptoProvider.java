@@ -273,7 +273,8 @@ public class DefaultJCECryptoProvider implements CryptoProvider {
         Cipher aesCipher = getAesCipherFromPassword(password, Cipher.ENCRYPT_MODE);
         byte[] encryptedPrivateKey = aesCipher.doFinal(keyPair.getPrivate().getEncoded());
         return new EncodedKeyInfo(encoder.encodeBase64URLSafeString(encryptedPrivateKey),
-                encoder.encodeBase64URLSafeString(keyPair.getPublic().getEncoded()));
+                encoder.encodeBase64URLSafeString(keyPair.getPublic().getEncoded()),
+                ((RSAPublicKey)keyPair.getPublic()).getModulus().bitLength());
     }
 
     @Override

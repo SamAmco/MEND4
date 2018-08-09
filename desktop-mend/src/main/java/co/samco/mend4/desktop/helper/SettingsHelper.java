@@ -22,12 +22,9 @@ public class SettingsHelper {
     }
 
     public boolean settingExists(String name) {
-        for (Settings.Name n : Settings.Name.values()) {
-            if (n.toString().equals(name)) {
-                return true;
-            }
-        }
-        return false;
+        return Arrays.stream(Settings.Name.values())
+                .map(Settings.Name::toString)
+                .anyMatch(n -> n.equals(name));
     }
 
     public String getSettingDescriptions() {

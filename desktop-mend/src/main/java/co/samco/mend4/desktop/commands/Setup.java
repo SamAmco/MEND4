@@ -26,7 +26,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
 
-//TODO allow people to call setup with different flags to modify things like key sizes etc
 //TODO ensure that current log is set automatically when setup is created
 public class Setup extends Command {
     public static final String COMMAND_NAME = "setup";
@@ -162,6 +161,7 @@ public class Setup extends Command {
         EncodedKeyInfo keyInfo = cryptoProvider.getEncodedKeyInfo(password, keyPair);
         settings.setValue(Settings.Name.PRIVATEKEY, keyInfo.getPrivateKey());
         settings.setValue(Settings.Name.PUBLICKEY, keyInfo.getPublicKey());
+        settings.setValue(Settings.Name.RSAKEYSIZE, String.valueOf(keyInfo.getKeySize()));
     }
 
     @Override
