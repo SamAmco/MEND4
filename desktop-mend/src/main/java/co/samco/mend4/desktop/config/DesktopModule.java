@@ -32,8 +32,11 @@ public class DesktopModule {
             return new DefaultJCECryptoProvider(AppProperties.STANDARD_IV,
                     Integer.parseInt(settings.getValue(Settings.Name.AESKEYSIZE)),
                     Integer.parseInt(settings.getValue(Settings.Name.RSAKEYSIZE)),
-                    settings.getValue(Settings.Name.PREFERREDAES), settings.getValue(Settings.Name.PREFERREDRSA),
-                    AppProperties.PASSCHECK_SALT, AppProperties.AES_KEY_GEN_ITERATIONS, encoder);
+                    settings.getValue(Settings.Name.PREFERREDAES),
+                    settings.getValue(Settings.Name.PREFERREDRSA),
+                    AppProperties.PASSCHECK_SALT,
+                    AppProperties.AES_KEY_GEN_ITERATIONS,
+                    encoder);
         } catch (IOException | CorruptSettingsException e) {
             log.err().println(e.getMessage());
             //TODO
