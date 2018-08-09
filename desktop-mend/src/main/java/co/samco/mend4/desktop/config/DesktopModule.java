@@ -1,6 +1,7 @@
 package co.samco.mend4.desktop.config;
 
 import co.samco.mend4.core.AppProperties;
+import co.samco.mend4.core.IBase64EncodingProvider;
 import co.samco.mend4.core.OSDao;
 import co.samco.mend4.core.Settings;
 import co.samco.mend4.core.crypto.CryptoProvider;
@@ -25,19 +26,25 @@ import java.util.Optional;
 @Module
 public class DesktopModule {
 
-    @Singleton @Provides CryptoProvider provideCryptoProvider(PrintStreamProvider log, Settings settings) {
+    @Singleton @Provides CryptoProvider provideCryptoProvider(PrintStreamProvider log, Settings settings,
+                                                              IBase64EncodingProvider encoder) {
         try {
             return new DefaultJCECryptoProvider(AppProperties.STANDARD_IV,
                     Integer.parseInt(settings.getValue(Settings.Name.AESKEYSIZE)),
                     Integer.parseInt(settings.getValue(Settings.Name.RSAKEYSIZE)),
                     settings.getValue(Settings.Name.PREFERREDAES), settings.getValue(Settings.Name.PREFERREDRSA),
-                    AppProperties.PASSCHECK_SALT, AppProperties.AES_KEY_GEN_ITERATIONS, new ApacheCommonsEncoder());
+                    AppProperties.PASSCHECK_SALT, AppProperties.AES_KEY_GEN_ITERATIONS, encoder);
         } catch (IOException | CorruptSettingsException e) {
             log.err().println(e.getMessage());
             //TODO
             throw new RuntimeException("TODO");
         }
     }
+
+    @Singleton @Provides IBase64EncodingProvider provideIBase64EncodingProvider() {
+        return new ApacheCommonsEncoder();
+    }
+
 
     @Singleton @Provides I18N provideI18N() {
         return new I18N("en", "UK");
