@@ -1,0 +1,3 @@
+#!/bin/sh
+
+java -Duser.home=. -jar ../build/libs/MEND4.jar ${1+"$@"}
