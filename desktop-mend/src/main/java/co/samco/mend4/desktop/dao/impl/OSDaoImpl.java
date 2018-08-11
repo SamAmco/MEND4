@@ -1,26 +1,27 @@
 package co.samco.mend4.desktop.dao.impl;
 
 import co.samco.mend4.core.OSDao;
+import co.samco.mend4.desktop.core.I18N;
 import org.apache.commons.io.FilenameUtils;
 
+import javax.inject.Inject;
 import java.awt.*;
 import java.io.*;
 import java.nio.file.CopyOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-//TODO clean this up, take strings out etc
 public class OSDaoImpl implements OSDao {
-    private String userHomeCached;
+    private final I18N strings;
 
-    public OSDaoImpl() {}
+    @Inject
+    public OSDaoImpl(I18N strings) {
+        this.strings = strings;
+    }
 
     @Override
     public String getUserHome() {
-        if (userHomeCached == null) {
-            userHomeCached = System.getProperty("user.home");
-        }
-        return userHomeCached;
+        return System.getProperty("user.home");
     }
 
     @Override
@@ -128,7 +129,7 @@ public class OSDaoImpl implements OSDao {
 
     private void assertDirectoryExists(File file) throws FileNotFoundException {
         if (!file.exists() || !file.isDirectory() || file.listFiles() == null) {
-            throw new FileNotFoundException("Could not find the directory: " + file.getAbsolutePath());
+            throw new FileNotFoundException(strings.getf("OSDaoImpl.dirNotFound", file.getAbsolutePath()));
         }
     }
 

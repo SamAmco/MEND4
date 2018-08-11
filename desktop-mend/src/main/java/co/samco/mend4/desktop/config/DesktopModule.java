@@ -69,8 +69,8 @@ public class DesktopModule {
         return new SystemPrintStreamProviderImpl();
     }
 
-    @Singleton @Provides OSDao provideOSDao() {
-        return new OSDaoImpl();
+    @Singleton @Provides OSDao provideOSDao(I18N strings) {
+        return new OSDaoImpl(strings);
     }
 
     @Singleton @Provides Settings provideSettings(FileResolveHelper fileResolveHelper, OSDao osDao, I18N strings) {
