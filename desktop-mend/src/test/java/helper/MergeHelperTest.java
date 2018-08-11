@@ -1,8 +1,10 @@
 package helper;
 
 import co.samco.mend4.core.AppProperties;
+import co.samco.mend4.core.Settings;
 import co.samco.mend4.core.bean.LogDataBlocks;
 import co.samco.mend4.core.bean.LogDataBlocksAndText;
+import co.samco.mend4.core.exception.CorruptSettingsException;
 import co.samco.mend4.core.util.LogUtils;
 import co.samco.mend4.desktop.helper.MergeHelper;
 import commands.TestBase;
@@ -15,28 +17,14 @@ import org.mockito.invocation.InvocationOnMock;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.security.NoSuchAlgorithmException;
-import java.security.spec.InvalidKeySpecException;
+import java.nio.file.StandardCopyOption;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
 import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 public class MergeHelperTest extends TestBase {
-    //TODO a merge with one empty log
-    //TODO a merge with other empty log
-    //TODO a merge with both empty logs
-    //TODO a merge with duplicate logs in one file
-    //TODO a merge with duplicate logs across files
-    //TODO merge to first
-    //TODO merge to second
-    //TODO one or both files wont open
-    //TODO one log all appended
-    //TODO both logs all appended
-
-
     private MergeHelper mergeHelper;
     private File first;
     private File second;
@@ -130,11 +118,11 @@ public class MergeHelperTest extends TestBase {
 
     @Test
     public void testMerge() throws IOException {
+        setupInputAndOutput();
         String a = getLogFromString("s1");
         String b = getLogFromString("s2");
         String c = getLogFromString("s3");
         String d = getLogFromString("s4");
-        setupInputAndOutput();
         writeToLog(firstWriter, a);
         writeToLog(secondWriter, b);
         writeToLog(firstWriter, c);
@@ -143,53 +131,122 @@ public class MergeHelperTest extends TestBase {
         String output = getMergedOutput();
         Assert.assertEquals(a + b + c + d, output);
     }
+
+    @Test
+    public void testMergeWithFirstEmpty() throws IOException {
+        setupInputAndOutput();
+        String a = getLogFromString("s1");
+        String b = getLogFromString("s2");
+        writeToLog(firstWriter, a);
+        writeToLog(firstWriter, b);
+        mergeHelper.mergeLogFilesToNew(files, output);
+        String output = getMergedOutput();
+        Assert.assertEquals(a + b, output);
+    }
+
+    @Test
+    public void testMergeWithSecondLogEmpty() throws IOException {
+        setupInputAndOutput();
+        String a = getLogFromString("s1");
+        String b = getLogFromString("s2");
+        writeToLog(secondWriter, a);
+        writeToLog(secondWriter, b);
+        mergeHelper.mergeLogFilesToNew(files, output);
+        String output = getMergedOutput();
+        Assert.assertEquals(a + b, output);
+    }
+
+    @Test
+    public void testBothLogsEmpty() throws IOException {
+        setupInputAndOutput();
+        mergeHelper.mergeLogFilesToNew(files, output);
+        String output = getMergedOutput();
+        Assert.assertEquals("", output);
+    }
+
+    @Test
+    public void testDupsInOneFile() throws IOException {
+        setupInputAndOutput();
+        String a = getLogFromString("s1");
+        String b = getLogFromString("s2");
+        String c = a;
+        String d = getLogFromString("s4");
+        writeToLog(firstWriter, a);
+        writeToLog(secondWriter, b);
+        writeToLog(firstWriter, c);
+        writeToLog(secondWriter, d);
+        mergeHelper.mergeLogFilesToNew(files, output);
+        String output = getMergedOutput();
+        Assert.assertEquals(a + b + d, output);
+    }
+
+    @Test
+    public void testDupsAcrossFiles() throws IOException {
+        setupInputAndOutput();
+        String a = getLogFromString("s1");
+        String b = a;
+        String c = getLogFromString("s3");
+        String d = getLogFromString("s4");
+        writeToLog(firstWriter, a);
+        writeToLog(secondWriter, b);
+        writeToLog(firstWriter, c);
+        writeToLog(secondWriter, d);
+        mergeHelper.mergeLogFilesToNew(files, output);
+        String output = getMergedOutput();
+        Assert.assertEquals(a + c + d, output);
+    }
+
+    @Test
+    public void testMergeToFirst() throws IOException, CorruptSettingsException {
+        setupInputAndOutput();
+        testMoveToFirstOrSecond(true, first);
+    }
+
+    @Test
+    public void testMergeToSecond() throws IOException, CorruptSettingsException {
+        setupInputAndOutput();
+        testMoveToFirstOrSecond(false, second);
+    }
+
+    private void testMoveToFirstOrSecond(boolean isFirst, File firstOrSecond) throws IOException, CorruptSettingsException {
+        String logdir = "logdir";
+        File tempFile = new File("temp");
+        when(settings.getValue(Settings.Name.LOGDIR)).thenReturn(logdir);
+        when(fileResolveHelper.getTempFile(logdir)).thenReturn(tempFile);
+        mergeHelper.mergeToFirstOrSecond(files, isFirst);
+        verify(fileResolveHelper).getTempFile(logdir);
+        verify(osDao).moveFile(tempFile.toPath(), firstOrSecond.toPath(), StandardCopyOption.REPLACE_EXISTING);
+    }
+
+    @Test
+    public void oneLogAllAppended() throws IOException {
+        setupInputAndOutput();
+        String a = "s1";
+        String b = getLogFromString("s2");
+        String c = "s3";
+        String d = getLogFromString("s4");
+        writeToLog(firstWriter, a);
+        writeToLog(secondWriter, b);
+        writeToLog(firstWriter, c);
+        writeToLog(secondWriter, d);
+        mergeHelper.mergeLogFilesToNew(files, output);
+        String output = getMergedOutput();
+        Assert.assertEquals(a + c + b + d, output);
+    }
+
+    @Test
+    public void bothLogsAllAppended() throws IOException {
+        setupInputAndOutput();
+        String a = "s1";
+        String b = "s2";
+        String c = "s3";
+        String d = "s4";
+        writeToLog(firstWriter, a);
+        writeToLog(secondWriter, b);
+        writeToLog(firstWriter, c);
+        writeToLog(secondWriter, d);
+        mergeHelper.mergeLogFilesToNew(files, output);
+        String output = getMergedOutput();
+        Assert.assertEquals(a + c + b + d, output);
+    }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

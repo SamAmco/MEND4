@@ -139,7 +139,10 @@ public class MergeHelper {
 
         @Override
         public boolean equals(Object other) {
-            return dateTime.equals(((LogEntry)other).dateTime);
+            LogEntry otherL = (LogEntry)other;
+            if (dateTime == null || otherL.dateTime == null) {
+                return false;
+            } else return dateTime.equals(otherL.dateTime);
         }
 
         public boolean before(LogEntry other) {
