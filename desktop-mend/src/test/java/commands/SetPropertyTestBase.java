@@ -13,7 +13,7 @@ import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.*;
 
-public class SetPropertyTest extends CommandTest {
+public class SetPropertyTestBase extends TestBase {
     private SetProperty setter;
 
     @Before

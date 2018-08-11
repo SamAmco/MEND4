@@ -90,7 +90,7 @@ public class MergeHelper {
             } else {
                 writeIfNotDuplicate(secondLogEntry, lastLogEntry, outputStream);
                 lastLogEntry = secondLogEntry;
-                secondLogEntry = parseNextLog(firstLog);
+                secondLogEntry = parseNextLog(secondLog);
             }
         }
     }
@@ -145,8 +145,6 @@ public class MergeHelper {
         public boolean before(LogEntry other) {
             if(other == null) {
                 return true;
-            } else if (other.dateTime == null) {
-                return false;
             } else if (dateTime == null) {
                 return true;
             } else return dateTime.before(other.dateTime);

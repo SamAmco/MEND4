@@ -26,7 +26,7 @@ import java.util.Collections;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.*;
 
-public class EncryptFromStdInTest extends CommandTest {
+public class EncryptFromStdInTestBase extends TestBase {
     private EncryptFromStdIn encrypt;
 
     @Before

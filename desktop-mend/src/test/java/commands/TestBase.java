@@ -13,7 +13,7 @@ import java.io.PrintStream;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class CommandTest {
+public class TestBase {
     protected CryptoHelper cryptoHelper;
     protected CryptoProvider cryptoProvider;
     protected FileResolveHelper fileResolveHelper;

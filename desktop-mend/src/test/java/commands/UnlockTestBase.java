@@ -21,7 +21,7 @@ import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.*;
 
-public class UnlockTest extends CommandTest {
+public class UnlockTestBase extends TestBase {
     private Unlock unlock;
 
     private ArgumentCaptor<String> errCaptor;

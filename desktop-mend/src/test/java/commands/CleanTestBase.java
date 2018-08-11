@@ -11,7 +11,7 @@ import java.util.Collections;
 
 import static org.mockito.Mockito.*;
 
-public class CleanTest extends CommandTest {
+public class CleanTestBase extends TestBase {
     private Clean clean;
 
     @Before

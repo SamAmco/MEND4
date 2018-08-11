@@ -9,7 +9,7 @@ import java.util.Collections;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class VersionTest extends CommandTest {
+public class VersionTestBase extends TestBase {
 
     private Version version;
 

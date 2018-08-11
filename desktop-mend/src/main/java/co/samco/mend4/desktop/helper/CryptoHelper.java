@@ -6,6 +6,7 @@ import co.samco.mend4.core.Settings;
 import co.samco.mend4.core.crypto.CryptoProvider;
 import co.samco.mend4.core.exception.CorruptSettingsException;
 import co.samco.mend4.core.exception.MalformedLogFileException;
+import co.samco.mend4.core.util.LogUtils;
 import co.samco.mend4.desktop.core.I18N;
 import co.samco.mend4.desktop.output.PrintStreamProvider;
 import org.apache.commons.io.FileUtils;
@@ -17,9 +18,7 @@ import java.io.*;
 import java.security.*;
 import java.security.spec.InvalidKeySpecException;
 import java.text.SimpleDateFormat;
-import java.util.Calendar;
 import java.util.Date;
-import java.util.Locale;
 
 public class CryptoHelper {
 
@@ -45,16 +44,6 @@ public class CryptoHelper {
         this.versionHelper = versionHelper;
     }
 
-    private String addHeaderToLogText(String logText, String platformHeader) {
-        StringBuilder sb = new StringBuilder();
-        Calendar cal = Calendar.getInstance();
-        SimpleDateFormat sdf = new SimpleDateFormat(AppProperties.LOG_DATE_FORMAT, Locale.ENGLISH);
-        sb.append(sdf.format(cal.getTime()));
-        sb.append(String.format(AppProperties.LOG_HEADER, versionHelper.getVersion(), platformHeader));
-        sb.append(strings.getNewLine());
-        sb.append(logText);
-        return sb.toString();
-    }
 
     public void encryptFile(File file, String name) throws IOException, CorruptSettingsException,
             InvalidKeySpecException, NoSuchAlgorithmException, IllegalBlockSizeException, InvalidKeyException,
@@ -86,7 +75,8 @@ public class CryptoHelper {
         osDao.createNewFile(currentLogFile);
         String logText = new String(text);
         if (!dropHeader) {
-            logText = addHeaderToLogText(logText, strings.get("Platform.header"));
+            logText = LogUtils.addHeaderToLogText(logText, strings.get("Platform.header"),
+                    versionHelper.getVersion(), strings.getNewLine());
         }
 
         try (OutputStream fos = osDao.getOutputStreamForFile(currentLogFile, true)) {

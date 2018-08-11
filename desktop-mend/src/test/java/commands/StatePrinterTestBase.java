@@ -20,7 +20,7 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.*;
 
-public class StatePrinterTest extends CommandTest {
+public class StatePrinterTestBase extends TestBase {
     private StatePrinter statePrinter;
 
     @Before

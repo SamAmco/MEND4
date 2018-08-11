@@ -18,7 +18,7 @@ import java.util.Collections;
 
 import static org.mockito.Mockito.*;
 
-public class LockTest extends CommandTest {
+public class LockTestBase extends TestBase {
    private Lock lock;
    private String privateKeyPath = "privpath";
    private String publicKeyPath = "pubpath";
