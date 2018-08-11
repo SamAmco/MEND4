@@ -1,15 +1,9 @@
 package commands;
 
-import co.samco.mend4.core.OSDao;
 import co.samco.mend4.core.Settings;
 import co.samco.mend4.core.exception.CorruptSettingsException;
 import co.samco.mend4.desktop.commands.Encrypt;
 import co.samco.mend4.desktop.commands.EncryptFromStdIn;
-import co.samco.mend4.desktop.core.I18N;
-import co.samco.mend4.desktop.helper.CryptoHelper;
-import co.samco.mend4.desktop.helper.FileResolveHelper;
-import co.samco.mend4.desktop.helper.InputHelper;
-import co.samco.mend4.desktop.output.PrintStreamProvider;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -21,7 +15,6 @@ import javax.crypto.NoSuchPaddingException;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
@@ -33,28 +26,19 @@ import java.util.Collections;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.*;
 
-public class EncryptFromStdInTest {
+public class EncryptFromStdInTest extends CommandTest {
     private EncryptFromStdIn encrypt;
-    private Settings settings;
-    private InputHelper inputHelper;
-    private CryptoHelper cryptoHelper;
-    private FileResolveHelper fileResolveHelper;
-    private PrintStreamProvider printStreamProvider;
-    private I18N strings;
-    private OSDao osDao;
 
     @Before
-    public void setup() throws IOException {
-        settings = mock(Settings.class);
-        osDao = mock(OSDao.class);
-        strings = new I18N("en", "UK");
-        printStreamProvider = mock(PrintStreamProvider.class);
-        cryptoHelper = mock(CryptoHelper.class);
-        fileResolveHelper = mock(FileResolveHelper.class);
-        inputHelper = mock(InputHelper.class);
-        when(settings.valueSet(Settings.Name.ENCDIR)).thenReturn(true);
-        when(settings.valueSet(Settings.Name.LOGDIR)).thenReturn(true);
-        encrypt = new EncryptFromStdIn(settings, printStreamProvider, strings, cryptoHelper, inputHelper, osDao, fileResolveHelper);
+    public void setup() {
+        super.setup();
+        try {
+            when(settings.valueSet(Settings.Name.ENCDIR)).thenReturn(true);
+            when(settings.valueSet(Settings.Name.LOGDIR)).thenReturn(true);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        encrypt = new EncryptFromStdIn(settings, log, strings, cryptoHelper, inputHelper, osDao, fileResolveHelper);
     }
 
     @Test

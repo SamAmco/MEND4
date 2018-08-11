@@ -1,46 +1,23 @@
 package commands;
 
 import co.samco.mend4.core.exception.CorruptSettingsException;
-import co.samco.mend4.core.OSDao;
 import co.samco.mend4.core.Settings;
 import co.samco.mend4.desktop.commands.Clean;
-import co.samco.mend4.desktop.core.I18N;
-import co.samco.mend4.desktop.helper.FileResolveHelper;
-import co.samco.mend4.desktop.helper.ShredHelper;
-import co.samco.mend4.desktop.output.PrintStreamProvider;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.io.PrintStream;
 import java.util.Collections;
 
 import static org.mockito.Mockito.*;
 
-public class CleanTest {
+public class CleanTest extends CommandTest {
     private Clean clean;
-    private OSDao osDao;
-    private PrintStreamProvider printStreamProvider;
-    private PrintStream err;
-    private PrintStream out;
-    private ShredHelper shredHelper;
-    private FileResolveHelper fileResolveHelper;
-    private I18N strings;
-    private Settings settings;
 
     @Before
     public void setup() {
-        strings = new I18N("en", "UK");
-        err = mock(PrintStream.class);
-        out = mock(PrintStream.class);
-        printStreamProvider = mock(PrintStreamProvider.class);
-        when(printStreamProvider.err()).thenReturn(err);
-        when(printStreamProvider.out()).thenReturn(out);
-        osDao = mock(OSDao.class);
-        shredHelper = mock(ShredHelper.class);
-        fileResolveHelper = mock(FileResolveHelper.class);
-        settings = mock(Settings.class);
-        clean = new Clean(strings, printStreamProvider, shredHelper, settings);
+        super.setup();
+        clean = new Clean(strings, log, shredHelper, settings);
     }
 
     @Test

@@ -3,38 +3,23 @@ package commands;
 import co.samco.mend4.core.Settings;
 import co.samco.mend4.desktop.commands.SetProperty;
 import co.samco.mend4.desktop.core.I18N;
-import co.samco.mend4.desktop.helper.SettingsHelper;
-import co.samco.mend4.desktop.output.PrintStreamProvider;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.io.PrintStream;
 import java.util.Arrays;
 
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.*;
 
-public class SetPropertyTest {
+public class SetPropertyTest extends CommandTest {
     private SetProperty setter;
-    private Settings settings;
-    private PrintStreamProvider log;
-    private I18N strings;
-    private PrintStream err;
-    private PrintStream out;
-    private SettingsHelper settingsHelper;
 
     @Before
     public void setup() {
-        settings = mock(Settings.class);
-        err = mock(PrintStream.class);
-        out = mock(PrintStream.class);
-        log = mock(PrintStreamProvider.class);
-        when(log.err()).thenReturn(err);
-        when(log.out()).thenReturn(out);
+        super.setup();
         strings = mock(I18N.class);
-        settingsHelper = mock(SettingsHelper.class);
         setter = new SetProperty(log, strings, settings, settingsHelper);
     }
 

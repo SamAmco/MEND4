@@ -2,13 +2,8 @@ package commands;
 
 import co.samco.mend4.core.AppProperties;
 import co.samco.mend4.core.exception.CorruptSettingsException;
-import co.samco.mend4.core.OSDao;
 import co.samco.mend4.core.Settings;
 import co.samco.mend4.desktop.commands.StatePrinter;
-import co.samco.mend4.desktop.core.I18N;
-import co.samco.mend4.desktop.helper.FileResolveHelper;
-import co.samco.mend4.desktop.helper.SettingsHelper;
-import co.samco.mend4.desktop.output.PrintStreamProvider;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -18,7 +13,6 @@ import org.mockito.stubbing.Answer;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.Collections;
 
@@ -26,29 +20,12 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.*;
 
-public class StatePrinterTest {
+public class StatePrinterTest extends CommandTest {
     private StatePrinter statePrinter;
-    private I18N strings;
-    private PrintStreamProvider log;
-    private PrintStream err;
-    private PrintStream out;
-    private OSDao osDao;
-    private FileResolveHelper fileResolveHelper;
-    private SettingsHelper settingsHelper;
-    private Settings settings;
 
     @Before
     public void setup() {
-        strings = new I18N("en", "UK");
-        err = mock(PrintStream.class);
-        out = mock(PrintStream.class);
-        log = mock(PrintStreamProvider.class);
-        when(log.err()).thenReturn(err);
-        when(log.out()).thenReturn(out);
-        osDao = mock(OSDao.class);
-        fileResolveHelper = mock(FileResolveHelper.class);
-        settingsHelper = mock(SettingsHelper.class);
-        settings = mock(Settings.class);
+        super.setup();
         statePrinter = new StatePrinter(strings, log, osDao, settingsHelper, settings);
     }
 

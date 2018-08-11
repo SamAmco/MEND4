@@ -1,15 +1,7 @@
 package commands;
 
-import co.samco.mend4.core.crypto.CryptoProvider;
 import co.samco.mend4.core.exception.CorruptSettingsException;
-import co.samco.mend4.core.OSDao;
-import co.samco.mend4.core.Settings;
 import co.samco.mend4.desktop.commands.Unlock;
-import co.samco.mend4.desktop.core.I18N;
-import co.samco.mend4.desktop.helper.FileResolveHelper;
-import co.samco.mend4.desktop.helper.KeyHelper;
-import co.samco.mend4.desktop.helper.ShredHelper;
-import co.samco.mend4.desktop.output.PrintStreamProvider;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -18,7 +10,6 @@ import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.interfaces.RSAPublicKey;
@@ -30,18 +21,8 @@ import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.*;
 
-public class UnlockTest {
+public class UnlockTest extends CommandTest {
     private Unlock unlock;
-    private I18N strings;
-    private OSDao osDao;
-    private Settings settings;
-    private PrintStream out;
-    private PrintStream err;
-    private PrintStreamProvider log;
-    private CryptoProvider cryptoProvider;
-    private ShredHelper shredHelper;
-    private FileResolveHelper fileResolveHelper;
-    private KeyHelper keyHelper;
 
     private ArgumentCaptor<String> errCaptor;
 
@@ -50,19 +31,8 @@ public class UnlockTest {
 
     @Before
     public void setup() {
+        super.setup();
         errCaptor = ArgumentCaptor.forClass(String.class);
-        err = mock(PrintStream.class);
-        out = mock(PrintStream.class);
-        log = mock(PrintStreamProvider.class);
-        when(log.err()).thenReturn(err);
-        when(log.out()).thenReturn(out);
-        strings = new I18N("en", "UK");
-        settings = mock(Settings.class);
-        cryptoProvider = mock(CryptoProvider.class);
-        osDao = mock(OSDao.class);
-        shredHelper = mock(ShredHelper.class);
-        fileResolveHelper = mock(FileResolveHelper.class);
-        keyHelper = mock(KeyHelper.class);
         when(fileResolveHelper.getPrivateKeyPath()).thenReturn(privateKeyPath);
         when(fileResolveHelper.getPublicKeyPath()).thenReturn(publicKeyPath);
         unlock = new Unlock(strings, osDao, settings, log, cryptoProvider, shredHelper, fileResolveHelper, keyHelper);

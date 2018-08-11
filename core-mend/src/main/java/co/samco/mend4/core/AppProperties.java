@@ -3,7 +3,6 @@ package co.samco.mend4.core;
 import javax.crypto.spec.IvParameterSpec;
 
 public class AppProperties {
-    public static final String CORE_VERSION_NUMBER = "4.0.8";
     public static final String CONFIG_DIR_NAME = ".MEND4";
     public static final String SETTINGS_FILE_NAME = "Settings.xml";
     public static final String PRIVATE_KEY_FILE_NAME = "prKey";

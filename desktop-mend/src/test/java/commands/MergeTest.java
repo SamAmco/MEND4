@@ -1,12 +1,7 @@
 package commands;
 
 import co.samco.mend4.core.exception.CorruptSettingsException;
-import co.samco.mend4.core.OSDao;
 import co.samco.mend4.desktop.commands.Merge;
-import co.samco.mend4.desktop.core.I18N;
-import co.samco.mend4.desktop.helper.FileResolveHelper;
-import co.samco.mend4.desktop.helper.MergeHelper;
-import co.samco.mend4.desktop.output.PrintStreamProvider;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Assert;
 import org.junit.Before;
@@ -19,7 +14,6 @@ import org.mockito.stubbing.Answer;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -30,14 +24,7 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.class)
-public class MergeTest {
-    private MergeHelper mergeHelper;
-    private I18N strings;
-    private PrintStream err;
-    private PrintStream out;
-    private PrintStreamProvider log;
-    private OSDao osDao;
-    private FileResolveHelper fileResolveHelper;
+public class MergeTest extends CommandTest {
     private Merge merge;
 
     @Captor
@@ -45,15 +32,7 @@ public class MergeTest {
 
     @Before
     public void setup() {
-        mergeHelper = mock(MergeHelper.class);
-        osDao = mock(OSDao.class);
-        strings = new I18N("en", "UK");
-        err = mock(PrintStream.class);
-        out = mock(PrintStream.class);
-        log = mock(PrintStreamProvider.class);
-        when(log.err()).thenReturn(err);
-        when(log.out()).thenReturn(out);
-        fileResolveHelper = mock(FileResolveHelper.class);
+        super.setup();
         merge = new Merge(strings, log, fileResolveHelper, mergeHelper, osDao);
     }
 

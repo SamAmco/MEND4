@@ -2,14 +2,8 @@ package commands;
 
 import co.samco.mend4.core.AppProperties;
 import co.samco.mend4.core.exception.CorruptSettingsException;
-import co.samco.mend4.core.OSDao;
-import co.samco.mend4.core.Settings;
 import co.samco.mend4.core.exception.MalformedLogFileException;
 import co.samco.mend4.desktop.commands.Decrypt;
-import co.samco.mend4.desktop.core.I18N;
-import co.samco.mend4.desktop.helper.CryptoHelper;
-import co.samco.mend4.desktop.helper.FileResolveHelper;
-import co.samco.mend4.desktop.output.PrintStreamProvider;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -21,7 +15,6 @@ import javax.crypto.NoSuchPaddingException;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -35,29 +28,12 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.*;
 
-public class DecryptTest {
-    private PrintStreamProvider log;
-    private I18N strings;
-    private PrintStream err;
-    private PrintStream out;
-    private Settings settings;
-    private CryptoHelper cryptoHelper;
-    private OSDao osDao;
+public class DecryptTest extends CommandTest {
     private Decrypt decrypt;
-    private FileResolveHelper fileResolveHelper;
 
     @Before
     public void setup() {
-        strings = new I18N("en", "UK");
-        err = mock(PrintStream.class);
-        out = mock(PrintStream.class);
-        log = mock(PrintStreamProvider.class);
-        when(log.err()).thenReturn(err);
-        when(log.out()).thenReturn(out);
-        settings = mock(Settings.class);
-        osDao = mock(OSDao.class);
-        cryptoHelper = mock(CryptoHelper.class);
-        fileResolveHelper = mock(FileResolveHelper.class);
+        super.setup();
         decrypt = new Decrypt(log, strings, cryptoHelper, osDao, fileResolveHelper);
     }
 

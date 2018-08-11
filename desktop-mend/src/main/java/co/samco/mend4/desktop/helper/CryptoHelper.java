@@ -30,10 +30,11 @@ public class CryptoHelper {
     private final CryptoProvider cryptoProvider;
     private final KeyHelper keyHelper;
     private final OSDao osDao;
+    private final VersionHelper versionHelper;
 
     @Inject
     public CryptoHelper(I18N strings, PrintStreamProvider log, FileResolveHelper fileResolveHelper, Settings settings,
-                        CryptoProvider cryptoProvider, KeyHelper keyHelper, OSDao osDao) {
+                        CryptoProvider cryptoProvider, KeyHelper keyHelper, OSDao osDao, VersionHelper versionHelper) {
         this.strings = strings;
         this.log = log;
         this.fileResolveHelper = fileResolveHelper;
@@ -41,6 +42,7 @@ public class CryptoHelper {
         this.cryptoProvider = cryptoProvider;
         this.keyHelper = keyHelper;
         this.osDao = osDao;
+        this.versionHelper = versionHelper;
     }
 
     private String addHeaderToLogText(String logText, String platformHeader) {
@@ -48,7 +50,7 @@ public class CryptoHelper {
         Calendar cal = Calendar.getInstance();
         SimpleDateFormat sdf = new SimpleDateFormat(AppProperties.LOG_DATE_FORMAT, Locale.ENGLISH);
         sb.append(sdf.format(cal.getTime()));
-        sb.append(String.format(AppProperties.LOG_HEADER, AppProperties.CORE_VERSION_NUMBER, platformHeader));
+        sb.append(String.format(AppProperties.LOG_HEADER, versionHelper.getVersion(), platformHeader));
         sb.append(strings.getNewLine());
         sb.append(logText);
         return sb.toString();
@@ -84,7 +86,7 @@ public class CryptoHelper {
         osDao.createNewFile(currentLogFile);
         String logText = new String(text);
         if (!dropHeader) {
-            addHeaderToLogText(logText, strings.get("Platform.header"));
+            logText = addHeaderToLogText(logText, strings.get("Platform.header"));
         }
 
         try (OutputStream fos = osDao.getOutputStreamForFile(currentLogFile, true)) {

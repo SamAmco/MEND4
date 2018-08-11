@@ -3,11 +3,6 @@ package commands;
 import co.samco.mend4.core.Settings;
 import co.samco.mend4.core.exception.CorruptSettingsException;
 import co.samco.mend4.desktop.commands.Encrypt;
-import co.samco.mend4.desktop.core.I18N;
-import co.samco.mend4.desktop.helper.CryptoHelper;
-import co.samco.mend4.desktop.helper.FileResolveHelper;
-import co.samco.mend4.desktop.helper.InputHelper;
-import co.samco.mend4.desktop.output.PrintStreamProvider;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -18,7 +13,6 @@ import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import java.io.File;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -28,30 +22,13 @@ import java.util.Collections;
 
 import static org.mockito.Mockito.*;
 
-public class EncryptTest {
+public class EncryptTest extends CommandTest {
     private Encrypt encrypt;
-    private Settings settings;
-    private InputHelper inputHelper;
-    private CryptoHelper cryptoHelper;
-    private FileResolveHelper fileResolveHelper;
-    private PrintStreamProvider printStreamProvider;
-    private PrintStream err;
-    private PrintStream out;
-    private I18N strings;
 
     @Before
     public void setup() {
-        settings = mock(Settings.class);
-        strings = new I18N("en", "UK");
-        err = mock(PrintStream.class);
-        out = mock(PrintStream.class);
-        printStreamProvider = mock(PrintStreamProvider.class);
-        fileResolveHelper = mock(FileResolveHelper.class);
-        when(printStreamProvider.err()).thenReturn(err);
-        when(printStreamProvider.out()).thenReturn(out);
-        cryptoHelper = mock(CryptoHelper.class);
-        inputHelper = mock(InputHelper.class);
-        encrypt = new Encrypt(settings, printStreamProvider, strings, cryptoHelper, inputHelper, fileResolveHelper);
+        super.setup();
+        encrypt = new Encrypt(settings, log, strings, cryptoHelper, inputHelper, fileResolveHelper);
     }
 
     private void setLogAndEncDir() throws IOException {

@@ -1,6 +1,7 @@
 package co.samco.mend4.desktop.commands;
 
 import co.samco.mend4.desktop.core.I18N;
+import co.samco.mend4.desktop.helper.VersionHelper;
 import co.samco.mend4.desktop.output.PrintStreamProvider;
 
 import javax.inject.Inject;
@@ -14,18 +15,18 @@ public class Version extends Command {
 
     private final I18N strings;
     private final PrintStreamProvider log;
+    private final VersionHelper versionHelper;
 
     @Inject
-    public Version(I18N strings, PrintStreamProvider log) {
+    public Version(I18N strings, PrintStreamProvider log, VersionHelper versionHelper) {
         this.strings = strings;
         this.log = log;
+        this.versionHelper = versionHelper;
     }
 
     @Override
     public void execute(List<String> args) {
-        //TODO make sure the version number is actually correct
-        log.err().println(strings.getf("Version.desktopVersion",
-                getClass().getPackage().getImplementationVersion()));
+        log.err().println(strings.getf("Version.desktopVersion", versionHelper.getVersion()));
     }
 
     @Override

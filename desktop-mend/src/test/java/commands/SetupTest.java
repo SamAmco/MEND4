@@ -1,15 +1,9 @@
 package commands;
 
 import co.samco.mend4.core.AppProperties;
-import co.samco.mend4.core.OSDao;
 import co.samco.mend4.core.Settings;
 import co.samco.mend4.core.bean.EncodedKeyInfo;
-import co.samco.mend4.core.crypto.CryptoProvider;
 import co.samco.mend4.desktop.commands.Setup;
-import co.samco.mend4.desktop.core.I18N;
-import co.samco.mend4.desktop.helper.CryptoHelper;
-import co.samco.mend4.desktop.helper.FileResolveHelper;
-import co.samco.mend4.desktop.output.PrintStreamProvider;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -23,7 +17,6 @@ import javax.crypto.NoSuchPaddingException;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
@@ -36,18 +29,9 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.*;
 
-public class SetupTest {
+public class SetupTest extends CommandTest {
     private Setup setup;
 
-    private PrintStreamProvider log;
-    private I18N strings;
-    private OSDao osDao;
-    private CryptoHelper cryptoHelper;
-    private CryptoProvider cryptoProvider;
-    private FileResolveHelper fileResolveHelper;
-    private PrintStream err;
-    private PrintStream out;
-    private Settings settings;
     private ArgumentCaptor<String> errCaptor;
 
     private final String mendDirPath = "settingspath";
@@ -55,19 +39,8 @@ public class SetupTest {
 
     @Before
     public void setup() {
+        super.setup();
         errCaptor = ArgumentCaptor.forClass(String.class);
-        err = mock(PrintStream.class);
-        out = mock(PrintStream.class);
-        log = mock(PrintStreamProvider.class);
-        when(log.err()).thenReturn(err);
-        when(log.out()).thenReturn(out);
-        fileResolveHelper = mock(FileResolveHelper.class);
-        strings = new I18N("en", "UK");
-        settings = mock(Settings.class);
-        cryptoHelper = mock(CryptoHelper.class);
-        cryptoProvider = mock(CryptoProvider.class);
-        osDao = mock(OSDao.class);
-
         when(fileResolveHelper.getSettingsFilePath()).thenReturn(settingsFilePath);
         when(fileResolveHelper.getMendDirPath()).thenReturn(mendDirPath);
         setup = new Setup(log, strings, osDao, cryptoHelper, cryptoProvider, fileResolveHelper, settings);
