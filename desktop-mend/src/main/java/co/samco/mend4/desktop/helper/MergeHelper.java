@@ -1,25 +1,24 @@
 package co.samco.mend4.desktop.helper;
 
 import co.samco.mend4.core.bean.LogDataBlocksAndText;
+import co.samco.mend4.core.crypto.CryptoProvider;
 import co.samco.mend4.core.exception.CorruptSettingsException;
 import co.samco.mend4.core.OSDao;
 import co.samco.mend4.core.Settings;
 import co.samco.mend4.core.exception.MalformedLogFileException;
+import co.samco.mend4.desktop.output.PrintStreamProvider;
 import org.apache.commons.lang3.tuple.Pair;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.inject.Inject;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.StandardCopyOption;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import java.security.interfaces.RSAPrivateKey;
+import java.security.spec.InvalidKeySpecException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -27,15 +26,21 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 //TODO clean this up and test it
-//TODO can we remove duplicate logs so we can safely merge the same two logs repeatedly
 public class MergeHelper {
+    private final PrintStreamProvider log;
     private final FileResolveHelper fileResolveHelper;
+    private final CryptoProvider cryptoProvider;
+    private final KeyHelper keyHelper;
     private final OSDao osDao;
     private final Settings settings;
 
     @Inject
-    public MergeHelper(FileResolveHelper fileResolveHelper, OSDao osDao, Settings settings) {
+    public MergeHelper(PrintStreamProvider log, FileResolveHelper fileResolveHelper, CryptoProvider cryptoProvider,
+                       KeyHelper keyHelper, OSDao osDao, Settings settings) {
+        this.log = log;
         this.fileResolveHelper = fileResolveHelper;
+        this.cryptoProvider = cryptoProvider;
+        this.keyHelper = keyHelper;
         this.osDao = osDao;
         this.settings = settings;
     }
@@ -53,91 +58,74 @@ public class MergeHelper {
                 osDao.moveFile(tempFile.toPath(), secondLog.toPath(), StandardCopyOption.REPLACE_EXISTING);
             }
         } catch (IOException | CorruptSettingsException e) {
-            System.err.println(e.getMessage());
+            log.err().println(e.getMessage());
         }
     }
 
     public void mergeLogFilesToNew(Pair<File, File> files, File outputLog) {
-        //TODO ONLY COMMENTED TO COMPILE
-        //File firstLog = files.getLeft();
-        //File secondLog = files.getRight();
-        //FileInputStream f1InputStream = null;
-        //FileInputStream f2InputStream = null;
-        //FileOutputStream fOutputStream = null;
-        //try {
-        //    f1InputStream = new FileInputStream(firstLog);
-        //    f2InputStream = new FileInputStream(secondLog);
-        //    outputLog.createNewFile();
-        //    fOutputStream = new FileOutputStream(outputLog);
-        //    mergeToOutputFile(f1InputStream, f2InputStream, fOutputStream);
-        //} catch (java.io.IOException | InvalidKeyException | InvalidAlgorithmParameterException | NoSuchAlgorithmException
-        //        | ParseException | NoSuchPaddingException |  IllegalBlockSizeException | BadPaddingException
-        //        | EncryptionUtils.MalformedLogFileException e) {
-        //    System.err.println(e.getMessage());
-        //    e.printStackTrace();
-        //} finally {
-        //    try {
-        //        if (f1InputStream != null)
-        //            f1InputStream.close();
-        //        if (f2InputStream != null)
-        //            f2InputStream.close();
-        //        if (fOutputStream != null)
-        //            fOutputStream.close();
-        //    } catch (IOException e) {
-        //        System.err.println(e.getMessage());
-        //    }
-        //}
+        try (InputStream f1InputStream = osDao.getInputStreamForFile(files.getLeft());
+            InputStream f2InputStream = osDao.getInputStreamForFile(files.getRight());
+            OutputStream fOutputStream = osDao.getOutputStreamForFile(outputLog)) {
+            osDao.createNewFile(outputLog);
+            mergeLogs(f1InputStream, f2InputStream, fOutputStream);
+        } catch (ParseException | NoSuchAlgorithmException | BadPaddingException | MalformedLogFileException
+                | InvalidKeyException | InvalidAlgorithmParameterException | NoSuchPaddingException | IOException
+                | IllegalBlockSizeException | InvalidKeySpecException e) {
+            log.err().println(e.getMessage());
+        }
     }
 
-    public void mergeToOutputFile(FileInputStream firstLog, FileInputStream secondLog, FileOutputStream outputFile)
+    private void mergeLogs(InputStream firstLog, InputStream secondLog, OutputStream outputStream)
             throws IOException, ParseException, NoSuchAlgorithmException, MalformedLogFileException,
             InvalidKeyException, InvalidAlgorithmParameterException, NoSuchPaddingException, BadPaddingException,
-            IllegalBlockSizeException {
-        //TODO ONLY COMMENTED TO COMPILE
-        //byte[] lc1Bytes = new byte[4];
-        //byte[] lc2Bytes = new byte[4];
-        //LogEntry firstLogEntry = parseNextLog(firstLog, lc1Bytes);
-        //LogEntry secondLogEntry = parseNextLog(secondLog, lc2Bytes);
-        //boolean firstLogHasNext = EncryptionUtils.logHasNext(firstLog, lc1Bytes);
-        //boolean secondLogHasNext = EncryptionUtils.logHasNext(secondLog, lc2Bytes);
-
-        //while (firstLogHasNext || secondLogHasNext) {
-        //    if (firstLogHasNext && firstLogEntry.before(secondLogEntry)) {
-        //        outputFile.write(firstLogEntry.data);
-        //        firstLogHasNext = EncryptionUtils.logHasNext(firstLog, lc1Bytes);
-        //        if (firstLogHasNext) {
-        //            firstLogEntry = parseNextLog(firstLog, lc1Bytes);
-        //        } else {
-        //            firstLogEntry = null;
-        //        }
-        //    } else if (secondLogHasNext) {
-        //        outputFile.write(secondLogEntry.data);
-        //        secondLogHasNext = EncryptionUtils.logHasNext(secondLog, lc2Bytes);
-        //        if (secondLogHasNext) {
-        //            secondLogEntry = parseNextLog(secondLog, lc2Bytes);
-        //        } else {
-        //            secondLogEntry = null;
-        //        }
-        //    }
-        //}
+            IllegalBlockSizeException, InvalidKeySpecException {
+        LogEntry firstLogEntry = parseNextLog(firstLog);
+        LogEntry secondLogEntry = parseNextLog(secondLog);
+        LogEntry lastLogEntry = null;
+        while (firstLogEntry != null || secondLogEntry != null) {
+            if (firstLogEntry != null && firstLogEntry.before(secondLogEntry)) {
+                writeIfNotDuplicate(firstLogEntry, lastLogEntry, outputStream);
+                lastLogEntry = firstLogEntry;
+                firstLogEntry = parseNextLog(firstLog);
+            } else {
+                writeIfNotDuplicate(secondLogEntry, lastLogEntry, outputStream);
+                lastLogEntry = secondLogEntry;
+                secondLogEntry = parseNextLog(firstLog);
+            }
+        }
     }
 
-    private LogEntry parseNextLog(FileInputStream inputStream, byte[] lc1Bytes)
+    private void writeIfNotDuplicate(LogEntry nextEntry, LogEntry lastEntry, OutputStream outputStream) throws IOException {
+        if (lastEntry == null || !nextEntry.equals(lastEntry)) {
+            outputStream.write(nextEntry.data);
+        }
+    }
+
+    private LogEntry parseNextLog(InputStream inputStream)
             throws IOException, InvalidKeyException, NoSuchAlgorithmException,
             InvalidAlgorithmParameterException, NoSuchPaddingException, BadPaddingException,
-            MalformedLogFileException, IllegalBlockSizeException, ParseException {
-        //TODO ONLY COMMENTED TO COMPILE
-        //RSAPrivateKey privateKey = fileResolveHelper.getPrivateKey();
-        //LogDataBlocksAndText nextLog = getNextLogTextWithDataBlocks(inputStream, privateKey, lc1Bytes);
-        //String logText = nextLog.entryText;
-        //Date firstDate = null;
-        //Pattern pattern = Pattern.compile("(\\d+)\\/(\\d+)\\/(\\d+) (\\d+):(\\d+):(\\d+)");
-        //Matcher matcher = pattern.matcher(logText);
-        //if (matcher.lookingAt()) {
-        //    firstDate = (new SimpleDateFormat("dd/MM/yyyy HH:mm:ss")).parse(matcher.group());
-        //}
-        //return new LogEntry(nextLog.logDataBlocks.getAsOneBlock(), firstDate);
-        return null;
+            MalformedLogFileException, IllegalBlockSizeException, ParseException, InvalidKeySpecException {
+        byte[] lc1Bytes = new byte[4];
+        if (cryptoProvider.logHasNext(inputStream, lc1Bytes)) {
+            return parseNextLog(inputStream, lc1Bytes);
+        } else {
+            return null;
+        }
+    }
+
+    private LogEntry parseNextLog(InputStream inputStream, byte[] lc1Bytes) throws NoSuchAlgorithmException, IOException,
+            InvalidKeySpecException, MalformedLogFileException, InvalidAlgorithmParameterException, IllegalBlockSizeException,
+            BadPaddingException, NoSuchPaddingException, InvalidKeyException, ParseException {
+        LogDataBlocksAndText nextLog = cryptoProvider.getNextLogTextWithDataBlocks(inputStream,
+                keyHelper.getPrivateKey(), lc1Bytes);
+        String logText = nextLog.getEntryText();
+        Date firstDate = null;
+        Pattern pattern = Pattern.compile("(\\d+)\\/(\\d+)\\/(\\d+) (\\d+):(\\d+):(\\d+)");
+        Matcher matcher = pattern.matcher(logText);
+        if (matcher.lookingAt()) {
+            firstDate = (new SimpleDateFormat("dd/MM/yyyy HH:mm:ss")).parse(matcher.group());
+        }
+        return new LogEntry(nextLog.getLogDataBlocks().getAsOneBlock(), firstDate);
     }
 
     private static class LogEntry {
@@ -147,6 +135,11 @@ public class MergeHelper {
         private LogEntry(byte[] data, Date dateTime) {
             this.data = data;
             this.dateTime = dateTime;
+        }
+
+        @Override
+        public boolean equals(Object other) {
+            return dateTime.equals(((LogEntry)other).dateTime);
         }
 
         public boolean before(LogEntry other) {
