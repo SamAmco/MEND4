@@ -23,6 +23,7 @@ public class Version extends Command {
 
     @Override
     public void execute(List<String> args) {
+        //TODO make sure the version number is actually correct
         log.err().println(strings.getf("Version.desktopVersion",
                 getClass().getPackage().getImplementationVersion()));
     }

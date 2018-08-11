@@ -1,6 +1,7 @@
 package commands;
 
 import co.samco.mend4.core.OSDao;
+import co.samco.mend4.core.Settings;
 import co.samco.mend4.core.exception.CorruptSettingsException;
 import co.samco.mend4.desktop.commands.Encrypt;
 import co.samco.mend4.desktop.commands.EncryptFromStdIn;
@@ -34,6 +35,7 @@ import static org.mockito.Mockito.*;
 
 public class EncryptFromStdInTest {
     private EncryptFromStdIn encrypt;
+    private Settings settings;
     private InputHelper inputHelper;
     private CryptoHelper cryptoHelper;
     private FileResolveHelper fileResolveHelper;
@@ -42,14 +44,17 @@ public class EncryptFromStdInTest {
     private OSDao osDao;
 
     @Before
-    public void setup() {
+    public void setup() throws IOException {
+        settings = mock(Settings.class);
         osDao = mock(OSDao.class);
         strings = new I18N("en", "UK");
         printStreamProvider = mock(PrintStreamProvider.class);
         cryptoHelper = mock(CryptoHelper.class);
         fileResolveHelper = mock(FileResolveHelper.class);
         inputHelper = mock(InputHelper.class);
-        encrypt = new EncryptFromStdIn(printStreamProvider, strings, cryptoHelper, inputHelper, osDao, fileResolveHelper);
+        when(settings.valueSet(Settings.Name.ENCDIR)).thenReturn(true);
+        when(settings.valueSet(Settings.Name.LOGDIR)).thenReturn(true);
+        encrypt = new EncryptFromStdIn(settings, printStreamProvider, strings, cryptoHelper, inputHelper, osDao, fileResolveHelper);
     }
 
     @Test

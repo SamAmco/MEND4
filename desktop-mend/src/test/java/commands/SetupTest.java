@@ -50,7 +50,8 @@ public class SetupTest {
     private Settings settings;
     private ArgumentCaptor<String> errCaptor;
 
-    private final String settingsPath = "settingspath";
+    private final String mendDirPath = "settingspath";
+    private final String settingsFilePath = mendDirPath + "/settings.file";
 
     @Before
     public void setup() {
@@ -67,7 +68,8 @@ public class SetupTest {
         cryptoProvider = mock(CryptoProvider.class);
         osDao = mock(OSDao.class);
 
-        when(fileResolveHelper.getSettingsPath()).thenReturn(settingsPath);
+        when(fileResolveHelper.getSettingsFilePath()).thenReturn(settingsFilePath);
+        when(fileResolveHelper.getMendDirPath()).thenReturn(mendDirPath);
         setup = new Setup(log, strings, osDao, cryptoHelper, cryptoProvider, fileResolveHelper, settings);
     }
 
@@ -76,7 +78,7 @@ public class SetupTest {
         when(osDao.fileExists(any(File.class))).thenReturn(true);
         setup.execute(Collections.emptyList());
         verify(err).println(errCaptor.capture());
-        Assert.assertEquals(strings.getf("SetupMend.alreadySetup", settingsPath, Setup.FORCE_FLAG),
+        Assert.assertEquals(strings.getf("SetupMend.alreadySetup", settingsFilePath, Setup.FORCE_FLAG),
                 errCaptor.getValue());
     }
 

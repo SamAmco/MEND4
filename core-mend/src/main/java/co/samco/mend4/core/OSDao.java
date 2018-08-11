@@ -8,6 +8,7 @@ public interface OSDao {
     String getUserHome();
     void desktopOpenFile(File file) throws IOException;
     void mkdirs(File file);
+    void createNewFile(File file) throws IOException;
     File[] getDirectoryListing(File dirFile) throws FileNotFoundException;
     String getAbsolutePath(File file);
     Process executeCommand(String[] commandArgs) throws IOException;
@@ -16,6 +17,7 @@ public interface OSDao {
     boolean fileIsFile(File file);
     InputStream getInputStreamForFile(File file) throws FileNotFoundException;
     OutputStream getOutputStreamForFile(File file) throws FileNotFoundException;
+    OutputStream getOutputStreamForFile(File file, boolean append) throws FileNotFoundException;
     void writeDataToFile(byte[] data, File outputFile) throws IOException;
     String getFileExtension(File file);
     String getFileExtension(String filePath);

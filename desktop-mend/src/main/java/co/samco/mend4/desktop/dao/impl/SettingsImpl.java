@@ -12,6 +12,7 @@ public class SettingsImpl implements Settings {
     private final File settingsFile;
     private Properties _propertiesCache;
     private final String corruptSettingsExceptionText;
+    private boolean propertiesNotFound = false;
 
     public SettingsImpl(OSDao osDao, File settingsFile, String corruptSettingsExceptionText) {
         this.osDao = osDao;
@@ -21,10 +22,11 @@ public class SettingsImpl implements Settings {
 
     private Properties getProperties() throws IOException {
         if (_propertiesCache == null) {
+            _propertiesCache = new Properties();
             try (InputStream fis = osDao.getInputStreamForFile(settingsFile)) {
                 _propertiesCache.loadFromXML(fis);
-            } catch (IOException e) {
-                throw e;
+            } catch (FileNotFoundException e) {
+                propertiesNotFound = true;
             }
         }
         return _propertiesCache;
@@ -48,6 +50,9 @@ public class SettingsImpl implements Settings {
 
     @Override
     public boolean valueSet(Name name) throws IOException {
+        if (propertiesNotFound) {
+            return false;
+        }
         Properties properties = getProperties();
         String value = properties.getProperty(name.toString());
         return value != null;

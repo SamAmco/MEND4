@@ -1,6 +1,7 @@
 package co.samco.mend4.desktop.commands;
 
 import co.samco.mend4.core.OSDao;
+import co.samco.mend4.core.Settings;
 import co.samco.mend4.core.exception.CorruptSettingsException;
 import co.samco.mend4.desktop.core.I18N;
 import co.samco.mend4.desktop.helper.CryptoHelper;
@@ -28,14 +29,15 @@ public class EncryptFromStdIn extends Encrypt {
     private OSDao osDao;
 
     private final List<Function<List<String>, List<String>>> behaviourChain = Arrays.asList(
+            a -> assertSettingsPresent(a),
             a -> shouldDropHeader(a),
             a -> encryptFromInput(a)
     );
 
     @Inject
-    public EncryptFromStdIn(PrintStreamProvider log, I18N strings, CryptoHelper cryptoHelper,
+    public EncryptFromStdIn(Settings settings, PrintStreamProvider log, I18N strings, CryptoHelper cryptoHelper,
                             InputHelper inputHelper, OSDao osDao, FileResolveHelper fileResolveHelper) {
-        super(log, strings, cryptoHelper, inputHelper, fileResolveHelper);
+        super(settings, log, strings, cryptoHelper, inputHelper, fileResolveHelper);
         this.osDao = osDao;
     }
 

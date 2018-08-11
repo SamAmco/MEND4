@@ -21,9 +21,7 @@ public class I18N {
     }
 
     public String getNewLine(int num) {
-        return IntStream.of(num)
-            .mapToObj(i -> getNewLine())
-            .collect(Collectors.joining());
+        return new String(new char[num]).replace("\0", getNewLine());
     }
 
     public String getNewLine() {

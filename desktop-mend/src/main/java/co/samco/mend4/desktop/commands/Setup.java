@@ -64,9 +64,9 @@ public class Setup extends Command {
     private List<String> checkAlreadySetup(List<String> args) {
         if (args.contains(FORCE_FLAG)) {
             args.remove(FORCE_FLAG);
-        } else if (osDao.fileExists(new File(fileResolveHelper.getSettingsPath()))) {
+        } else if (osDao.fileExists(new File(fileResolveHelper.getSettingsFilePath()))) {
             log.err().println(strings.getf("SetupMend.alreadySetup",
-                    fileResolveHelper.getSettingsPath(), FORCE_FLAG));
+                    fileResolveHelper.getSettingsFilePath(), FORCE_FLAG));
             return null;
         }
         return args;
@@ -94,8 +94,8 @@ public class Setup extends Command {
     }
 
     private List<String> ensureSettingsPathExists(List<String> args) {
-        log.out().println(strings.getf("SetupMend.creating", fileResolveHelper.getSettingsPath()));
-        osDao.mkdirs(new File(fileResolveHelper.getSettingsPath()));
+        log.out().println(strings.getf("SetupMend.creating", fileResolveHelper.getMendDirPath()));
+        osDao.mkdirs(new File(fileResolveHelper.getMendDirPath()));
         return args;
     }
 

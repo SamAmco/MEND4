@@ -66,8 +66,8 @@ public class CryptoHelper {
         File outputFile = new File(encLocation + File.separatorChar + name + AppProperties.ENC_FILE_EXTENSION);
         fileResolveHelper.assertFileDoesNotExist(outputFile);
 
-        try (FileInputStream fis = new FileInputStream(file);
-            FileOutputStream fos = new FileOutputStream(outputFile)) {
+        try (InputStream fis = osDao.getInputStreamForFile(file);
+            OutputStream fos = osDao.getOutputStreamForFile(outputFile)) {
             log.err().println(strings.getf("CryptoHelper.encryptingFile", outputFile.getAbsolutePath()));
             cryptoProvider.encryptEncStream(keyHelper.getPublicKey(), fis, fos, fileExtension);
             log.err().println(strings.getf("CryptoHelper.encryptFileComplete", name));
@@ -81,13 +81,13 @@ public class CryptoHelper {
             return;
 
         File currentLogFile = fileResolveHelper.getCurrentLogFile();
-        currentLogFile.createNewFile();
+        osDao.createNewFile(currentLogFile);
         String logText = new String(text);
         if (!dropHeader) {
             addHeaderToLogText(logText, strings.get("Platform.header"));
         }
 
-        try (FileOutputStream fos = new FileOutputStream(currentLogFile, true)) {
+        try (OutputStream fos = osDao.getOutputStreamForFile(currentLogFile, true)) {
             cryptoProvider.encryptLogStream(keyHelper.getPublicKey(), logText, fos);
         }
     }
@@ -95,7 +95,7 @@ public class CryptoHelper {
     public void decryptLog(File file) throws InvalidKeySpecException, IOException, NoSuchAlgorithmException,
             MalformedLogFileException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException,
             NoSuchPaddingException, InvalidAlgorithmParameterException {
-        try (FileInputStream fis = new FileInputStream(file)){
+        try (InputStream fis = osDao.getInputStreamForFile(file)){
             cryptoProvider.decryptLogStream(keyHelper.getPrivateKey(), fis, log.out());
         }
     }
@@ -111,8 +111,8 @@ public class CryptoHelper {
         String fileExtension;
 
         log.err().println(strings.getf("CryptoHelper.decryptingFile", outputFile.getAbsolutePath()));
-        try (FileInputStream fis = new FileInputStream(file);
-            FileOutputStream fos = new FileOutputStream(outputFile)) {
+        try (InputStream fis = osDao.getInputStreamForFile(file);
+            OutputStream fos = osDao.getOutputStreamForFile(outputFile)) {
             fileExtension = cryptoProvider.decryptEncStream(keyHelper.getPrivateKey(), fis, fos);
         }
         osDao.renameFile(outputFile, outputFile.getName() + "." + fileExtension);

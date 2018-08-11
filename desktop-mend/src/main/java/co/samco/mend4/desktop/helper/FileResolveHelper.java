@@ -64,21 +64,23 @@ public class FileResolveHelper {
         return file;
     }
 
-    public String getSettingsPath() {
-        return osDao.getUserHome() + File.pathSeparator
-                + AppProperties.CONFIG_DIR_NAME + File.pathSeparator
+    public String getMendDirPath() {
+        return osDao.getUserHome() + File.separator
+                + AppProperties.CONFIG_DIR_NAME;
+    }
+
+    public String getSettingsFilePath() {
+        return getMendDirPath() + File.separator
                 + AppProperties.SETTINGS_FILE_NAME;
     }
 
     public String getPublicKeyPath() {
-        return osDao.getUserHome() + File.pathSeparator
-                + AppProperties.CONFIG_DIR_NAME + File.pathSeparator
+        return getMendDirPath() + File.separator
                 + AppProperties.PUBLIC_KEY_FILE_NAME;
     }
 
     public String getPrivateKeyPath() {
-        return osDao.getUserHome() + File.pathSeparator
-                + AppProperties.CONFIG_DIR_NAME + File.pathSeparator
+        return getMendDirPath() + File.separator
                 + AppProperties.PRIVATE_KEY_FILE_NAME;
     }
 
@@ -122,7 +124,7 @@ public class FileResolveHelper {
     public File getTempFile(String dir) {
         String tempName = "tmp";
         int tempSuffix = 0;
-        File currentOutFile = new File(dir + File.separatorChar + tempName + tempSuffix + AppProperties.LOG_FILE_EXTENSION);
+        File currentOutFile = new File(dir + File.separator + tempName + tempSuffix + AppProperties.LOG_FILE_EXTENSION);
         while (osDao.fileExists(currentOutFile)) {
             tempSuffix++;
             currentOutFile = new File(dir + tempName + tempSuffix + AppProperties.LOG_FILE_EXTENSION);

@@ -34,13 +34,13 @@ public class SettingsHelper {
     }
 
     public String getSettingValueWrapped(Settings.Name name) {
-        String value;
         try {
-            value = settings.getValue(name);
-        } catch (CorruptSettingsException | IOException e) {
-            value = strings.get("StatePrinter.Error");
+            if (settings.valueSet(name)) {
+                return settings.getValue(name);
+            } else return strings.get("StatePrinter.notFound");
+        } catch (IOException | CorruptSettingsException e) {
+            return strings.get("StatePrinter.Error");
         }
-        return value;
     }
 
     private String getFormattedSettingDescription(Settings.Name name) {

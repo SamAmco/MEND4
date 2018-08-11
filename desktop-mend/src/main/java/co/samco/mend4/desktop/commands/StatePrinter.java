@@ -118,11 +118,11 @@ public class StatePrinter extends Command {
     }
 
     private String formatSettingValue(Settings.Name name) {
+        String value = settingsHelper.getSettingValueWrapped(name);
         StringBuilder sb = new StringBuilder();
         sb.append(name.toString());
         sb.append("\t");
-        String value = settingsHelper.getSettingValueWrapped(name);
-        sb.append(value == null ? strings.get("StatePrinter.notFound") : value);
+        sb.append(value);
         return sb.toString();
     }
 

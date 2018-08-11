@@ -1,5 +1,6 @@
 package commands;
 
+import co.samco.mend4.core.Settings;
 import co.samco.mend4.core.exception.CorruptSettingsException;
 import co.samco.mend4.desktop.commands.Encrypt;
 import co.samco.mend4.desktop.core.I18N;
@@ -29,6 +30,7 @@ import static org.mockito.Mockito.*;
 
 public class EncryptTest {
     private Encrypt encrypt;
+    private Settings settings;
     private InputHelper inputHelper;
     private CryptoHelper cryptoHelper;
     private FileResolveHelper fileResolveHelper;
@@ -39,6 +41,7 @@ public class EncryptTest {
 
     @Before
     public void setup() {
+        settings = mock(Settings.class);
         strings = new I18N("en", "UK");
         err = mock(PrintStream.class);
         out = mock(PrintStream.class);
@@ -48,13 +51,28 @@ public class EncryptTest {
         when(printStreamProvider.out()).thenReturn(out);
         cryptoHelper = mock(CryptoHelper.class);
         inputHelper = mock(InputHelper.class);
-        encrypt = new Encrypt(printStreamProvider, strings, cryptoHelper, inputHelper, fileResolveHelper);
+        encrypt = new Encrypt(settings, printStreamProvider, strings, cryptoHelper, inputHelper, fileResolveHelper);
+    }
+
+    private void setLogAndEncDir() throws IOException {
+        when(settings.valueSet(Settings.Name.ENCDIR)).thenReturn(true);
+        when(settings.valueSet(Settings.Name.LOGDIR)).thenReturn(true);
+    }
+
+    @Test
+    public void attemptEncryptWithoutDir() throws IOException {
+        encrypt.execute(Collections.emptyList());
+        verify(err).println(strings.getf("Encrypt.dirRequired", Settings.Name.ENCDIR.toString()));
+        when(settings.valueSet(Settings.Name.ENCDIR)).thenReturn(true);
+        encrypt.execute(Collections.emptyList());
+        verify(err).println(strings.getf("Encrypt.dirRequired", Settings.Name.LOGDIR.toString()));
     }
 
     @Test
     public void encryptViaTextEditor() throws IOException, NoSuchPaddingException,
             NoSuchAlgorithmException, InvalidKeyException, InvalidAlgorithmParameterException, IllegalBlockSizeException,
             BadPaddingException, CorruptSettingsException, InvalidKeySpecException {
+        setLogAndEncDir();
         encrypt.execute(Collections.emptyList());
         verify(inputHelper).createInputProviderAndRegisterListener(encrypt);
         encrypt.onWrite("hi".toCharArray());
@@ -65,6 +83,7 @@ public class EncryptTest {
     public void encryptViaTextEditorAppend() throws IOException, NoSuchPaddingException, NoSuchAlgorithmException,
             InvalidKeyException, InvalidAlgorithmParameterException, IllegalBlockSizeException, BadPaddingException,
             CorruptSettingsException, InvalidKeySpecException {
+        setLogAndEncDir();
         encrypt.execute(Arrays.asList(Encrypt.APPEND_FLAG));
         verify(inputHelper).createInputProviderAndRegisterListener(encrypt);
         encrypt.onWrite("hi".toCharArray());
@@ -75,6 +94,7 @@ public class EncryptTest {
     public void encryptFromArg() throws IOException, NoSuchPaddingException, NoSuchAlgorithmException,
             InvalidKeyException, InvalidAlgorithmParameterException, IllegalBlockSizeException, BadPaddingException,
             CorruptSettingsException, InvalidKeySpecException {
+        setLogAndEncDir();
         encrypt.execute(Arrays.asList(Encrypt.FROM_ARG_FLAG, "hi"));
         verify(cryptoHelper).encryptTextToLog("hi".toCharArray(), false);
     }
@@ -83,6 +103,7 @@ public class EncryptTest {
     public void encryptFromArgAppend() throws IOException, NoSuchPaddingException, NoSuchAlgorithmException,
             InvalidKeyException, InvalidAlgorithmParameterException, IllegalBlockSizeException, BadPaddingException,
             CorruptSettingsException, InvalidKeySpecException {
+        setLogAndEncDir();
         encrypt.execute(Arrays.asList(Encrypt.APPEND_FLAG, Encrypt.FROM_ARG_FLAG, "hi"));
         verify(cryptoHelper).encryptTextToLog("hi".toCharArray(), true);
     }
@@ -91,18 +112,21 @@ public class EncryptTest {
     public void encryptFromArgAppendFlipped() throws IOException, NoSuchPaddingException, NoSuchAlgorithmException,
             InvalidKeyException, InvalidAlgorithmParameterException, IllegalBlockSizeException, BadPaddingException,
             CorruptSettingsException, InvalidKeySpecException {
+        setLogAndEncDir();
         encrypt.execute(Arrays.asList(Encrypt.FROM_ARG_FLAG, Encrypt.APPEND_FLAG, "hi"));
         verify(cryptoHelper).encryptTextToLog("hi".toCharArray(), true);
     }
 
     @Test
-    public void encryptFromArgMalformed() {
+    public void encryptFromArgMalformed() throws IOException {
+        setLogAndEncDir();
         encrypt.execute(Arrays.asList(Encrypt.FROM_ARG_FLAG, "a", "b"));
         verify(err).println(strings.getf("Encrypt.badDataArgs", Encrypt.FROM_ARG_FLAG));
     }
 
     @Test
-    public void encryptTooManyArgs() {
+    public void encryptTooManyArgs() throws IOException {
+        setLogAndEncDir();
         encrypt.execute(Arrays.asList("a", "b", "c"));
         verify(err).println(strings.getf("General.invalidArgNum", Encrypt.COMMAND_NAME));
     }
@@ -111,6 +135,7 @@ public class EncryptTest {
     public void encryptFile() throws IOException, NoSuchPaddingException, NoSuchAlgorithmException,
             InvalidKeyException, InvalidAlgorithmParameterException, IllegalBlockSizeException, BadPaddingException,
             CorruptSettingsException, InvalidKeySpecException {
+        setLogAndEncDir();
         String fileName = "hi";
         when(fileResolveHelper.resolveFile(eq(fileName))).thenReturn(new File(fileName));
         encrypt.execute(Arrays.asList(fileName));
@@ -123,6 +148,7 @@ public class EncryptTest {
     public void encryptFileWithName() throws IOException, NoSuchPaddingException, NoSuchAlgorithmException,
             InvalidKeyException, InvalidAlgorithmParameterException, IllegalBlockSizeException, BadPaddingException,
             CorruptSettingsException, InvalidKeySpecException {
+        setLogAndEncDir();
         String fileName1 = "hi1";
         String fileName2 = "hi2";
         when(fileResolveHelper.resolveFile(eq(fileName1))).thenReturn(new File(fileName1));

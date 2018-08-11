@@ -34,6 +34,11 @@ public class OSDaoImpl implements OSDao {
     }
 
     @Override
+    public void createNewFile(File file) throws IOException {
+        file.createNewFile();
+    }
+
+    @Override
     public File[] getDirectoryListing(File dirFile) throws FileNotFoundException {
         assertDirectoryExists(dirFile);
         return dirFile.listFiles();
@@ -72,6 +77,11 @@ public class OSDaoImpl implements OSDao {
     @Override
     public OutputStream getOutputStreamForFile(File file) throws FileNotFoundException {
         return new FileOutputStream(file);
+    }
+
+    @Override
+    public OutputStream getOutputStreamForFile(File file, boolean append) throws FileNotFoundException {
+        return new FileOutputStream(file, append);
     }
 
     @Override

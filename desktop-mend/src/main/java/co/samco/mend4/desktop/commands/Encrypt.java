@@ -1,5 +1,6 @@
 package co.samco.mend4.desktop.commands;
 
+import co.samco.mend4.core.Settings;
 import co.samco.mend4.core.exception.CorruptSettingsException;
 import co.samco.mend4.desktop.core.I18N;
 import co.samco.mend4.desktop.helper.CryptoHelper;
@@ -30,6 +31,7 @@ public class Encrypt extends Command implements InputListener {
     public static final String APPEND_FLAG = "-a";
     public static final String FROM_ARG_FLAG = "-d";
 
+    protected final Settings settings;
     protected final CryptoHelper cryptoHelper;
     protected final InputHelper inputHelper;
     protected final FileResolveHelper fileResolveHelper;
@@ -39,6 +41,7 @@ public class Encrypt extends Command implements InputListener {
     protected boolean dropHeader = false;
 
     private final List<Function<List<String>, List<String>>> behaviourChain = Arrays.asList(
+            a -> assertSettingsPresent(a),
             a -> shouldDropHeader(a),
             a -> shouldEncryptFromTextEditor(a),
             a -> shouldEncryptFromArg(a),
@@ -48,8 +51,9 @@ public class Encrypt extends Command implements InputListener {
     );
 
     @Inject
-    public Encrypt(PrintStreamProvider log, I18N strings, CryptoHelper cryptoHelper,
+    public Encrypt(Settings settings, PrintStreamProvider log, I18N strings, CryptoHelper cryptoHelper,
                    InputHelper inputHelper, FileResolveHelper fileResolveHelper) {
+        this.settings = settings;
         this.log = log;
         this.cryptoHelper = cryptoHelper;
         this.inputHelper = inputHelper;
@@ -62,14 +66,22 @@ public class Encrypt extends Command implements InputListener {
         executeBehaviourChain(behaviourChain, args);
     }
 
-    private void encryptTextToLog(char[] text) {
+    protected List<String> assertSettingsPresent(List<String> args) {
         try {
-            cryptoHelper.encryptTextToLog(text, dropHeader);
-        } catch (IOException | CorruptSettingsException | InvalidKeySpecException | NoSuchAlgorithmException
-                | IllegalBlockSizeException | InvalidKeyException | BadPaddingException
-                | InvalidAlgorithmParameterException | NoSuchPaddingException e) {
+            if (!assertSettingPresent(Settings.Name.ENCDIR) || !assertSettingPresent(Settings.Name.LOGDIR)) {
+                return null;
+            } else return args;
+        } catch (IOException e) {
             log.err().println(e.getMessage());
+            return null;
         }
+    }
+
+    private boolean assertSettingPresent(Settings.Name name) throws IOException {
+        if (!settings.valueSet(name)) {
+            log.err().println(strings.getf("Encrypt.dirRequired", name.toString()));
+            return false;
+        } else return true;
     }
 
     protected List<String> shouldDropHeader(List<String> args) {
@@ -130,6 +142,16 @@ public class Encrypt extends Command implements InputListener {
     protected List<String> unknownBehaviour() {
         log.err().println(strings.getf("Encrypt.malformedCommand", COMMAND_NAME));
         return null;
+    }
+
+    private void encryptTextToLog(char[] text) {
+        try {
+            cryptoHelper.encryptTextToLog(text, dropHeader);
+        } catch (IOException | CorruptSettingsException | InvalidKeySpecException | NoSuchAlgorithmException
+                | IllegalBlockSizeException | InvalidKeyException | BadPaddingException
+                | InvalidAlgorithmParameterException | NoSuchPaddingException e) {
+            log.err().println(e.getMessage());
+        }
     }
 
     @Override

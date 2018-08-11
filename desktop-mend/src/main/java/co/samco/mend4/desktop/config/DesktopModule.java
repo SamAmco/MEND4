@@ -22,6 +22,7 @@ import javax.swing.text.html.Option;
 import java.io.File;
 import java.io.IOException;
 import java.util.Optional;
+import java.util.Set;
 
 @Module
 public class DesktopModule {
@@ -29,18 +30,29 @@ public class DesktopModule {
     @Singleton @Provides CryptoProvider provideCryptoProvider(PrintStreamProvider log, Settings settings,
                                                               IBase64EncodingProvider encoder) {
         try {
+            int aesKeySize = AppProperties.PREFERRED_AES_KEY_SIZE;
+            int rsaKeySize = AppProperties.PREFERRED_RSA_KEY_SIZE;
+            String preferredAES = AppProperties.PREFERRED_AES_ALG;
+            String preferredRSA = AppProperties.PREFERRED_RSA_ALG;
+            if (settings.valueSet(Settings.Name.AESKEYSIZE)) {
+                aesKeySize = Integer.parseInt(settings.getValue(Settings.Name.AESKEYSIZE));
+            }
+            if (settings.valueSet(Settings.Name.RSAKEYSIZE)) {
+                rsaKeySize = Integer.parseInt(settings.getValue(Settings.Name.RSAKEYSIZE));
+            }
+            if (settings.valueSet(Settings.Name.PREFERREDAES)) {
+                preferredAES = settings.getValue(Settings.Name.PREFERREDAES);
+            }
+            if (settings.valueSet(Settings.Name.PREFERREDRSA)) {
+                preferredRSA = settings.getValue(Settings.Name.PREFERREDRSA);
+            }
+
             return new DefaultJCECryptoProvider(AppProperties.STANDARD_IV,
-                    Integer.parseInt(settings.getValue(Settings.Name.AESKEYSIZE)),
-                    Integer.parseInt(settings.getValue(Settings.Name.RSAKEYSIZE)),
-                    settings.getValue(Settings.Name.PREFERREDAES),
-                    settings.getValue(Settings.Name.PREFERREDRSA),
-                    AppProperties.PASSCHECK_SALT,
-                    AppProperties.AES_KEY_GEN_ITERATIONS,
-                    encoder);
+                    aesKeySize, rsaKeySize, preferredAES, preferredRSA,
+                    AppProperties.PASSCHECK_SALT, AppProperties.AES_KEY_GEN_ITERATIONS, encoder);
         } catch (IOException | CorruptSettingsException e) {
             log.err().println(e.getMessage());
-            //TODO
-            throw new RuntimeException("TODO");
+            throw new RuntimeException(e.getMessage());
         }
     }
 
@@ -62,6 +74,6 @@ public class DesktopModule {
     }
 
     @Singleton @Provides Settings provideSettings(FileResolveHelper fileResolveHelper, OSDao osDao, I18N strings) {
-        return new SettingsImpl(osDao, new File(fileResolveHelper.getSettingsPath()), strings.get("Settings.settingNotFound"));
+        return new SettingsImpl(osDao, new File(fileResolveHelper.getSettingsFilePath()), strings.get("Settings.settingNotFound"));
     }
 }
