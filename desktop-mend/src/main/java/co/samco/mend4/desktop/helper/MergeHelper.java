@@ -25,7 +25,6 @@ import java.util.Date;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-//TODO clean this up and test it
 public class MergeHelper {
     private final PrintStreamProvider log;
     private final FileResolveHelper fileResolveHelper;
