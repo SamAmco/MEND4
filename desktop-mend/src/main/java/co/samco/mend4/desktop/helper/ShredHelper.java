@@ -29,7 +29,7 @@ public class ShredHelper {
 
     //TODO test this
     public String[] generateShredCommandArgs(String fileName, String commandString) {
-        return commandString.replace(strings.get("Shred.fileName"), fileName).split(" ");
+        return commandString.replaceAll(strings.get("Shred.fileName"), fileName).split(" ");
     }
 
     public void tryShredFile(String absolutePath) throws IOException, CorruptSettingsException {
