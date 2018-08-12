@@ -3,6 +3,7 @@ package commands;
 import co.samco.mend4.core.exception.CorruptSettingsException;
 import co.samco.mend4.desktop.commands.Merge;
 import co.samco.mend4.desktop.exception.MendLockedException;
+import co.samco.mend4.desktop.exception.SettingRequiredException;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Assert;
 import org.junit.Before;
@@ -34,7 +35,12 @@ public class MergeTest extends TestBase {
     @Before
     public void setup() {
         super.setup();
-        merge = new Merge(strings, log, fileResolveHelper, mergeHelper, osDao);
+        merge = new Merge(strings, log, fileResolveHelper, settingsHelper, mergeHelper, osDao);
+    }
+
+    @Test
+    public void testCommandWithSettingsDependencies() throws IOException, SettingRequiredException {
+        super.testCommandWithSettingsDependencies(merge);
     }
 
     @Test

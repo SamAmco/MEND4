@@ -3,6 +3,7 @@ package commands;
 import co.samco.mend4.core.Settings;
 import co.samco.mend4.core.exception.CorruptSettingsException;
 import co.samco.mend4.desktop.commands.Encrypt;
+import co.samco.mend4.desktop.exception.SettingRequiredException;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -28,21 +29,17 @@ public class EncryptTest extends TestBase {
     @Before
     public void setup() {
         super.setup();
-        encrypt = new Encrypt(settings, log, strings, cryptoHelper, inputHelper, fileResolveHelper);
+        encrypt = new Encrypt(settings, settingsHelper, log, strings, cryptoHelper, inputHelper, fileResolveHelper);
+    }
+
+    @Test
+    public void testCommandWithSettingsDependencies() throws IOException, SettingRequiredException {
+        super.testCommandWithSettingsDependencies(encrypt);
     }
 
     private void setLogAndEncDir() throws IOException {
         when(settings.valueSet(Settings.Name.ENCDIR)).thenReturn(true);
         when(settings.valueSet(Settings.Name.LOGDIR)).thenReturn(true);
-    }
-
-    @Test
-    public void attemptEncryptWithoutDir() throws IOException {
-        encrypt.execute(Collections.emptyList());
-        verify(err).println(strings.getf("Encrypt.dirRequired", Settings.Name.ENCDIR.toString()));
-        when(settings.valueSet(Settings.Name.ENCDIR)).thenReturn(true);
-        encrypt.execute(Collections.emptyList());
-        verify(err).println(strings.getf("Encrypt.dirRequired", Settings.Name.LOGDIR.toString()));
     }
 
     @Test

@@ -5,6 +5,7 @@ import co.samco.mend4.core.exception.CorruptSettingsException;
 import co.samco.mend4.core.exception.MalformedLogFileException;
 import co.samco.mend4.desktop.commands.Decrypt;
 import co.samco.mend4.desktop.exception.MendLockedException;
+import co.samco.mend4.desktop.exception.SettingRequiredException;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -35,7 +36,12 @@ public class DecryptTest extends TestBase {
     @Before
     public void setup() {
         super.setup();
-        decrypt = new Decrypt(log, strings, cryptoHelper, osDao, fileResolveHelper);
+        decrypt = new Decrypt(log, strings, settingsHelper, cryptoHelper, osDao, fileResolveHelper);
+    }
+
+    @Test
+    public void testCommandWithSettingsDependencies() throws IOException, SettingRequiredException {
+        super.testCommandWithSettingsDependencies(decrypt);
     }
 
     @Test

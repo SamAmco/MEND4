@@ -3,6 +3,7 @@ package commands;
 import co.samco.mend4.core.exception.CorruptSettingsException;
 import co.samco.mend4.core.Settings;
 import co.samco.mend4.desktop.commands.Clean;
+import co.samco.mend4.desktop.exception.SettingRequiredException;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -17,7 +18,12 @@ public class CleanTest extends TestBase {
     @Before
     public void setup() {
         super.setup();
-        clean = new Clean(strings, log, shredHelper, settings);
+        clean = new Clean(strings, log, settingsHelper, shredHelper, settings);
+    }
+
+    @Test
+    public void testCommandWithSettingsDependencies() throws IOException, SettingRequiredException {
+        super.testCommandWithSettingsDependencies(clean);
     }
 
     @Test

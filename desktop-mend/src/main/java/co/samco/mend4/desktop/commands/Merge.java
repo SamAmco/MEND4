@@ -1,12 +1,15 @@
 package co.samco.mend4.desktop.commands;
 
 import co.samco.mend4.core.AppProperties;
+import co.samco.mend4.core.Settings;
 import co.samco.mend4.core.exception.CorruptSettingsException;
 import co.samco.mend4.core.OSDao;
 import co.samco.mend4.desktop.core.I18N;
 import co.samco.mend4.desktop.exception.MendLockedException;
+import co.samco.mend4.desktop.exception.SettingRequiredException;
 import co.samco.mend4.desktop.helper.FileResolveHelper;
 import co.samco.mend4.desktop.helper.MergeHelper;
+import co.samco.mend4.desktop.helper.SettingsHelper;
 import co.samco.mend4.desktop.output.PrintStreamProvider;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -26,24 +29,39 @@ public class Merge extends Command {
     private final I18N strings;
     private final PrintStreamProvider log;
     private final FileResolveHelper fileResolveHelper;
+    private final SettingsHelper settingsHelper;
     private final MergeHelper mergeHelper;
     private final OSDao osDao;
 
     private final List<Function<List<String>, List<String>>> behaviourChain = Arrays.asList(
+            a -> assertSettingsPresent(a),
             a -> assertCorrectNumOfArgs(a),
             a -> tryMergeInPlace(a),
             a -> tryMergeToNew(a)
     );
 
-
     @Inject
     public Merge(I18N strings, PrintStreamProvider log, FileResolveHelper fileResolveHelper,
-                 MergeHelper mergeHelper, OSDao osDao) {
+                 SettingsHelper settingsHelper, MergeHelper mergeHelper, OSDao osDao) {
         this.strings = strings;
         this.log = log;
         this.fileResolveHelper = fileResolveHelper;
+        this.settingsHelper = settingsHelper;
         this.mergeHelper = mergeHelper;
         this.osDao = osDao;
+    }
+
+    protected List<String> assertSettingsPresent(List<String> args) {
+        try {
+            settingsHelper.assertRequiredSettingsExist(new Settings.Name[]{
+                            Settings.Name.PUBLICKEY, Settings.Name.PRIVATEKEY, Settings.Name.RSAKEYSIZE, Settings.Name.AESKEYSIZE,
+                            Settings.Name.PREFERREDAES, Settings.Name.PREFERREDRSA, Settings.Name.ENCDIR, Settings.Name.LOGDIR},
+                    COMMAND_NAME);
+        } catch (IOException | SettingRequiredException e) {
+            failWithMessage(log, e.getMessage());
+            return null;
+        }
+        return args;
     }
 
     private List<String> assertCorrectNumOfArgs(List<String> args) {

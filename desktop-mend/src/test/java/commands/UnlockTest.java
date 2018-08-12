@@ -2,6 +2,7 @@ package commands;
 
 import co.samco.mend4.core.exception.CorruptSettingsException;
 import co.samco.mend4.desktop.commands.Unlock;
+import co.samco.mend4.desktop.exception.SettingRequiredException;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -35,7 +36,12 @@ public class UnlockTest extends TestBase {
         errCaptor = ArgumentCaptor.forClass(String.class);
         when(fileResolveHelper.getPrivateKeyPath()).thenReturn(privateKeyPath);
         when(fileResolveHelper.getPublicKeyPath()).thenReturn(publicKeyPath);
-        unlock = new Unlock(strings, osDao, settings, log, cryptoProvider, shredHelper, fileResolveHelper, keyHelper);
+        unlock = new Unlock(strings, osDao, settings, settingsHelper, log, cryptoProvider, shredHelper, fileResolveHelper, keyHelper);
+    }
+
+    @Test
+    public void testCommandWithSettingsDependencies() throws IOException, SettingRequiredException {
+        super.testCommandWithSettingsDependencies(unlock);
     }
 
     @Test

@@ -3,15 +3,19 @@ package commands;
 import co.samco.mend4.core.OSDao;
 import co.samco.mend4.core.Settings;
 import co.samco.mend4.core.crypto.CryptoProvider;
+import co.samco.mend4.desktop.commands.Command;
 import co.samco.mend4.desktop.core.I18N;
+import co.samco.mend4.desktop.exception.SettingRequiredException;
 import co.samco.mend4.desktop.helper.*;
 import co.samco.mend4.desktop.output.PrintStreamProvider;
+import org.junit.Assert;
 import org.junit.Before;
 
+import java.io.IOException;
 import java.io.PrintStream;
+import java.util.ArrayList;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 public class TestBase {
     protected CryptoHelper cryptoHelper;
@@ -49,5 +53,13 @@ public class TestBase {
         shredHelper = mock(ShredHelper.class);
         versionHelper = mock(VersionHelper.class);
         settings = mock(Settings.class);
+    }
+
+    protected void testCommandWithSettingsDependencies(Command command) throws IOException, SettingRequiredException {
+        String message = "message";
+        doThrow(new SettingRequiredException(message)).when(settingsHelper).assertRequiredSettingsExist(any(), any());
+        command.executeCommand(new ArrayList<>());
+        verify(err).println(eq(message));
+        Assert.assertNotEquals(0, command.getExecutionResult());
     }
 }

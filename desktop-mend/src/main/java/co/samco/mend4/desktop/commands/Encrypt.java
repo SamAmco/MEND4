@@ -3,9 +3,11 @@ package co.samco.mend4.desktop.commands;
 import co.samco.mend4.core.Settings;
 import co.samco.mend4.core.exception.CorruptSettingsException;
 import co.samco.mend4.desktop.core.I18N;
+import co.samco.mend4.desktop.exception.SettingRequiredException;
 import co.samco.mend4.desktop.helper.CryptoHelper;
 import co.samco.mend4.desktop.helper.FileResolveHelper;
 import co.samco.mend4.desktop.helper.InputHelper;
+import co.samco.mend4.desktop.helper.SettingsHelper;
 import co.samco.mend4.desktop.input.InputListener;
 import co.samco.mend4.desktop.output.PrintStreamProvider;
 
@@ -32,6 +34,7 @@ public class Encrypt extends Command implements InputListener {
     public static final String FROM_ARG_FLAG = "-d";
 
     protected final Settings settings;
+    protected final SettingsHelper settingsHelper;
     protected final CryptoHelper cryptoHelper;
     protected final InputHelper inputHelper;
     protected final FileResolveHelper fileResolveHelper;
@@ -51,9 +54,10 @@ public class Encrypt extends Command implements InputListener {
     );
 
     @Inject
-    public Encrypt(Settings settings, PrintStreamProvider log, I18N strings, CryptoHelper cryptoHelper,
-                   InputHelper inputHelper, FileResolveHelper fileResolveHelper) {
+    public Encrypt(Settings settings, SettingsHelper settingsHelper, PrintStreamProvider log, I18N strings,
+                   CryptoHelper cryptoHelper, InputHelper inputHelper, FileResolveHelper fileResolveHelper) {
         this.settings = settings;
+        this.settingsHelper = settingsHelper;
         this.log = log;
         this.cryptoHelper = cryptoHelper;
         this.inputHelper = inputHelper;
@@ -68,20 +72,15 @@ public class Encrypt extends Command implements InputListener {
 
     protected List<String> assertSettingsPresent(List<String> args) {
         try {
-            if (!assertSettingPresent(Settings.Name.ENCDIR) || !assertSettingPresent(Settings.Name.LOGDIR)) {
-                return null;
-            } else return args;
-        } catch (IOException e) {
+            settingsHelper.assertRequiredSettingsExist(new Settings.Name[]{
+                        Settings.Name.PUBLICKEY, Settings.Name.PRIVATEKEY, Settings.Name.RSAKEYSIZE, Settings.Name.AESKEYSIZE,
+                        Settings.Name.PREFERREDAES, Settings.Name.PREFERREDRSA, Settings.Name.ENCDIR, Settings.Name.LOGDIR},
+                    COMMAND_NAME);
+        } catch (IOException | SettingRequiredException e) {
             failWithMessage(log, e.getMessage());
             return null;
         }
-    }
-
-    private boolean assertSettingPresent(Settings.Name name) throws IOException {
-        if (!settings.valueSet(name)) {
-            log.err().println(strings.getf("Encrypt.dirRequired", name.toString()));
-            return false;
-        } else return true;
+        return args;
     }
 
     protected List<String> shouldDropHeader(List<String> args) {

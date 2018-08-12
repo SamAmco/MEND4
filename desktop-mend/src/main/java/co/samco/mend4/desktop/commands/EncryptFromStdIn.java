@@ -7,6 +7,7 @@ import co.samco.mend4.desktop.core.I18N;
 import co.samco.mend4.desktop.helper.CryptoHelper;
 import co.samco.mend4.desktop.helper.FileResolveHelper;
 import co.samco.mend4.desktop.helper.InputHelper;
+import co.samco.mend4.desktop.helper.SettingsHelper;
 import co.samco.mend4.desktop.output.PrintStreamProvider;
 
 import javax.crypto.BadPaddingException;
@@ -35,9 +36,10 @@ public class EncryptFromStdIn extends Encrypt {
     );
 
     @Inject
-    public EncryptFromStdIn(Settings settings, PrintStreamProvider log, I18N strings, CryptoHelper cryptoHelper,
-                            InputHelper inputHelper, OSDao osDao, FileResolveHelper fileResolveHelper) {
-        super(settings, log, strings, cryptoHelper, inputHelper, fileResolveHelper);
+    public EncryptFromStdIn(Settings settings, SettingsHelper settingsHelper, PrintStreamProvider log, I18N strings,
+                            CryptoHelper cryptoHelper, InputHelper inputHelper, OSDao osDao,
+                            FileResolveHelper fileResolveHelper) {
+        super(settings, settingsHelper, log, strings, cryptoHelper, inputHelper, fileResolveHelper);
         this.osDao = osDao;
     }
 

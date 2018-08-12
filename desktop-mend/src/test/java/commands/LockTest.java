@@ -3,6 +3,7 @@ package commands;
 import co.samco.mend4.core.exception.CorruptSettingsException;
 import co.samco.mend4.core.Settings;
 import co.samco.mend4.desktop.commands.Lock;
+import co.samco.mend4.desktop.exception.SettingRequiredException;
 import co.samco.mend4.desktop.helper.ShredHelper;
 import org.junit.Assert;
 import org.junit.Before;
@@ -29,7 +30,12 @@ public class LockTest extends TestBase {
       shredHelper = new ShredHelper(strings, osDao, settings, log);
       when(fileResolveHelper.getPrivateKeyPath()).thenReturn(privateKeyPath);
       when(fileResolveHelper.getPublicKeyPath()).thenReturn(publicKeyPath);
-      lock = new Lock(strings, log, osDao, shredHelper, fileResolveHelper);
+      lock = new Lock(strings, log, osDao, settingsHelper, shredHelper, fileResolveHelper);
+   }
+
+   @Test
+   public void testCommandWithSettingsDependencies() throws IOException, SettingRequiredException {
+      super.testCommandWithSettingsDependencies(lock);
    }
 
    private ArgumentCaptor<String> getOutputOfLockTest() throws IOException, CorruptSettingsException {

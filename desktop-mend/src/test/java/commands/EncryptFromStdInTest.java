@@ -4,6 +4,7 @@ import co.samco.mend4.core.Settings;
 import co.samco.mend4.core.exception.CorruptSettingsException;
 import co.samco.mend4.desktop.commands.Encrypt;
 import co.samco.mend4.desktop.commands.EncryptFromStdIn;
+import co.samco.mend4.desktop.exception.SettingRequiredException;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -38,7 +39,13 @@ public class EncryptFromStdInTest extends TestBase {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        encrypt = new EncryptFromStdIn(settings, log, strings, cryptoHelper, inputHelper, osDao, fileResolveHelper);
+        encrypt = new EncryptFromStdIn(settings, settingsHelper, log, strings, cryptoHelper, inputHelper,
+                osDao, fileResolveHelper);
+    }
+
+    @Test
+    public void testCommandWithSettingsDependencies() throws IOException, SettingRequiredException {
+        super.testCommandWithSettingsDependencies(encrypt);
     }
 
     @Test

@@ -3,10 +3,12 @@ package co.samco.mend4.desktop.helper;
 import co.samco.mend4.core.exception.CorruptSettingsException;
 import co.samco.mend4.core.Settings;
 import co.samco.mend4.desktop.core.I18N;
+import co.samco.mend4.desktop.exception.SettingRequiredException;
 
 import javax.inject.Inject;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.List;
 import java.util.stream.Collectors;
 
 public class SettingsHelper {
@@ -19,6 +21,15 @@ public class SettingsHelper {
     public SettingsHelper(I18N strings, Settings settings) {
         this.strings = strings;
         this.settings = settings;
+    }
+
+    public void assertRequiredSettingsExist(Settings.Name[] required, String commandName) throws IOException,
+            SettingRequiredException {
+        for (Settings.Name n : required) {
+            if (settings.valueSet(n)) {
+                throw new SettingRequiredException(strings.getf("Encrypt.dirRequired", n.toString(), commandName));
+            }
+        }
     }
 
     public boolean settingExists(String name) {
