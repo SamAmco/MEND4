@@ -27,7 +27,6 @@ public class ShredHelper {
         this.strings = strings;
     }
 
-    //TODO test this
     public String[] generateShredCommandArgs(String fileName, String commandString) {
         return commandString.replaceAll(strings.get("Shred.fileName"), fileName).split(" ");
     }
