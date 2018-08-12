@@ -75,7 +75,7 @@ public class Decrypt extends Command {
 
     private List<String> tryResolveFileAsEncId(List<String> args) {
         try {
-            File file = fileResolveHelper.resolveEncFilePath(fileIdentifier);
+            File file = fileResolveHelper.resolveAsEncFilePath(fileIdentifier);
             if (fileResolveHelper.fileExistsAndHasExtension(AppProperties.ENC_FILE_EXTENSION, file)) {
                 cryptoHelper.decryptFile(file, silent);
                 return null;
@@ -90,7 +90,7 @@ public class Decrypt extends Command {
 
     private List<String> tryResolveFileAsLog() {
         try {
-            File file = fileResolveHelper.resolveLogFilePath(fileIdentifier);
+            File file = fileResolveHelper.resolveAsLogFilePath(fileIdentifier);
             fileResolveHelper.assertFileExistsAndHasExtension(fileIdentifier, AppProperties.LOG_FILE_EXTENSION, file);
             cryptoHelper.decryptLog(file);
         } catch (IOException | CorruptSettingsException | InvalidKeySpecException | NoSuchAlgorithmException

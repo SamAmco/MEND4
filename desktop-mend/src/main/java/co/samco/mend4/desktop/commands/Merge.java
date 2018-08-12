@@ -79,8 +79,8 @@ public class Merge extends Command {
 
     private Pair<File, File> resolveFiles(String file1, String file2)
             throws IOException, CorruptSettingsException {
-        File firstLog = fileResolveHelper.resolveLogFilePath(file1);
-        File secondLog = fileResolveHelper.resolveLogFilePath(file2);
+        File firstLog = fileResolveHelper.resolveAsLogFilePath(file1);
+        File secondLog = fileResolveHelper.resolveAsLogFilePath(file2);
         fileResolveHelper.assertFileExistsAndHasExtension(file1, AppProperties.LOG_FILE_EXTENSION, firstLog);
         fileResolveHelper.assertFileExistsAndHasExtension(file2, AppProperties.LOG_FILE_EXTENSION, secondLog);
         return new ImmutablePair<>(firstLog, secondLog);

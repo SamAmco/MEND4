@@ -101,18 +101,22 @@ public class FileResolveHelper {
         return filePath.matches("\\d{14}") || filePath.matches("\\d{16}") || filePath.matches("\\d{17}");
     }
 
-    public File resolveLogFilePath(String filePath) throws CorruptSettingsException, IOException {
+    //TODO test this
+    public File resolveAsLogFilePath(String filePath) throws CorruptSettingsException, IOException {
         if (osDao.getFileExtension(filePath).equals("")) {
             return FileUtils.getFile(settings.get().getValue(Settings.Name.LOGDIR),
                     filePath + "." + AppProperties.LOG_FILE_EXTENSION);
         } else if (osDao.fileExists(new File(filePath))) {
             return new File(filePath);
+        } else if (osDao.getFileExtension(filePath).equals(AppProperties.LOG_FILE_EXTENSION)){
+            return FileUtils.getFile(settings.get().getValue(Settings.Name.LOGDIR), filePath);
         } else {
+            filePath = ensureLogNameHasFileExtension(filePath);
             return FileUtils.getFile(settings.get().getValue(Settings.Name.LOGDIR), filePath);
         }
     }
 
-    public File resolveEncFilePath(String fileIdentifier) throws CorruptSettingsException, IOException {
+    public File resolveAsEncFilePath(String fileIdentifier) throws CorruptSettingsException, IOException {
         if (filePathIsEncId(fileIdentifier)) {
             return FileUtils.getFile(settings.get().getValue(Settings.Name.ENCDIR),
                     fileIdentifier + "." + AppProperties.ENC_FILE_EXTENSION);
@@ -121,14 +125,16 @@ public class FileResolveHelper {
         }
     }
 
+    //TODO test this
     public File getTempFile(String dir) {
         String tempName = "tmp";
         int tempSuffix = 0;
-        File currentOutFile = new File(dir + File.separator + tempName + tempSuffix + AppProperties.LOG_FILE_EXTENSION);
-        while (osDao.fileExists(currentOutFile)) {
+        File currentOutFile;
+        do {
+            currentOutFile = new File(dir + File.separator + tempName + tempSuffix + "." + AppProperties.LOG_FILE_EXTENSION);
             tempSuffix++;
-            currentOutFile = new File(dir + tempName + tempSuffix + AppProperties.LOG_FILE_EXTENSION);
         }
+        while (osDao.fileExists(currentOutFile));
         return currentOutFile;
     }
 

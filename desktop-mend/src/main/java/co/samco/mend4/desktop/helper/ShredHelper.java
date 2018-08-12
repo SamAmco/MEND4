@@ -27,14 +27,9 @@ public class ShredHelper {
         this.strings = strings;
     }
 
-    private String mapFilename(String s, String fileName) {
-        return s.equals(strings.get("Shred.fileName")) ? fileName : s;
-    }
-
+    //TODO test this
     public String[] generateShredCommandArgs(String fileName, String commandString) {
-        return Arrays.stream(commandString.split(" "))
-                .map(s -> mapFilename(s, fileName))
-                .toArray(String[]::new);
+        return commandString.replace(strings.get("Shred.fileName"), fileName).split(" ");
     }
 
     public void tryShredFile(String absolutePath) throws IOException, CorruptSettingsException {

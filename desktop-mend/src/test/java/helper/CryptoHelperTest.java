@@ -1,13 +1,11 @@
 package helper;
 
 import co.samco.mend4.core.AppProperties;
-import co.samco.mend4.core.OSDao;
 import co.samco.mend4.core.Settings;
 import co.samco.mend4.core.exception.CorruptSettingsException;
 import co.samco.mend4.core.exception.MalformedLogFileException;
 import co.samco.mend4.core.util.LogUtils;
 import co.samco.mend4.desktop.helper.CryptoHelper;
-import com.sun.org.apache.xpath.internal.Arg;
 import commands.TestBase;
 import org.junit.Assert;
 import org.junit.Before;
@@ -23,8 +21,6 @@ import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -58,7 +54,7 @@ public class CryptoHelperTest extends TestBase {
 
         ArgumentCaptor<File> fileCaptor2 = ArgumentCaptor.forClass(File.class);
         verify(osDao).getOutputStreamForFile(fileCaptor2.capture());
-        Pattern pattern = Pattern.compile(encdir + File.separatorChar + "\\d{17}" + "." + AppProperties.ENC_FILE_EXTENSION);
+        Pattern pattern = Pattern.compile(encdir + File.separatorChar + "\\d{17}." + AppProperties.ENC_FILE_EXTENSION);
         Matcher matcher = pattern.matcher(fileCaptor2.getValue().getAbsolutePath());
         Assert.assertTrue(matcher.matches());
 

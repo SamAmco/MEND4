@@ -84,10 +84,10 @@ public class DecryptTest extends TestBase {
     @Test
     public void encFileDoesntExist() throws IOException, CorruptSettingsException {
         String fileName = "unkown.extension";
-        when(fileResolveHelper.resolveEncFilePath(fileName)).thenReturn(new File(fileName));
+        when(fileResolveHelper.resolveAsEncFilePath(fileName)).thenReturn(new File(fileName));
         when(fileResolveHelper.fileExistsAndHasExtension(anyString(), any(File.class))).thenReturn(false);
         decrypt.execute(Arrays.asList(fileName));
-        verify(fileResolveHelper).resolveLogFilePath(anyString());
+        verify(fileResolveHelper).resolveAsLogFilePath(eq(fileName));
     }
 
     @Test
@@ -102,7 +102,7 @@ public class DecryptTest extends TestBase {
     private void decryptEnc(String encFileName, List<String> args, boolean silentFlag) throws IOException, CorruptSettingsException,
             MalformedLogFileException, InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, BadPaddingException,
             IllegalBlockSizeException, InvalidAlgorithmParameterException, InvalidKeySpecException {
-        when(fileResolveHelper.resolveEncFilePath(encFileName)).thenReturn(new File(encFileName));
+        when(fileResolveHelper.resolveAsEncFilePath(encFileName)).thenReturn(new File(encFileName));
         when(fileResolveHelper.fileExistsAndHasExtension(eq(AppProperties.ENC_FILE_EXTENSION), any(File.class))).thenReturn(true);
         decrypt.execute(args);
         ArgumentCaptor<File> fileCaptor = ArgumentCaptor.forClass(File.class);
@@ -114,7 +114,7 @@ public class DecryptTest extends TestBase {
     private void decryptLog(String logFileName, boolean silentFlag) throws IOException, CorruptSettingsException,
             MalformedLogFileException, InvalidAlgorithmParameterException, NoSuchAlgorithmException, IllegalBlockSizeException,
             BadPaddingException, NoSuchPaddingException, InvalidKeyException, InvalidKeySpecException {
-        when(fileResolveHelper.resolveLogFilePath(anyString())).thenReturn(new File(logFileName));
+        when(fileResolveHelper.resolveAsLogFilePath(anyString())).thenReturn(new File(logFileName));
         List<String> args = new ArrayList<>();
         args.add(logFileName);
         if (silentFlag) {

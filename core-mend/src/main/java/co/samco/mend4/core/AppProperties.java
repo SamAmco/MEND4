@@ -12,7 +12,7 @@ public class AppProperties {
     public static final String LOG_DATE_FORMAT = "dd/MM/yyyy HH:mm:ss";
     public static final String LOG_HEADER = "//MEND%s//%s////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////";
     public static final String DEFAULT_LOG_FILE_NAME = "Log";
-    public static final String ENC_FILE_NAME_FORMAT = "yyyyMMddHHmmssSS";
+    public static final String ENC_FILE_NAME_FORMAT = "yyyyMMddHHmmssSSS";
     public static final String PREFERRED_AES_ALG = "AES/CTR/NoPadding";
     public static final String PREFERRED_RSA_ALG = "RSA/ECB/PKCS1Padding";
     public static final int PREFERRED_RSA_KEY_SIZE = 4096;

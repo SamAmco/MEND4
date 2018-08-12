@@ -92,7 +92,7 @@ public class MergeTest extends TestBase {
     }
 
     private void resolveAnyFile() throws IOException, CorruptSettingsException {
-        when(fileResolveHelper.resolveLogFilePath(anyString())).thenAnswer(
+        when(fileResolveHelper.resolveAsLogFilePath(anyString())).thenAnswer(
                 (Answer<File>) invocation
                         -> new File((String)invocation.getArguments()[0]));
     }
