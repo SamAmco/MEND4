@@ -101,15 +101,12 @@ public class FileResolveHelper {
         return filePath.matches("\\d{14}") || filePath.matches("\\d{16}") || filePath.matches("\\d{17}");
     }
 
-    //TODO test this
     public File resolveAsLogFilePath(String filePath) throws CorruptSettingsException, IOException {
         if (osDao.getFileExtension(filePath).equals("")) {
             return FileUtils.getFile(settings.get().getValue(Settings.Name.LOGDIR),
                     filePath + "." + AppProperties.LOG_FILE_EXTENSION);
         } else if (osDao.fileExists(new File(filePath))) {
             return new File(filePath);
-        } else if (osDao.getFileExtension(filePath).equals(AppProperties.LOG_FILE_EXTENSION)){
-            return FileUtils.getFile(settings.get().getValue(Settings.Name.LOGDIR), filePath);
         } else {
             filePath = ensureLogNameHasFileExtension(filePath);
             return FileUtils.getFile(settings.get().getValue(Settings.Name.LOGDIR), filePath);
@@ -139,3 +136,31 @@ public class FileResolveHelper {
     }
 
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
