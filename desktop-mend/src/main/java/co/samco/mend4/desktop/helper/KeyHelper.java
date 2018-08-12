@@ -17,7 +17,6 @@ import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
 
-//TODO print some sort of helpful message if mend is not unlocked
 public class KeyHelper {
     private final Settings settings;
     private final FileResolveHelper fileResolveHelper;
@@ -33,8 +32,11 @@ public class KeyHelper {
     }
 
     public RSAPrivateKey getPrivateKey() throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
-        Path privateKeyPath = Paths.get(fileResolveHelper.getPrivateKeyPath());
-        //TODO we should probably wrap the IOException here to provide a more useful message if mend is locked
+        String privateKeyPathString = fileResolveHelper.getPrivateKeyPath();
+        if (!fileResolveHelper.fileExists(new File(privateKeyPathString))) {
+            return null;
+        }
+        Path privateKeyPath = Paths.get(privateKeyPathString);
         byte[] privateKeyBytes = osDao.readAllFileBytes(privateKeyPath);
         return cryptoProvider.getPrivateKeyFromBytes(privateKeyBytes);
     }

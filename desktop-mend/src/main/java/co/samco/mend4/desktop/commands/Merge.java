@@ -4,6 +4,7 @@ import co.samco.mend4.core.AppProperties;
 import co.samco.mend4.core.exception.CorruptSettingsException;
 import co.samco.mend4.core.OSDao;
 import co.samco.mend4.desktop.core.I18N;
+import co.samco.mend4.desktop.exception.MendLockedException;
 import co.samco.mend4.desktop.helper.FileResolveHelper;
 import co.samco.mend4.desktop.helper.MergeHelper;
 import co.samco.mend4.desktop.output.PrintStreamProvider;
@@ -61,7 +62,11 @@ public class Merge extends Command {
                 return null;
             }
         } catch (IOException | CorruptSettingsException e) {
-            e.printStackTrace();
+            failWithMessage(log, e.getMessage());
+            return null;
+        } catch (MendLockedException e) {
+            failWithMessage(log, strings.getf("Merge.mendLocked", Unlock.COMMAND_NAME));
+            return null;
         }
         return args;
     }
@@ -70,11 +75,12 @@ public class Merge extends Command {
         try {
             Pair<File, File> logFiles = resolveFiles(args.get(0), args.get(1));
             mergeHelper.mergeLogFilesToNew(logFiles, new File(args.get(2)));
-            return null;
         } catch (IOException | CorruptSettingsException e) {
-            e.printStackTrace();
+            failWithMessage(log, e.getMessage());
+        } catch (MendLockedException e) {
+            failWithMessage(log, strings.getf("Merge.mendLocked", Unlock.COMMAND_NAME));
         }
-        return args;
+        return null;
     }
 
     private Pair<File, File> resolveFiles(String file1, String file2)

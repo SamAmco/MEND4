@@ -11,8 +11,8 @@ public class InputHelper {
     public InputHelper() { }
 
     public void createInputProviderAndRegisterListener(InputListener inputListener) {
-        //TODO we should allow users to use different text editors at some point
-        //TODO we should allow users to configure these parameters
+        //TODO can we allow different text editors somehow?
+        //TODO maybe we should allow users to configure these parameters?
         MendInputBox mendInputBox = new MendInputBox(true, false, 800, 250);
         mendInputBox.addListener(inputListener);
         mendInputBox.setVisible(true);

@@ -2,6 +2,7 @@ package commands;
 
 import co.samco.mend4.core.exception.CorruptSettingsException;
 import co.samco.mend4.desktop.commands.Merge;
+import co.samco.mend4.desktop.exception.MendLockedException;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Assert;
 import org.junit.Before;
@@ -37,17 +38,17 @@ public class MergeTest extends TestBase {
     }
 
     @Test
-    public void mergeToFirst() throws IOException, CorruptSettingsException {
+    public void mergeToFirst() throws IOException, CorruptSettingsException, MendLockedException {
         mergeInPlaceTest(true);
     }
 
     @Test
-    public void mergeToSecond() throws IOException, CorruptSettingsException {
+    public void mergeToSecond() throws IOException, CorruptSettingsException, MendLockedException {
         mergeInPlaceTest(false);
     }
 
     @Test
-    public void mergeToNewFile() throws IOException, CorruptSettingsException {
+    public void mergeToNewFile() throws IOException, CorruptSettingsException, MendLockedException {
         String logA = "logA";
         String logB = "logB";
         String logC = "logC";
@@ -78,7 +79,7 @@ public class MergeTest extends TestBase {
         verify(err).println(strings.getf("General.invalidArgNum", Merge.COMMAND_NAME));
     }
 
-    private void mergeInPlaceTest(boolean first) throws IOException, CorruptSettingsException {
+    private void mergeInPlaceTest(boolean first) throws IOException, CorruptSettingsException, MendLockedException {
         String logA = "logA";
         String logB = "logB";
         when(osDao.fileExists(any())).thenReturn(true);

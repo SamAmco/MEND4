@@ -1,5 +1,8 @@
 package co.samco.mend4.desktop.commands;
 
+import co.samco.mend4.desktop.output.PrintStreamProvider;
+
+import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -8,6 +11,8 @@ import java.util.stream.Collectors;
 
 public abstract class Command {
     public static final List<String> HELP_ALIASES = Arrays.asList("-h", "--help");
+
+    protected int executionResult = 0;
 
     protected abstract void execute(List<String> args);
 
@@ -35,6 +40,15 @@ public abstract class Command {
                 return;
             }
         }
+    }
+
+    protected void failWithMessage(PrintStreamProvider log, String message) {
+        log.err().println(message);
+        executionResult = -1;
+    }
+
+    public int getExecutionResult() {
+        return executionResult;
     }
 
     public abstract String getUsageText();

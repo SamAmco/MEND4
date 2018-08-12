@@ -5,6 +5,7 @@ import co.samco.mend4.core.exception.CorruptSettingsException;
 import co.samco.mend4.core.OSDao;
 import co.samco.mend4.core.exception.MalformedLogFileException;
 import co.samco.mend4.desktop.core.I18N;
+import co.samco.mend4.desktop.exception.MendLockedException;
 import co.samco.mend4.desktop.helper.CryptoHelper;
 import co.samco.mend4.desktop.helper.FileResolveHelper;
 import co.samco.mend4.desktop.output.PrintStreamProvider;
@@ -83,7 +84,9 @@ public class Decrypt extends Command {
         } catch (IOException | CorruptSettingsException | InvalidKeySpecException | NoSuchAlgorithmException
                 | BadPaddingException | MalformedLogFileException | InvalidKeyException
                 | InvalidAlgorithmParameterException | NoSuchPaddingException | IllegalBlockSizeException e) {
-            log.err().println(e.getMessage());
+            failWithMessage(log, e.getMessage());
+        } catch (MendLockedException e) {
+            failWithMessage(log, strings.getf("Decrypt.mendLocked", Unlock.COMMAND_NAME));
         }
         return null;
     }
@@ -96,7 +99,9 @@ public class Decrypt extends Command {
         } catch (IOException | CorruptSettingsException | InvalidKeySpecException | NoSuchAlgorithmException
                 | BadPaddingException | MalformedLogFileException | InvalidKeyException
                 | InvalidAlgorithmParameterException | NoSuchPaddingException | IllegalBlockSizeException e) {
-            log.err().println(e.getMessage());
+            failWithMessage(log, e.getMessage());
+        } catch (MendLockedException e) {
+            failWithMessage(log, strings.getf("Decrypt.mendLocked", Unlock.COMMAND_NAME));
         }
         return null;
     }

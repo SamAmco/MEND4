@@ -5,6 +5,7 @@ import co.samco.mend4.core.Settings;
 import co.samco.mend4.core.exception.CorruptSettingsException;
 import co.samco.mend4.core.exception.MalformedLogFileException;
 import co.samco.mend4.core.util.LogUtils;
+import co.samco.mend4.desktop.exception.MendLockedException;
 import co.samco.mend4.desktop.helper.CryptoHelper;
 import commands.TestBase;
 import org.junit.Assert;
@@ -20,6 +21,7 @@ import java.io.IOException;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.security.interfaces.RSAPrivateKey;
 import java.security.spec.InvalidKeySpecException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -31,10 +33,12 @@ import static org.mockito.Mockito.*;
 public class CryptoHelperTest extends TestBase {
 
     private String encdir = File.separatorChar + "output" + File.separatorChar + "directory";
+    private RSAPrivateKey privateKey;
 
     @Before
     public void setup() {
         super.setup();
+        privateKey = mock(RSAPrivateKey.class);
         cryptoHelper = new CryptoHelper(strings, log, fileResolveHelper, settings, cryptoProvider,
                 keyHelper, osDao, versionHelper);
     }
@@ -123,17 +127,25 @@ public class CryptoHelperTest extends TestBase {
     @Test
     public void testDecryptLog() throws IOException, NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException,
             InvalidAlgorithmParameterException, IllegalBlockSizeException, BadPaddingException, MalformedLogFileException,
-            InvalidKeySpecException {
+            InvalidKeySpecException, MendLockedException {
         File logFile = new File("/logfile.log");
+        when(keyHelper.getPrivateKey()).thenReturn(privateKey);
         cryptoHelper.decryptLog(logFile);
         verify(osDao).getInputStreamForFile(eq(logFile));
         verify(cryptoProvider).decryptLogStream(any(), any(), eq(out));
     }
 
+    @Test(expected = MendLockedException.class)
+    public void testDecryptLogMendLocked() throws IOException, NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException,
+            InvalidAlgorithmParameterException, IllegalBlockSizeException, BadPaddingException, MalformedLogFileException,
+            InvalidKeySpecException, MendLockedException {
+        cryptoHelper.decryptLog(new File(""));
+    }
+
     @Test
     public void testDecryptFile() throws IOException, NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException,
             InvalidAlgorithmParameterException, MalformedLogFileException, BadPaddingException, CorruptSettingsException,
-            InvalidKeySpecException, IllegalBlockSizeException {
+            InvalidKeySpecException, IllegalBlockSizeException, MendLockedException {
         String encFileName = "encFile";
         String fileExtension = "txt";
         File encFile = new File(File.separator + "path" + File.separator + encFileName + "." + AppProperties.ENC_FILE_EXTENSION);
@@ -141,6 +153,7 @@ public class CryptoHelperTest extends TestBase {
         String decDir = File.separator + "decdir";
         when(settings.getValue(Settings.Name.DECDIR)).thenReturn(decDir);
         when(cryptoProvider.decryptEncStream(any(), any(), any())).thenReturn(fileExtension);
+        when(keyHelper.getPrivateKey()).thenReturn(privateKey);
         cryptoHelper.decryptFile(encFile, false);
         verify(fileResolveHelper).assertDirWritable(decDir);
         verify(fileResolveHelper, times(2)).assertFileDoesNotExist(fileCaptor.capture());
@@ -152,28 +165,11 @@ public class CryptoHelperTest extends TestBase {
         verify(osDao).renameFile(any(), eq(encFileName + "." + fileExtension));
         verify(osDao).desktopOpenFile(any());
     }
+
+    @Test(expected = MendLockedException.class)
+    public void testDecryptFileMendLocked() throws IOException, NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException,
+            InvalidAlgorithmParameterException, MalformedLogFileException, BadPaddingException, CorruptSettingsException,
+            InvalidKeySpecException, IllegalBlockSizeException, MendLockedException {
+        cryptoHelper.decryptFile(new File(""), false);
+    }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

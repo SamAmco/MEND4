@@ -15,7 +15,7 @@ dependencies {
     testCompile group: 'org.mockito', name: 'mockito-all', version: '1.10.19'
 }
 
-version = 'DESKT0.3.0'
+version = '4.1.0'
 
 jar {
     manifest {

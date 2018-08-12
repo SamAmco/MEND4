@@ -8,7 +8,6 @@ public class VersionHelper {
     public VersionHelper() {}
 
     public String getVersion() {
-        //TODO make sure the version number is actually correct
         return getClass().getPackage().getImplementationVersion();
     }
 }

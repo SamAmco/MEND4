@@ -66,9 +66,9 @@ public class SetProperty extends Command {
             settings.setValue(name, value);
             log.err().println(strings.getf("SetProperty.successful", propertyName, value));
         } catch (IOException e) {
-            log.err().println(e.getMessage());
+            failWithMessage(log, e.getMessage());
         }
-        return args;
+        return null;
     }
 
     @Override

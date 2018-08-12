@@ -8,6 +8,7 @@ import co.samco.mend4.core.exception.CorruptSettingsException;
 import co.samco.mend4.core.exception.MalformedLogFileException;
 import co.samco.mend4.core.util.LogUtils;
 import co.samco.mend4.desktop.core.I18N;
+import co.samco.mend4.desktop.exception.MendLockedException;
 import co.samco.mend4.desktop.output.PrintStreamProvider;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
@@ -16,6 +17,7 @@ import javax.crypto.*;
 import javax.inject.Inject;
 import java.io.*;
 import java.security.*;
+import java.security.interfaces.RSAPrivateKey;
 import java.security.spec.InvalidKeySpecException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -86,16 +88,25 @@ public class CryptoHelper {
 
     public void decryptLog(File file) throws InvalidKeySpecException, IOException, NoSuchAlgorithmException,
             MalformedLogFileException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException,
-            NoSuchPaddingException, InvalidAlgorithmParameterException {
+            NoSuchPaddingException, InvalidAlgorithmParameterException, MendLockedException {
+        RSAPrivateKey privateKey = keyHelper.getPrivateKey();
+        if (privateKey == null) {
+            throw new MendLockedException();
+        }
         try (InputStream fis = osDao.getInputStreamForFile(file)){
-            cryptoProvider.decryptLogStream(keyHelper.getPrivateKey(), fis, log.out());
+            cryptoProvider.decryptLogStream(privateKey, fis, log.out());
         }
     }
 
     public void decryptFile(File file, boolean silent) throws IOException, CorruptSettingsException,
             InvalidKeySpecException, NoSuchAlgorithmException, MalformedLogFileException,
             InvalidAlgorithmParameterException, NoSuchPaddingException, BadPaddingException, IllegalBlockSizeException,
-            InvalidKeyException {
+            InvalidKeyException, MendLockedException {
+        RSAPrivateKey privateKey = keyHelper.getPrivateKey();
+        if (privateKey == null) {
+            throw new MendLockedException();
+        }
+
         String decDir = settings.getValue(Settings.Name.DECDIR);
         fileResolveHelper.assertDirWritable(decDir);
         File outputFile = FileUtils.getFile(decDir, FilenameUtils.removeExtension(file.getName()));
@@ -105,7 +116,7 @@ public class CryptoHelper {
         log.err().println(strings.getf("CryptoHelper.decryptingFile", outputFile.getAbsolutePath()));
         try (InputStream fis = osDao.getInputStreamForFile(file);
             OutputStream fos = osDao.getOutputStreamForFile(outputFile)) {
-            fileExtension = cryptoProvider.decryptEncStream(keyHelper.getPrivateKey(), fis, fos);
+            fileExtension = cryptoProvider.decryptEncStream(privateKey, fis, fos);
         }
         String newFileName = outputFile.getName() + "." + fileExtension;
         File newOutputFile = new File(outputFile.getParentFile().getAbsolutePath()

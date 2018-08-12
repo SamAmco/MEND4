@@ -110,7 +110,7 @@ public class Setup extends Command {
         } catch (InvalidKeyException | InvalidAlgorithmParameterException | NoSuchAlgorithmException
                 | InvalidKeySpecException | IllegalBlockSizeException | BadPaddingException | NoSuchPaddingException
                 | IOException e) {
-            log.err().println(e.getMessage());
+            failWithMessage(log, e.getMessage());
             return null;
         }
         return args;
@@ -124,7 +124,7 @@ public class Setup extends Command {
             setIfNull(Settings.Name.AESKEYSIZE, Integer.toString(AppProperties.PREFERRED_AES_KEY_SIZE));
             setIfNull(Settings.Name.RSAKEYSIZE, Integer.toString(AppProperties.PREFERRED_RSA_KEY_SIZE));
         } catch (IOException  e) {
-            log.err().println(e.getMessage());
+            failWithMessage(log, e.getMessage());
             return null;
         }
         return args;

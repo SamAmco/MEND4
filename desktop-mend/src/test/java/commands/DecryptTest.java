@@ -4,6 +4,7 @@ import co.samco.mend4.core.AppProperties;
 import co.samco.mend4.core.exception.CorruptSettingsException;
 import co.samco.mend4.core.exception.MalformedLogFileException;
 import co.samco.mend4.desktop.commands.Decrypt;
+import co.samco.mend4.desktop.exception.MendLockedException;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -40,7 +41,7 @@ public class DecryptTest extends TestBase {
     @Test
     public void decryptLog() throws IOException, CorruptSettingsException, MalformedLogFileException, InvalidKeyException,
             NoSuchAlgorithmException, IllegalBlockSizeException, BadPaddingException, NoSuchPaddingException,
-            InvalidAlgorithmParameterException, InvalidKeySpecException {
+            InvalidAlgorithmParameterException, InvalidKeySpecException, MendLockedException {
         String logFileName = "logFile." + AppProperties.LOG_FILE_EXTENSION;
         decryptLog(logFileName, false);
     }
@@ -48,7 +49,7 @@ public class DecryptTest extends TestBase {
     @Test
     public void decryptLogWithSilentFlag() throws IOException, CorruptSettingsException, MalformedLogFileException,
             InvalidKeyException, NoSuchAlgorithmException, IllegalBlockSizeException, BadPaddingException,
-            NoSuchPaddingException, InvalidAlgorithmParameterException, InvalidKeySpecException {
+            NoSuchPaddingException, InvalidAlgorithmParameterException, InvalidKeySpecException, MendLockedException {
         String logFileName = "logFile." + AppProperties.LOG_FILE_EXTENSION;
         decryptLog(logFileName, true);
     }
@@ -56,7 +57,7 @@ public class DecryptTest extends TestBase {
     @Test
     public void decryptEnc() throws IOException, CorruptSettingsException, MalformedLogFileException,
             InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchPaddingException, BadPaddingException,
-            IllegalBlockSizeException, InvalidKeyException, InvalidKeySpecException {
+            IllegalBlockSizeException, InvalidKeyException, InvalidKeySpecException, MendLockedException {
         String encFileName = "sam." + AppProperties.ENC_FILE_EXTENSION;
         decryptEnc(encFileName, Arrays.asList(encFileName), false);
     }
@@ -64,7 +65,7 @@ public class DecryptTest extends TestBase {
     @Test
     public void decryptEncSilent() throws IOException, CorruptSettingsException, MalformedLogFileException,
             InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchPaddingException, BadPaddingException,
-            IllegalBlockSizeException, InvalidKeyException, InvalidKeySpecException {
+            IllegalBlockSizeException, InvalidKeyException, InvalidKeySpecException, MendLockedException {
         String encFileName = "sam." + AppProperties.ENC_FILE_EXTENSION;
         decryptEnc(encFileName, Arrays.asList(encFileName, Decrypt.SILENT_FLAG), true);
     }
@@ -101,7 +102,7 @@ public class DecryptTest extends TestBase {
 
     private void decryptEnc(String encFileName, List<String> args, boolean silentFlag) throws IOException, CorruptSettingsException,
             MalformedLogFileException, InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, BadPaddingException,
-            IllegalBlockSizeException, InvalidAlgorithmParameterException, InvalidKeySpecException {
+            IllegalBlockSizeException, InvalidAlgorithmParameterException, InvalidKeySpecException, MendLockedException {
         when(fileResolveHelper.resolveAsEncFilePath(encFileName)).thenReturn(new File(encFileName));
         when(fileResolveHelper.fileExistsAndHasExtension(eq(AppProperties.ENC_FILE_EXTENSION), any(File.class))).thenReturn(true);
         decrypt.execute(args);
@@ -113,7 +114,7 @@ public class DecryptTest extends TestBase {
 
     private void decryptLog(String logFileName, boolean silentFlag) throws IOException, CorruptSettingsException,
             MalformedLogFileException, InvalidAlgorithmParameterException, NoSuchAlgorithmException, IllegalBlockSizeException,
-            BadPaddingException, NoSuchPaddingException, InvalidKeyException, InvalidKeySpecException {
+            BadPaddingException, NoSuchPaddingException, InvalidKeyException, InvalidKeySpecException, MendLockedException {
         when(fileResolveHelper.resolveAsLogFilePath(anyString())).thenReturn(new File(logFileName));
         List<String> args = new ArrayList<>();
         args.add(logFileName);

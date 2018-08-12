@@ -75,7 +75,7 @@ public class Unlock extends Command {
         }
         catch (IOException | InvalidKeySpecException | NoSuchAlgorithmException | InvalidKeyException
                 | NoSuchPaddingException | BadPaddingException | IllegalBlockSizeException | CorruptSettingsException e) {
-            log.err().println(e.getMessage());
+            failWithMessage(log, e.getMessage());
         }
         return args;
     }
@@ -90,7 +90,7 @@ public class Unlock extends Command {
             }
         }
         catch (IOException | CorruptSettingsException e) {
-            log.err().println(e.getMessage());
+            failWithMessage(log, e.getMessage());
             return null;
         }
         return args;
@@ -106,7 +106,7 @@ public class Unlock extends Command {
         } catch (CorruptSettingsException | NoSuchAlgorithmException | InvalidKeyException
                 | InvalidAlgorithmParameterException | NoSuchPaddingException | InvalidKeySpecException
                 | IOException | BadPaddingException | IllegalBlockSizeException e) {
-            log.err().println(e.getMessage());
+            failWithMessage(log, e.getMessage());
             return null;
         }
         return args;

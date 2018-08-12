@@ -25,13 +25,19 @@ public class Main {
         this.log = log;
     }
 
-    public void run(Runner runner, List<String> args) {
+    public void run(Runner runner, List<String> args) throws Exception {
         if (args.size() < 1) {
             runner.defaultCommand().executeCommand(args);
         } else if (printHelp(runner, args)) {
            return;
-        } else if (!findAndRunCommand(runner.commands(), args)) {
-            log.err().println(strings.get("Main.commandNotFound"));
+        } else {
+            Command command = findAndRunCommand(runner.commands(), args);
+            if (command == null) {
+                log.err().println(strings.get("Main.commandNotFound"));
+                System.exit(1);
+            } else if (command.getExecutionResult() != 0) {
+                throw new Exception();
+            }
         }
     }
 
@@ -43,14 +49,14 @@ public class Main {
         return false;
     }
 
-    private boolean findAndRunCommand(Set<Command> commands, List<String> args) {
+    private Command findAndRunCommand(Set<Command> commands, List<String> args) {
         for (Command c : commands) {
             if (c.isCommandForString(args.get(0))) {
                 c.executeCommand(args.subList(1, args.size()));
-                return true;
+                return c;
             }
         }
-        return false;
+        return null;
     }
 
     @Singleton
@@ -62,7 +68,7 @@ public class Main {
         Main getMain();
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         Runner runner = DaggerMain_Runner.create();
         runner.getMain().run(runner, Arrays.asList(args));
     }

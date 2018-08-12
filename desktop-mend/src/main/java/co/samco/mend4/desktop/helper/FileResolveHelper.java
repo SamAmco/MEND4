@@ -25,7 +25,7 @@ public class FileResolveHelper {
         this.strings = strings;
     }
 
-    private boolean fileExists(File file) {
+    public boolean fileExists(File file) {
         return file != null && osDao.fileExists(file) && osDao.fileIsFile(file);
     }
 
@@ -122,7 +122,6 @@ public class FileResolveHelper {
         }
     }
 
-    //TODO test this
     public File getTempFile(String dir) {
         String tempName = "tmp";
         int tempSuffix = 0;

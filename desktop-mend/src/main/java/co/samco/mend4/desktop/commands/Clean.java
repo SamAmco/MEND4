@@ -34,7 +34,7 @@ public class Clean extends Command {
             shredHelper.shredFilesInDirectory(decDir);
             log.err().println(strings.get("Clean.cleanComplete"));
         } catch (CorruptSettingsException | IOException e) {
-            log.err().println(e.getMessage());
+            failWithMessage(log, e.getMessage());
         }
     }
 

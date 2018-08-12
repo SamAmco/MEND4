@@ -51,7 +51,7 @@ public class Lock extends Command {
             shredHelper.tryShredFile(fileResolveHelper.getPublicKeyPath());
             printLockStatus(strings.get("Lock.lockFailed"), strings.get("Lock.locked"));
         } catch (IOException | CorruptSettingsException e) {
-            log.err().println(e.getMessage());
+            failWithMessage(log, e.getMessage());
         }
     }
 

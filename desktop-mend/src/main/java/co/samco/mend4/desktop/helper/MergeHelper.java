@@ -6,6 +6,9 @@ import co.samco.mend4.core.exception.CorruptSettingsException;
 import co.samco.mend4.core.OSDao;
 import co.samco.mend4.core.Settings;
 import co.samco.mend4.core.exception.MalformedLogFileException;
+import co.samco.mend4.desktop.commands.Unlock;
+import co.samco.mend4.desktop.core.I18N;
+import co.samco.mend4.desktop.exception.MendLockedException;
 import co.samco.mend4.desktop.output.PrintStreamProvider;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -18,6 +21,7 @@ import java.nio.file.StandardCopyOption;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.security.interfaces.RSAPrivateKey;
 import java.security.spec.InvalidKeySpecException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -27,6 +31,7 @@ import java.util.regex.Pattern;
 
 public class MergeHelper {
     private final PrintStreamProvider log;
+    private final I18N strings;
     private final FileResolveHelper fileResolveHelper;
     private final CryptoProvider cryptoProvider;
     private final KeyHelper keyHelper;
@@ -34,17 +39,18 @@ public class MergeHelper {
     private final Settings settings;
 
     @Inject
-    public MergeHelper(PrintStreamProvider log, FileResolveHelper fileResolveHelper, CryptoProvider cryptoProvider,
-                       KeyHelper keyHelper, OSDao osDao, Settings settings) {
+    public MergeHelper(PrintStreamProvider log, I18N strings, FileResolveHelper fileResolveHelper,
+                       CryptoProvider cryptoProvider, KeyHelper keyHelper, OSDao osDao, Settings settings) {
         this.log = log;
         this.fileResolveHelper = fileResolveHelper;
+        this.strings = strings;
         this.cryptoProvider = cryptoProvider;
         this.keyHelper = keyHelper;
         this.osDao = osDao;
         this.settings = settings;
     }
 
-    public void mergeToFirstOrSecond(Pair<File, File> logFiles, boolean first) {
+    public void mergeToFirstOrSecond(Pair<File, File> logFiles, boolean first) throws MendLockedException {
         try {
             File firstLog = logFiles.getLeft();
             File secondLog = logFiles.getRight();
@@ -61,7 +67,7 @@ public class MergeHelper {
         }
     }
 
-    public void mergeLogFilesToNew(Pair<File, File> files, File outputLog) {
+    public void mergeLogFilesToNew(Pair<File, File> files, File outputLog) throws MendLockedException {
         try (InputStream f1InputStream = osDao.getInputStreamForFile(files.getLeft());
             InputStream f2InputStream = osDao.getInputStreamForFile(files.getRight());
             OutputStream fOutputStream = osDao.getOutputStreamForFile(outputLog)) {
@@ -77,19 +83,23 @@ public class MergeHelper {
     private void mergeLogs(InputStream firstLog, InputStream secondLog, OutputStream outputStream)
             throws IOException, ParseException, NoSuchAlgorithmException, MalformedLogFileException,
             InvalidKeyException, InvalidAlgorithmParameterException, NoSuchPaddingException, BadPaddingException,
-            IllegalBlockSizeException, InvalidKeySpecException {
-        LogEntry firstLogEntry = parseNextLog(firstLog);
-        LogEntry secondLogEntry = parseNextLog(secondLog);
+            IllegalBlockSizeException, InvalidKeySpecException, MendLockedException {
+        RSAPrivateKey privateKey = keyHelper.getPrivateKey();
+        if (privateKey == null) {
+            throw new MendLockedException();
+        }
+        LogEntry firstLogEntry = parseNextLog(firstLog, privateKey);
+        LogEntry secondLogEntry = parseNextLog(secondLog, privateKey);
         LogEntry lastLogEntry = null;
         while (firstLogEntry != null || secondLogEntry != null) {
             if (firstLogEntry != null && firstLogEntry.before(secondLogEntry)) {
                 writeIfNotDuplicate(firstLogEntry, lastLogEntry, outputStream);
                 lastLogEntry = firstLogEntry;
-                firstLogEntry = parseNextLog(firstLog);
+                firstLogEntry = parseNextLog(firstLog, privateKey);
             } else {
                 writeIfNotDuplicate(secondLogEntry, lastLogEntry, outputStream);
                 lastLogEntry = secondLogEntry;
-                secondLogEntry = parseNextLog(secondLog);
+                secondLogEntry = parseNextLog(secondLog, privateKey);
             }
         }
     }
@@ -100,23 +110,24 @@ public class MergeHelper {
         }
     }
 
-    private LogEntry parseNextLog(InputStream inputStream)
-            throws IOException, InvalidKeyException, NoSuchAlgorithmException,
-            InvalidAlgorithmParameterException, NoSuchPaddingException, BadPaddingException,
-            MalformedLogFileException, IllegalBlockSizeException, ParseException, InvalidKeySpecException {
+    private LogEntry parseNextLog(InputStream inputStream, RSAPrivateKey privateKey)
+            throws IOException, InvalidKeyException, NoSuchAlgorithmException, InvalidAlgorithmParameterException,
+            NoSuchPaddingException, BadPaddingException, MalformedLogFileException, IllegalBlockSizeException,
+            ParseException {
         byte[] lc1Bytes = new byte[4];
         if (cryptoProvider.logHasNext(inputStream, lc1Bytes)) {
-            return parseNextLog(inputStream, lc1Bytes);
+            return parseNextLog(inputStream, lc1Bytes, privateKey);
         } else {
             return null;
         }
     }
 
-    private LogEntry parseNextLog(InputStream inputStream, byte[] lc1Bytes) throws NoSuchAlgorithmException, IOException,
-            InvalidKeySpecException, MalformedLogFileException, InvalidAlgorithmParameterException, IllegalBlockSizeException,
-            BadPaddingException, NoSuchPaddingException, InvalidKeyException, ParseException {
+    private LogEntry parseNextLog(InputStream inputStream, byte[] lc1Bytes, RSAPrivateKey privateKey) throws
+            NoSuchAlgorithmException, IOException, MalformedLogFileException, InvalidAlgorithmParameterException,
+            IllegalBlockSizeException, BadPaddingException, NoSuchPaddingException, InvalidKeyException,
+            ParseException {
         LogDataBlocksAndText nextLog = cryptoProvider.getNextLogTextWithDataBlocks(inputStream,
-                keyHelper.getPrivateKey(), lc1Bytes);
+                privateKey, lc1Bytes);
         String logText = nextLog.getEntryText();
         Date firstDate = null;
         Pattern pattern = Pattern.compile("(\\d+)\\/(\\d+)\\/(\\d+) (\\d+):(\\d+):(\\d+)");

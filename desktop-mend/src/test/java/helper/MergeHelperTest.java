@@ -6,6 +6,7 @@ import co.samco.mend4.core.bean.LogDataBlocks;
 import co.samco.mend4.core.bean.LogDataBlocksAndText;
 import co.samco.mend4.core.exception.CorruptSettingsException;
 import co.samco.mend4.core.util.LogUtils;
+import co.samco.mend4.desktop.exception.MendLockedException;
 import co.samco.mend4.desktop.helper.MergeHelper;
 import commands.TestBase;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -18,6 +19,9 @@ import org.mockito.invocation.InvocationOnMock;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.StandardCopyOption;
+import java.security.NoSuchAlgorithmException;
+import java.security.interfaces.RSAPrivateKey;
+import java.security.spec.InvalidKeySpecException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -41,11 +45,12 @@ public class MergeHelperTest extends TestBase {
     public void setup() {
         super.setup();
         try {
-            when(keyHelper.getPrivateKey()).thenReturn(null);
+            RSAPrivateKey privateKey = mock(RSAPrivateKey.class);
+            when(keyHelper.getPrivateKey()).thenReturn(privateKey);
         } catch (Exception e) {
             e.printStackTrace();
         }
-        mergeHelper = new MergeHelper(log, fileResolveHelper, cryptoProvider, keyHelper, osDao, settings);
+        mergeHelper = new MergeHelper(log, strings, fileResolveHelper, cryptoProvider, keyHelper, osDao, settings);
     }
 
     private void setupInputAndOutput() throws IOException {
@@ -116,8 +121,24 @@ public class MergeHelperTest extends TestBase {
         return new String(mergedLogBytes, StandardCharsets.UTF_8);
     }
 
+    @Test(expected = MendLockedException.class)
+    public void testMergeMendLocked() throws NoSuchAlgorithmException, IOException, InvalidKeySpecException, MendLockedException {
+        setupInputAndOutput();
+        when(keyHelper.getPrivateKey()).thenReturn(null);
+        mergeHelper.mergeLogFilesToNew(files, output);
+    }
+
+    @Test(expected = MendLockedException.class)
+    public void testMergeMendLockedMergeToExisting() throws NoSuchAlgorithmException, IOException,
+            InvalidKeySpecException, MendLockedException {
+        setupInputAndOutput();
+        when(keyHelper.getPrivateKey()).thenReturn(null);
+        mergeHelper.mergeToFirstOrSecond(files, true);
+        verify(osDao, never()).renameFile(any(), any());
+    }
+
     @Test
-    public void testMerge() throws IOException {
+    public void testMerge() throws IOException, MendLockedException {
         setupInputAndOutput();
         String a = getLogFromString("s1");
         String b = getLogFromString("s2");
@@ -133,7 +154,7 @@ public class MergeHelperTest extends TestBase {
     }
 
     @Test
-    public void testMergeWithFirstEmpty() throws IOException {
+    public void testMergeWithFirstEmpty() throws IOException, MendLockedException {
         setupInputAndOutput();
         String a = getLogFromString("s1");
         String b = getLogFromString("s2");
@@ -145,7 +166,7 @@ public class MergeHelperTest extends TestBase {
     }
 
     @Test
-    public void testMergeWithSecondLogEmpty() throws IOException {
+    public void testMergeWithSecondLogEmpty() throws IOException, MendLockedException {
         setupInputAndOutput();
         String a = getLogFromString("s1");
         String b = getLogFromString("s2");
@@ -157,7 +178,7 @@ public class MergeHelperTest extends TestBase {
     }
 
     @Test
-    public void testBothLogsEmpty() throws IOException {
+    public void testBothLogsEmpty() throws IOException, MendLockedException {
         setupInputAndOutput();
         mergeHelper.mergeLogFilesToNew(files, output);
         String output = getMergedOutput();
@@ -165,7 +186,7 @@ public class MergeHelperTest extends TestBase {
     }
 
     @Test
-    public void testDupsInOneFile() throws IOException {
+    public void testDupsInOneFile() throws IOException, MendLockedException {
         setupInputAndOutput();
         String a = getLogFromString("s1");
         String b = getLogFromString("s2");
@@ -181,7 +202,7 @@ public class MergeHelperTest extends TestBase {
     }
 
     @Test
-    public void testDupsAcrossFiles() throws IOException {
+    public void testDupsAcrossFiles() throws IOException, MendLockedException {
         setupInputAndOutput();
         String a = getLogFromString("s1");
         String b = a;
@@ -197,18 +218,18 @@ public class MergeHelperTest extends TestBase {
     }
 
     @Test
-    public void testMergeToFirst() throws IOException, CorruptSettingsException {
+    public void testMergeToFirst() throws IOException, CorruptSettingsException, MendLockedException {
         setupInputAndOutput();
         testMoveToFirstOrSecond(true, first);
     }
 
     @Test
-    public void testMergeToSecond() throws IOException, CorruptSettingsException {
+    public void testMergeToSecond() throws IOException, CorruptSettingsException, MendLockedException {
         setupInputAndOutput();
         testMoveToFirstOrSecond(false, second);
     }
 
-    private void testMoveToFirstOrSecond(boolean isFirst, File firstOrSecond) throws IOException, CorruptSettingsException {
+    private void testMoveToFirstOrSecond(boolean isFirst, File firstOrSecond) throws IOException, CorruptSettingsException, MendLockedException {
         String logdir = "logdir";
         File tempFile = new File("temp");
         when(settings.getValue(Settings.Name.LOGDIR)).thenReturn(logdir);
@@ -219,7 +240,7 @@ public class MergeHelperTest extends TestBase {
     }
 
     @Test
-    public void oneLogAllAppended() throws IOException {
+    public void oneLogAllAppended() throws IOException, MendLockedException {
         setupInputAndOutput();
         String a = "s1";
         String b = getLogFromString("s2");
@@ -235,7 +256,7 @@ public class MergeHelperTest extends TestBase {
     }
 
     @Test
-    public void bothLogsAllAppended() throws IOException {
+    public void bothLogsAllAppended() throws IOException, MendLockedException {
         setupInputAndOutput();
         String a = "s1";
         String b = "s2";

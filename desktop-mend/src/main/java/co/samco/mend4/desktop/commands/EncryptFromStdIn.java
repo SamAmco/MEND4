@@ -58,7 +58,7 @@ public class EncryptFromStdIn extends Encrypt {
         } catch (IOException | CorruptSettingsException | InvalidKeySpecException | NoSuchAlgorithmException
                 | IllegalBlockSizeException | InvalidKeyException | BadPaddingException
                 | InvalidAlgorithmParameterException | NoSuchPaddingException e) {
-            e.printStackTrace();
+            failWithMessage(log, e.getMessage());
         }
         return null;
     }

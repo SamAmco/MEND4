@@ -70,7 +70,7 @@ public class StatePrinter extends Command {
                 return null;
             }
         } catch (IOException | CorruptSettingsException e) {
-            log.err().println(e.getMessage());
+            failWithMessage(log, e.getMessage());
         }
         return args;
     }

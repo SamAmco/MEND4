@@ -72,7 +72,7 @@ public class Encrypt extends Command implements InputListener {
                 return null;
             } else return args;
         } catch (IOException e) {
-            log.err().println(e.getMessage());
+            failWithMessage(log, e.getMessage());
             return null;
         }
     }
@@ -134,7 +134,7 @@ public class Encrypt extends Command implements InputListener {
         } catch (IOException | CorruptSettingsException | InvalidKeySpecException | NoSuchAlgorithmException
                 | IllegalBlockSizeException | InvalidKeyException | BadPaddingException
                 | InvalidAlgorithmParameterException | NoSuchPaddingException e) {
-            log.err().println(e.getMessage());
+            failWithMessage(log, e.getMessage());
         }
         return null;
     }
@@ -150,7 +150,7 @@ public class Encrypt extends Command implements InputListener {
         } catch (IOException | CorruptSettingsException | InvalidKeySpecException | NoSuchAlgorithmException
                 | IllegalBlockSizeException | InvalidKeyException | BadPaddingException
                 | InvalidAlgorithmParameterException | NoSuchPaddingException e) {
-            log.err().println(e.getMessage());
+            failWithMessage(log, e.getMessage());
         }
     }
 

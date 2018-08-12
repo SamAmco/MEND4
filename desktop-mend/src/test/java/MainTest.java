@@ -42,7 +42,7 @@ public class MainTest {
     }
 
     @Test
-    public void helpTest() {
+    public void helpTest() throws Exception {
         Help help = mock(Help.class);
         when(runner.helpCommand()).thenReturn(help);
         for (String s : Help.HELP_ALIASES) {
@@ -54,7 +54,7 @@ public class MainTest {
     }
 
     @Test
-    public void noArgs() {
+    public void noArgs() throws Exception {
         Command defaultCommand = mock(Command.class);
         when(runner.defaultCommand()).thenReturn(defaultCommand);
         main.run(runner, Collections.emptyList());
@@ -63,18 +63,26 @@ public class MainTest {
     }
 
     @Test
-    public void runCommandWithArgs() {
-        runCommand(Arrays.asList("hi"));
+    public void runCommandWithArgs() throws Exception {
+        Command command = mock(Command.class);
+        runCommand(Arrays.asList("hi"), command);
     }
 
     @Test
-    public void runCommand() {
-        runCommand(Collections.emptyList());
+    public void runCommand() throws Exception {
+        Command command = mock(Command.class);
+        runCommand(Collections.emptyList(), command);
     }
 
-    private void runCommand(List<String> subCommandArgs) {
-        String commandName = "command";
+    @Test (expected = Exception.class)
+    public void commandFailed() throws Exception {
         Command command = mock(Command.class);
+        when(command.getExecutionResult()).thenReturn(-1);
+        runCommand(Collections.emptyList(), command);
+    }
+
+    private void runCommand(List<String> subCommandArgs, Command command) throws Exception {
+        String commandName = "command";
         when(command.isCommandForString(commandName)).thenReturn(true);
         Set<Command> commands = new HashSet<>();
         commands.add(command);
