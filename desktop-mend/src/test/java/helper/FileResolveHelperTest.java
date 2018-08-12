@@ -9,6 +9,9 @@ import dagger.Lazy;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.runners.MockitoJUnitRunner;
 
 import java.io.File;
 import java.io.IOException;
@@ -16,12 +19,15 @@ import java.io.IOException;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.*;
 
+@RunWith(MockitoJUnitRunner.class)
 public class FileResolveHelperTest extends TestBase {
+
+    @Mock
+    private Lazy<Settings> lazySettings;
 
     @Before
     public void setup() {
         super.setup();
-        Lazy<Settings> lazySettings = mock(Lazy.class);
         when(lazySettings.get()).thenReturn(settings);
         fileResolveHelper = new FileResolveHelper(osDao, lazySettings, strings);
     }
