@@ -29,7 +29,7 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.*;
 
-public class SetupTestBase extends TestBase {
+public class SetupTest extends TestBase {
     private Setup setup;
 
     private ArgumentCaptor<String> errCaptor;
@@ -43,7 +43,7 @@ public class SetupTestBase extends TestBase {
         errCaptor = ArgumentCaptor.forClass(String.class);
         when(fileResolveHelper.getSettingsFilePath()).thenReturn(settingsFilePath);
         when(fileResolveHelper.getMendDirPath()).thenReturn(mendDirPath);
-        setup = new Setup(log, strings, osDao, cryptoHelper, cryptoProvider, fileResolveHelper, settings);
+        setup = new Setup(log, strings, osDao, keyHelper, cryptoProvider, fileResolveHelper, settings);
     }
 
     @Test
@@ -146,7 +146,7 @@ public class SetupTestBase extends TestBase {
         when(cryptoProvider.getEncodedKeyInfo(any(char[].class), any(KeyPair.class))).thenReturn(keyInfo);
         when(fileResolveHelper.resolveFile(anyString())).thenReturn(new File(""));
         setup.execute(Arrays.asList("x", "y"));
-        verify(cryptoHelper).readKeyPairFromFiles(any(File.class), any(File.class));
+        verify(keyHelper).readKeyPairFromFiles(any(File.class), any(File.class));
         verify(err).println(errCaptor.capture());
         return keyInfo;
     }

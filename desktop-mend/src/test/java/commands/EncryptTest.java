@@ -22,7 +22,7 @@ import java.util.Collections;
 
 import static org.mockito.Mockito.*;
 
-public class EncryptTestBase extends TestBase {
+public class EncryptTest extends TestBase {
     private Encrypt encrypt;
 
     @Before

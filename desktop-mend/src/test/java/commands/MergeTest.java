@@ -24,7 +24,7 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.class)
-public class MergeTestBase extends TestBase {
+public class MergeTest extends TestBase {
     private Merge merge;
 
     @Captor

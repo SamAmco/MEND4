@@ -8,6 +8,7 @@ import co.samco.mend4.core.crypto.CryptoProvider;
 import co.samco.mend4.desktop.core.I18N;
 import co.samco.mend4.desktop.helper.CryptoHelper;
 import co.samco.mend4.desktop.helper.FileResolveHelper;
+import co.samco.mend4.desktop.helper.KeyHelper;
 import co.samco.mend4.desktop.output.PrintStreamProvider;
 
 import javax.crypto.BadPaddingException;
@@ -32,7 +33,7 @@ public class Setup extends Command {
     private final PrintStreamProvider log;
     private final I18N strings;
     private final OSDao osDao;
-    private final CryptoHelper cryptoHelper;
+    private final KeyHelper keyHelper;
     private final CryptoProvider cryptoProvider;
     private final FileResolveHelper fileResolveHelper;
     private final Settings settings;
@@ -50,12 +51,12 @@ public class Setup extends Command {
     );
 
     @Inject
-    public Setup(PrintStreamProvider log, I18N strings, OSDao osDao, CryptoHelper cryptoHelper,
+    public Setup(PrintStreamProvider log, I18N strings, OSDao osDao, KeyHelper keyHelper,
                  CryptoProvider cryptoProvider, FileResolveHelper fileResolveHelper, Settings settings) {
         this.log = log;
         this.strings = strings;
         this.osDao = osDao;
-        this.cryptoHelper = cryptoHelper;
+        this.keyHelper = keyHelper;
         this.cryptoProvider = cryptoProvider;
         this.fileResolveHelper = fileResolveHelper;
         this.settings = settings;
@@ -151,7 +152,7 @@ public class Setup extends Command {
             InvalidKeyException {
         File privateKeyFile = fileResolveHelper.resolveFile(privateKeyFilePath);
         File publicKeyFile = fileResolveHelper.resolveFile(publicKeyFilePath);
-        setKeys(password, cryptoHelper.readKeyPairFromFiles(privateKeyFile, publicKeyFile));
+        setKeys(password, keyHelper.readKeyPairFromFiles(privateKeyFile, publicKeyFile));
     }
 
     private void setKeysGenerated(char[] password) throws NoSuchAlgorithmException,

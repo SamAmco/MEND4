@@ -7,9 +7,11 @@ import co.samco.mend4.core.exception.CorruptSettingsException;
 import org.apache.commons.codec.binary.Base64;
 
 import javax.inject.Inject;
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
@@ -42,5 +44,12 @@ public class KeyHelper {
         String pubKeyString = settings.getValue(Settings.Name.PUBLICKEY);
         byte[] publicKeyBytes = Base64.decodeBase64(pubKeyString);
         return cryptoProvider.getPublicKeyFromBytes(publicKeyBytes);
+    }
+
+    public KeyPair readKeyPairFromFiles(File privateKeyFile, File publicKeyFile)
+            throws InvalidKeySpecException, NoSuchAlgorithmException, IOException {
+        return cryptoProvider.getKeyPairFromBytes(
+                osDao.readAllFileBytes(privateKeyFile.toPath()),
+                osDao.readAllFileBytes(publicKeyFile.toPath()));
     }
 }

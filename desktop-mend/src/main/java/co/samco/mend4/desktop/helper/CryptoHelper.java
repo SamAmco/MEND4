@@ -44,7 +44,6 @@ public class CryptoHelper {
         this.versionHelper = versionHelper;
     }
 
-
     public void encryptFile(File file, String name) throws IOException, CorruptSettingsException,
             InvalidKeySpecException, NoSuchAlgorithmException, IllegalBlockSizeException, InvalidKeyException,
             BadPaddingException, InvalidAlgorithmParameterException, NoSuchPaddingException {
@@ -54,7 +53,7 @@ public class CryptoHelper {
 
         String fileExtension = FilenameUtils.getExtension(file.getAbsolutePath());
         String encLocation = settings.getValue(Settings.Name.ENCDIR);
-        File outputFile = new File(encLocation + File.separatorChar + name + AppProperties.ENC_FILE_EXTENSION);
+        File outputFile = new File(encLocation + File.separatorChar + name + "." + AppProperties.ENC_FILE_EXTENSION);
         fileResolveHelper.assertFileDoesNotExist(outputFile);
 
         try (InputStream fis = osDao.getInputStreamForFile(file);
@@ -68,8 +67,9 @@ public class CryptoHelper {
     public void encryptTextToLog(char[] text, boolean dropHeader) throws IOException, CorruptSettingsException,
             InvalidKeySpecException, NoSuchAlgorithmException, IllegalBlockSizeException, InvalidKeyException,
             BadPaddingException, InvalidAlgorithmParameterException, NoSuchPaddingException {
-        if (text.length <= 0)
+        if (text == null || text.length <= 0) {
             return;
+        }
 
         File currentLogFile = fileResolveHelper.getCurrentLogFile();
         osDao.createNewFile(currentLogFile);
@@ -107,7 +107,11 @@ public class CryptoHelper {
             OutputStream fos = osDao.getOutputStreamForFile(outputFile)) {
             fileExtension = cryptoProvider.decryptEncStream(keyHelper.getPrivateKey(), fis, fos);
         }
-        osDao.renameFile(outputFile, outputFile.getName() + "." + fileExtension);
+        String newFileName = outputFile.getName() + "." + fileExtension;
+        File newOutputFile = new File(outputFile.getParentFile().getAbsolutePath()
+                + File.separator + newFileName);
+        fileResolveHelper.assertFileDoesNotExist(newOutputFile);
+        osDao.renameFile(outputFile, newFileName);
         log.err().println(strings.get("CryptoHelper.decryptComplete"));
 
         if (!silent) {
@@ -115,10 +119,4 @@ public class CryptoHelper {
         }
     }
 
-    public KeyPair readKeyPairFromFiles(File privateKeyFile, File publicKeyFile)
-            throws InvalidKeySpecException, NoSuchAlgorithmException, IOException {
-        return cryptoProvider.getKeyPairFromBytes(
-                osDao.readAllFileBytes(privateKeyFile.toPath()),
-                osDao.readAllFileBytes(publicKeyFile.toPath()));
-    }
 }

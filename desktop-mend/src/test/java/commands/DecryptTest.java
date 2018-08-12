@@ -28,7 +28,7 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.*;
 
-public class DecryptTestBase extends TestBase {
+public class DecryptTest extends TestBase {
     private Decrypt decrypt;
 
     @Before
