@@ -1,8 +1,8 @@
 package commands;
 
 import co.samco.mend4.core.AppProperties;
-import co.samco.mend4.core.exception.CorruptSettingsException;
 import co.samco.mend4.core.Settings;
+import co.samco.mend4.core.exception.CorruptSettingsException;
 import co.samco.mend4.desktop.commands.StatePrinter;
 import org.junit.Assert;
 import org.junit.Before;
@@ -18,7 +18,8 @@ import java.util.Collections;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class StatePrinterTest extends TestBase {
     private StatePrinter statePrinter;

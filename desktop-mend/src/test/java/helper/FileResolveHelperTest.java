@@ -17,7 +17,8 @@ import java.io.File;
 import java.io.IOException;
 
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class FileResolveHelperTest extends TestBase {

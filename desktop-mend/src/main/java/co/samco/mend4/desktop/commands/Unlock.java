@@ -1,9 +1,9 @@
 package co.samco.mend4.desktop.commands;
 
-import co.samco.mend4.core.crypto.CryptoProvider;
-import co.samco.mend4.core.exception.CorruptSettingsException;
 import co.samco.mend4.core.OSDao;
 import co.samco.mend4.core.Settings;
+import co.samco.mend4.core.crypto.CryptoProvider;
+import co.samco.mend4.core.exception.CorruptSettingsException;
 import co.samco.mend4.desktop.core.I18N;
 import co.samco.mend4.desktop.exception.SettingRequiredException;
 import co.samco.mend4.desktop.helper.FileResolveHelper;

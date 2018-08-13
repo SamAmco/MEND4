@@ -25,7 +25,8 @@ import java.util.Arrays;
 import java.util.Collections;
 
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class EncryptFromStdInTest extends TestBase {
     private EncryptFromStdIn encrypt;

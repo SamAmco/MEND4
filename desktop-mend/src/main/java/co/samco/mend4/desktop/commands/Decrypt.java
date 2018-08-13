@@ -1,9 +1,9 @@
 package co.samco.mend4.desktop.commands;
 
 import co.samco.mend4.core.AppProperties;
+import co.samco.mend4.core.OSDao;
 import co.samco.mend4.core.Settings;
 import co.samco.mend4.core.exception.CorruptSettingsException;
-import co.samco.mend4.core.OSDao;
 import co.samco.mend4.core.exception.MalformedLogFileException;
 import co.samco.mend4.desktop.core.I18N;
 import co.samco.mend4.desktop.exception.FileAlreadyExistsException;
@@ -27,7 +27,6 @@ import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Set;
 import java.util.function.Function;
 
 public class Decrypt extends Command {

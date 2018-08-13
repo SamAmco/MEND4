@@ -1,7 +1,7 @@
 package commands;
 
-import co.samco.mend4.core.exception.CorruptSettingsException;
 import co.samco.mend4.core.Settings;
+import co.samco.mend4.core.exception.CorruptSettingsException;
 import co.samco.mend4.desktop.commands.Clean;
 import co.samco.mend4.desktop.exception.SettingRequiredException;
 import org.junit.Before;

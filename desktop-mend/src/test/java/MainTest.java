@@ -1,8 +1,6 @@
 import co.samco.mend4.desktop.Main;
 import co.samco.mend4.desktop.commands.Command;
 import co.samco.mend4.desktop.commands.Help;
-import co.samco.mend4.desktop.core.I18N;
-import co.samco.mend4.desktop.output.PrintStreamProvider;
 import commands.TestBase;
 import org.junit.Assert;
 import org.junit.Before;
@@ -12,7 +10,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import java.io.PrintStream;
 import java.util.*;
 
 import static org.hamcrest.CoreMatchers.is;

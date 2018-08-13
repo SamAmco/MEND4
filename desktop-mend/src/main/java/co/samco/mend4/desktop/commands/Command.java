@@ -2,7 +2,6 @@ package co.samco.mend4.desktop.commands;
 
 import co.samco.mend4.desktop.output.PrintStreamProvider;
 
-import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;

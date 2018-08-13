@@ -1,12 +1,11 @@
 package co.samco.mend4.desktop.helper;
 
+import co.samco.mend4.core.OSDao;
+import co.samco.mend4.core.Settings;
 import co.samco.mend4.core.bean.LogDataBlocksAndText;
 import co.samco.mend4.core.crypto.CryptoProvider;
 import co.samco.mend4.core.exception.CorruptSettingsException;
-import co.samco.mend4.core.OSDao;
-import co.samco.mend4.core.Settings;
 import co.samco.mend4.core.exception.MalformedLogFileException;
-import co.samco.mend4.desktop.commands.Unlock;
 import co.samco.mend4.desktop.core.I18N;
 import co.samco.mend4.desktop.exception.MendLockedException;
 import co.samco.mend4.desktop.output.PrintStreamProvider;
@@ -16,7 +15,10 @@ import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.inject.Inject;
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.StandardCopyOption;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;

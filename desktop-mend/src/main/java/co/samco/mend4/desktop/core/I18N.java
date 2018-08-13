@@ -2,8 +2,6 @@ package co.samco.mend4.desktop.core;
 
 import java.util.Locale;
 import java.util.ResourceBundle;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 public class I18N {
     private final ResourceBundle strings;

@@ -7,7 +7,14 @@ import co.samco.mend4.core.bean.LogDataBlocksAndText;
 import co.samco.mend4.core.crypto.CryptoProvider;
 import co.samco.mend4.core.exception.MalformedLogFileException;
 
-import java.io.*;
+import javax.crypto.*;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.PBEKeySpec;
+import javax.crypto.spec.SecretKeySpec;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.PrintStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.*;
@@ -19,11 +26,6 @@ import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Arrays;
 import java.util.Random;
-
-import javax.crypto.*;
-import javax.crypto.spec.IvParameterSpec;
-import javax.crypto.spec.PBEKeySpec;
-import javax.crypto.spec.SecretKeySpec;
 
 public class DefaultJCECryptoProvider implements CryptoProvider {
     private final IvParameterSpec iv;

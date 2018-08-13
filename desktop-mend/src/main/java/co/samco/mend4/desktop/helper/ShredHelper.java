@@ -1,8 +1,8 @@
 package co.samco.mend4.desktop.helper;
 
-import co.samco.mend4.core.exception.CorruptSettingsException;
 import co.samco.mend4.core.OSDao;
 import co.samco.mend4.core.Settings;
+import co.samco.mend4.core.exception.CorruptSettingsException;
 import co.samco.mend4.desktop.core.I18N;
 import co.samco.mend4.desktop.output.PrintStreamProvider;
 

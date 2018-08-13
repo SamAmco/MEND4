@@ -1,7 +1,7 @@
 package commands;
 
-import co.samco.mend4.core.exception.CorruptSettingsException;
 import co.samco.mend4.core.Settings;
+import co.samco.mend4.core.exception.CorruptSettingsException;
 import co.samco.mend4.desktop.commands.Lock;
 import co.samco.mend4.desktop.exception.SettingRequiredException;
 import co.samco.mend4.desktop.helper.ShredHelper;

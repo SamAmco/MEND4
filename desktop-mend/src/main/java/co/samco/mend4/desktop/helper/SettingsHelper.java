@@ -1,14 +1,13 @@
 package co.samco.mend4.desktop.helper;
 
-import co.samco.mend4.core.exception.CorruptSettingsException;
 import co.samco.mend4.core.Settings;
+import co.samco.mend4.core.exception.CorruptSettingsException;
 import co.samco.mend4.desktop.core.I18N;
 import co.samco.mend4.desktop.exception.SettingRequiredException;
 
 import javax.inject.Inject;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.List;
 import java.util.stream.Collectors;
 
 public class SettingsHelper {

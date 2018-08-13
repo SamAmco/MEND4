@@ -6,7 +6,6 @@ import co.samco.mend4.core.Settings;
 import co.samco.mend4.core.bean.EncodedKeyInfo;
 import co.samco.mend4.core.crypto.CryptoProvider;
 import co.samco.mend4.desktop.core.I18N;
-import co.samco.mend4.desktop.helper.CryptoHelper;
 import co.samco.mend4.desktop.helper.FileResolveHelper;
 import co.samco.mend4.desktop.helper.KeyHelper;
 import co.samco.mend4.desktop.output.PrintStreamProvider;

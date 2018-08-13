@@ -1,8 +1,8 @@
 package co.samco.mend4.desktop.dao.impl;
 
-import co.samco.mend4.core.exception.CorruptSettingsException;
 import co.samco.mend4.core.OSDao;
 import co.samco.mend4.core.Settings;
+import co.samco.mend4.core.exception.CorruptSettingsException;
 
 import java.io.*;
 import java.util.Properties;

@@ -18,11 +18,8 @@ import dagger.Module;
 import dagger.Provides;
 
 import javax.inject.Singleton;
-import javax.swing.text.html.Option;
 import java.io.File;
 import java.io.IOException;
-import java.util.Optional;
-import java.util.Set;
 
 @Module
 public class DesktopModule {

@@ -5,7 +5,6 @@ import co.samco.mend4.core.exception.CorruptSettingsException;
 import co.samco.mend4.desktop.commands.Encrypt;
 import co.samco.mend4.desktop.exception.FileAlreadyExistsException;
 import co.samco.mend4.desktop.exception.SettingRequiredException;
-import co.samco.mend4.desktop.input.InputListener;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
