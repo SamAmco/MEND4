@@ -3,6 +3,7 @@ import co.samco.mend4.desktop.commands.Command;
 import co.samco.mend4.desktop.commands.Help;
 import co.samco.mend4.desktop.core.I18N;
 import co.samco.mend4.desktop.output.PrintStreamProvider;
+import commands.TestBase;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -18,12 +19,8 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.class)
-public class MainTest {
+public class MainTest extends TestBase {
     private Main main;
-    private I18N strings;
-    private PrintStreamProvider log;
-    private PrintStream err;
-    private PrintStream out;
     private Main.Runner runner;
 
     @Captor
@@ -31,18 +28,13 @@ public class MainTest {
 
     @Before
     public void setup() {
-        strings = new I18N("en", "UK");
+        super.setup();
         runner = mock(Main.Runner.class);
-        err = mock(PrintStream.class);
-        out = mock(PrintStream.class);
-        log = mock(PrintStreamProvider.class);
-        when(log.err()).thenReturn(err);
-        when(log.out()).thenReturn(out);
         main = new Main(strings, log);
     }
 
     @Test
-    public void helpTest() throws Exception {
+    public void helpTest() {
         Help help = mock(Help.class);
         when(runner.helpCommand()).thenReturn(help);
         for (String s : Help.HELP_ALIASES) {
@@ -54,7 +46,7 @@ public class MainTest {
     }
 
     @Test
-    public void noArgs() throws Exception {
+    public void noArgs() {
         Command defaultCommand = mock(Command.class);
         when(runner.defaultCommand()).thenReturn(defaultCommand);
         main.run(runner, Collections.emptyList());
@@ -63,25 +55,28 @@ public class MainTest {
     }
 
     @Test
-    public void runCommandWithArgs() throws Exception {
+    public void runCommandWithArgs() {
+        exit.expectSystemExit();
         Command command = mock(Command.class);
         runCommand(Arrays.asList("hi"), command);
     }
 
     @Test
-    public void runCommand() throws Exception {
+    public void runCommand() {
+        exit.expectSystemExit();
         Command command = mock(Command.class);
         runCommand(Collections.emptyList(), command);
     }
 
-    @Test (expected = Exception.class)
-    public void commandFailed() throws Exception {
+    @Test
+    public void commandFailed() {
+        exit.expectSystemExitWithStatus(-1);
         Command command = mock(Command.class);
         when(command.getExecutionResult()).thenReturn(-1);
         runCommand(Collections.emptyList(), command);
     }
 
-    private void runCommand(List<String> subCommandArgs, Command command) throws Exception {
+    private void runCommand(List<String> subCommandArgs, Command command) {
         String commandName = "command";
         when(command.isCommandForString(commandName)).thenReturn(true);
         Set<Command> commands = new HashSet<>();

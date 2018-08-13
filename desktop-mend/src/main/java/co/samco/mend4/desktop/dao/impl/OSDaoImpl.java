@@ -118,8 +118,8 @@ public class OSDaoImpl implements OSDao {
     }
 
     @Override
-    public void renameFile(File file, String newName) {
-        file.renameTo(new File(newName));
+    public void renameFile(File file, File newFile) {
+        file.renameTo(newFile);
     }
 
     @Override

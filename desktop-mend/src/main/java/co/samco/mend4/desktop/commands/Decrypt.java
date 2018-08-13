@@ -6,6 +6,7 @@ import co.samco.mend4.core.exception.CorruptSettingsException;
 import co.samco.mend4.core.OSDao;
 import co.samco.mend4.core.exception.MalformedLogFileException;
 import co.samco.mend4.desktop.core.I18N;
+import co.samco.mend4.desktop.exception.FileAlreadyExistsException;
 import co.samco.mend4.desktop.exception.MendLockedException;
 import co.samco.mend4.desktop.exception.SettingRequiredException;
 import co.samco.mend4.desktop.helper.CryptoHelper;
@@ -31,7 +32,7 @@ import java.util.function.Function;
 
 public class Decrypt extends Command {
     public static final String COMMAND_NAME = "dec";
-    public static final String SILENT_FLAG = "dec";
+    public static final String SILENT_FLAG = "-s";
 
     private final CryptoHelper cryptoHelper;
     private final PrintStreamProvider log;
@@ -44,8 +45,8 @@ public class Decrypt extends Command {
 
     private final List<Function<List<String>, List<String>>> behaviourChain = Arrays.asList(
             a -> assertSettingsPresent(a),
-            a -> getFileIdentifier(a),
             a -> checkShouldBeSilent(a),
+            a -> getFileIdentifier(a),
             a -> tryResolveFileAsEncId(a),
             a -> tryResolveFileAsLog()
     );
@@ -74,6 +75,15 @@ public class Decrypt extends Command {
         return args;
     }
 
+    private List<String> checkShouldBeSilent(List<String> args) {
+        List<String> newArgs = new ArrayList<>(args);
+        if (newArgs.contains(SILENT_FLAG)) {
+            silent = true;
+            newArgs.remove(SILENT_FLAG);
+        }
+        return newArgs;
+    }
+
     private List<String> getFileIdentifier(List<String> args) {
         if (args.size() < 1) {
             log.err().println(strings.get("Decrypt.noFile"));
@@ -84,15 +94,6 @@ public class Decrypt extends Command {
         return args;
     }
 
-    private List<String> checkShouldBeSilent(List<String> args) {
-        List<String> newArgs = new ArrayList<>(args);
-        if (newArgs.contains(SILENT_FLAG)) {
-            silent = true;
-            newArgs.remove(SILENT_FLAG);
-        }
-        return newArgs;
-    }
-
     private List<String> tryResolveFileAsEncId(List<String> args) {
         try {
             File file = fileResolveHelper.resolveAsEncFilePath(fileIdentifier);
@@ -101,7 +102,7 @@ public class Decrypt extends Command {
                 return null;
             } else return args;
         } catch (IOException | CorruptSettingsException | InvalidKeySpecException | NoSuchAlgorithmException
-                | BadPaddingException | MalformedLogFileException | InvalidKeyException
+                | BadPaddingException | MalformedLogFileException | InvalidKeyException | FileAlreadyExistsException
                 | InvalidAlgorithmParameterException | NoSuchPaddingException | IllegalBlockSizeException e) {
             failWithMessage(log, e.getMessage());
         } catch (MendLockedException e) {

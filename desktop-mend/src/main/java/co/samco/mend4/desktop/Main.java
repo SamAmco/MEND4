@@ -25,7 +25,7 @@ public class Main {
         this.log = log;
     }
 
-    public void run(Runner runner, List<String> args) throws Exception {
+    public void run(Runner runner, List<String> args) {
         if (args.size() < 1) {
             runner.defaultCommand().executeCommand(args);
         } else if (printHelp(runner, args)) {
@@ -35,9 +35,7 @@ public class Main {
             if (command == null) {
                 log.err().println(strings.get("Main.commandNotFound"));
                 System.exit(1);
-            } else if (command.getExecutionResult() != 0) {
-                throw new Exception();
-            }
+            } else System.exit(command.getExecutionResult());
         }
     }
 
@@ -68,7 +66,7 @@ public class Main {
         Main getMain();
     }
 
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) {
         Runner runner = DaggerMain_Runner.create();
         runner.getMain().run(runner, Arrays.asList(args));
     }

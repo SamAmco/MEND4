@@ -92,7 +92,8 @@ public class Merge extends Command {
     private List<String> tryMergeToNew(List<String> args) {
         try {
             Pair<File, File> logFiles = resolveFiles(args.get(0), args.get(1));
-            mergeHelper.mergeLogFilesToNew(logFiles, new File(args.get(2)));
+            mergeHelper.mergeLogFilesToNew(logFiles,
+                    new File(fileResolveHelper.ensureLogNameHasFileExtension(args.get(2))));
         } catch (IOException | CorruptSettingsException e) {
             failWithMessage(log, e.getMessage());
         } catch (MendLockedException e) {

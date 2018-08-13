@@ -111,6 +111,7 @@ public class MendInputBox extends JFrame implements KeyListener {
 
     public void close() {
         setVisible(false);
+        listeners.forEach(l -> l.onClose());
         dispose();
     }
 }

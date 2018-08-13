@@ -8,6 +8,7 @@ import co.samco.mend4.core.exception.CorruptSettingsException;
 import co.samco.mend4.core.exception.MalformedLogFileException;
 import co.samco.mend4.core.util.LogUtils;
 import co.samco.mend4.desktop.core.I18N;
+import co.samco.mend4.desktop.exception.FileAlreadyExistsException;
 import co.samco.mend4.desktop.exception.MendLockedException;
 import co.samco.mend4.desktop.output.PrintStreamProvider;
 import org.apache.commons.io.FileUtils;
@@ -19,6 +20,7 @@ import java.io.*;
 import java.security.*;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.spec.InvalidKeySpecException;
+import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
@@ -48,7 +50,7 @@ public class CryptoHelper {
 
     public void encryptFile(File file, String name) throws IOException, CorruptSettingsException,
             InvalidKeySpecException, NoSuchAlgorithmException, IllegalBlockSizeException, InvalidKeyException,
-            BadPaddingException, InvalidAlgorithmParameterException, NoSuchPaddingException {
+            BadPaddingException, InvalidAlgorithmParameterException, NoSuchPaddingException, FileAlreadyExistsException {
         if (name == null) {
             name = new SimpleDateFormat(AppProperties.ENC_FILE_NAME_FORMAT).format(new Date());
         }
@@ -83,6 +85,9 @@ public class CryptoHelper {
 
         try (OutputStream fos = osDao.getOutputStreamForFile(currentLogFile, true)) {
             cryptoProvider.encryptLogStream(keyHelper.getPublicKey(), logText, fos);
+            DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+            Date date = new Date();
+            log.out().println(strings.getf("CryptoHelper.successfullyLogged", dateFormat.format(date)));
         }
     }
 
@@ -101,7 +106,7 @@ public class CryptoHelper {
     public void decryptFile(File file, boolean silent) throws IOException, CorruptSettingsException,
             InvalidKeySpecException, NoSuchAlgorithmException, MalformedLogFileException,
             InvalidAlgorithmParameterException, NoSuchPaddingException, BadPaddingException, IllegalBlockSizeException,
-            InvalidKeyException, MendLockedException {
+            InvalidKeyException, MendLockedException, FileAlreadyExistsException {
         RSAPrivateKey privateKey = keyHelper.getPrivateKey();
         if (privateKey == null) {
             throw new MendLockedException();
@@ -118,11 +123,13 @@ public class CryptoHelper {
             OutputStream fos = osDao.getOutputStreamForFile(outputFile)) {
             fileExtension = cryptoProvider.decryptEncStream(privateKey, fis, fos);
         }
-        String newFileName = outputFile.getName() + "." + fileExtension;
-        File newOutputFile = new File(outputFile.getParentFile().getAbsolutePath()
-                + File.separator + newFileName);
-        fileResolveHelper.assertFileDoesNotExist(newOutputFile);
-        osDao.renameFile(outputFile, newFileName);
+        if (!fileExtension.equals("")) {
+            String newFileName = outputFile.getName() + "." + fileExtension;
+            File newOutputFile = new File(outputFile.getParent() + File.separator + newFileName);
+            fileResolveHelper.assertFileDoesNotExist(newOutputFile);
+            osDao.renameFile(outputFile, newOutputFile);
+            outputFile = newOutputFile;
+        }
         log.err().println(strings.get("CryptoHelper.decryptComplete"));
 
         if (!silent) {

@@ -10,6 +10,8 @@ import co.samco.mend4.desktop.helper.*;
 import co.samco.mend4.desktop.output.PrintStreamProvider;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Rule;
+import org.junit.contrib.java.lang.system.ExpectedSystemExit;
 
 import java.io.IOException;
 import java.io.PrintStream;
@@ -18,6 +20,9 @@ import java.util.ArrayList;
 import static org.mockito.Mockito.*;
 
 public class TestBase {
+    @Rule
+    public final ExpectedSystemExit exit = ExpectedSystemExit.none();
+
     protected CryptoHelper cryptoHelper;
     protected CryptoProvider cryptoProvider;
     protected FileResolveHelper fileResolveHelper;

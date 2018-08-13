@@ -59,8 +59,12 @@ public class MergeHelper {
             mergeLogFilesToNew(logFiles, tempFile);
             if (first) {
                 osDao.moveFile(tempFile.toPath(), firstLog.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                log.out().println(strings.getf("MergeHelper.movedFile",
+                        tempFile.getAbsolutePath(), firstLog.getAbsolutePath()));
             } else {
                 osDao.moveFile(tempFile.toPath(), secondLog.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                log.out().println(strings.getf("MergeHelper.movedFile",
+                        tempFile.getAbsolutePath(), secondLog.getAbsolutePath()));
             }
         } catch (IOException | CorruptSettingsException e) {
             log.err().println(e.getMessage());
@@ -73,6 +77,7 @@ public class MergeHelper {
             OutputStream fOutputStream = osDao.getOutputStreamForFile(outputLog)) {
             osDao.createNewFile(outputLog);
             mergeLogs(f1InputStream, f2InputStream, fOutputStream);
+            log.out().println(strings.getf("MergeHelper.mergeComplete", outputLog.getAbsolutePath()));
         } catch (ParseException | NoSuchAlgorithmException | BadPaddingException | MalformedLogFileException
                 | InvalidKeyException | InvalidAlgorithmParameterException | NoSuchPaddingException | IOException
                 | IllegalBlockSizeException | InvalidKeySpecException e) {
@@ -160,6 +165,8 @@ public class MergeHelper {
                 return true;
             } else if (dateTime == null) {
                 return true;
+            } else if (other.dateTime == null) {
+                return false;
             } else return dateTime.before(other.dateTime);
         }
     }

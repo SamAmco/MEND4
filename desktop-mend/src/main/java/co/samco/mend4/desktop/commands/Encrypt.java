@@ -3,6 +3,7 @@ package co.samco.mend4.desktop.commands;
 import co.samco.mend4.core.Settings;
 import co.samco.mend4.core.exception.CorruptSettingsException;
 import co.samco.mend4.desktop.core.I18N;
+import co.samco.mend4.desktop.exception.FileAlreadyExistsException;
 import co.samco.mend4.desktop.exception.SettingRequiredException;
 import co.samco.mend4.desktop.helper.CryptoHelper;
 import co.samco.mend4.desktop.helper.FileResolveHelper;
@@ -43,6 +44,8 @@ public class Encrypt extends Command implements InputListener {
 
     protected boolean dropHeader = false;
 
+    private boolean waitingForInputListener = false;
+
     private final List<Function<List<String>, List<String>>> behaviourChain = Arrays.asList(
             a -> assertSettingsPresent(a),
             a -> shouldDropHeader(a),
@@ -68,6 +71,13 @@ public class Encrypt extends Command implements InputListener {
     @Override
     public void execute(List<String> args) {
         executeBehaviourChain(behaviourChain, args);
+        try {
+            while (waitingForInputListener) {
+                Thread.sleep(100);
+            }
+        } catch (InterruptedException e) {
+            failWithMessage(log, strings.get("Encrypt.threadInterrupt"));
+        }
     }
 
     protected List<String> assertSettingsPresent(List<String> args) {
@@ -95,6 +105,7 @@ public class Encrypt extends Command implements InputListener {
     protected List<String> shouldEncryptFromTextEditor(List<String> args) {
         if (args.size() <= 0) {
             inputHelper.createInputProviderAndRegisterListener(this);
+            waitingForInputListener = true;
             return null;
         }
         return args;
@@ -105,11 +116,9 @@ public class Encrypt extends Command implements InputListener {
             int index = args.indexOf(FROM_ARG_FLAG);
             if (args.size() != index + 2) {
                 log.err().println(strings.getf("Encrypt.badDataArgs", FROM_ARG_FLAG));
+            } else {
+                encryptTextToLog(args.get(index + 1).toCharArray());
             }
-            encryptTextToLog(args.get(index + 1).toCharArray());
-            DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
-            Date date = new Date();
-            log.out().println("Successfully Logged entry at: " + dateFormat.format(date));
             return null;
         }
         return args;
@@ -131,8 +140,8 @@ public class Encrypt extends Command implements InputListener {
         try {
             cryptoHelper.encryptFile(fileResolveHelper.resolveFile(args.get(0)), name);
         } catch (IOException | CorruptSettingsException | InvalidKeySpecException | NoSuchAlgorithmException
-                | IllegalBlockSizeException | InvalidKeyException | BadPaddingException
-                | InvalidAlgorithmParameterException | NoSuchPaddingException e) {
+                | IllegalBlockSizeException | InvalidKeyException | BadPaddingException | InvalidAlgorithmParameterException
+                | NoSuchPaddingException | FileAlreadyExistsException e) {
             failWithMessage(log, e.getMessage());
         }
         return null;
@@ -171,5 +180,10 @@ public class Encrypt extends Command implements InputListener {
     @Override
     public void onWrite(char[] text) {
         encryptTextToLog(text);
+    }
+
+    @Override
+    public void onClose() {
+        waitingForInputListener = false;
     }
 }

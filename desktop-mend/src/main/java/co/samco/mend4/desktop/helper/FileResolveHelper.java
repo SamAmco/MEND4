@@ -5,6 +5,7 @@ import co.samco.mend4.core.exception.CorruptSettingsException;
 import co.samco.mend4.core.OSDao;
 import co.samco.mend4.core.Settings;
 import co.samco.mend4.desktop.core.I18N;
+import co.samco.mend4.desktop.exception.FileAlreadyExistsException;
 import dagger.Lazy;
 import org.apache.commons.io.FileUtils;
 
@@ -39,9 +40,9 @@ public class FileResolveHelper {
         }
     }
 
-    public void assertFileDoesNotExist(File file) throws IllegalArgumentException {
+    public void assertFileDoesNotExist(File file) throws FileAlreadyExistsException {
         if (fileExists(file)) {
-            throw new IllegalArgumentException(strings.getf("General.fileAlreadyExists", file.getAbsolutePath()));
+            throw new FileAlreadyExistsException(strings.getf("General.fileAlreadyExists", file.getAbsolutePath()));
         }
     }
 
@@ -84,7 +85,7 @@ public class FileResolveHelper {
                 + AppProperties.PRIVATE_KEY_FILE_NAME;
     }
 
-    private String ensureLogNameHasFileExtension(String logName) {
+    public String ensureLogNameHasFileExtension(String logName) {
         if (!osDao.getFileExtension(logName).equals(AppProperties.LOG_FILE_EXTENSION)) {
             logName += "." + AppProperties.LOG_FILE_EXTENSION;
         }

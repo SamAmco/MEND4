@@ -26,8 +26,8 @@ public class SettingsHelper {
     public void assertRequiredSettingsExist(Settings.Name[] required, String commandName) throws IOException,
             SettingRequiredException {
         for (Settings.Name n : required) {
-            if (settings.valueSet(n)) {
-                throw new SettingRequiredException(strings.getf("Encrypt.dirRequired", n.toString(), commandName));
+            if (!settings.valueSet(n)) {
+                throw new SettingRequiredException(strings.getf("General.dirRequired", n.toString(), commandName));
             }
         }
     }

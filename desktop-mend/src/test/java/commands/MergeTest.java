@@ -60,6 +60,7 @@ public class MergeTest extends TestBase {
         String logC = "logC";
         when(osDao.fileExists(any())).thenReturn(true);
         when(osDao.fileIsFile(any())).thenReturn(true);
+        when(fileResolveHelper.ensureLogNameHasFileExtension(eq(logC))).thenReturn(logC);
         resolveAnyFile();
         merge.execute(Arrays.asList(logA, logB, logC));
         ArgumentCaptor<File> fileCaptor = ArgumentCaptor.forClass(File.class);

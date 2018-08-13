@@ -4,6 +4,7 @@ import co.samco.mend4.core.AppProperties;
 import co.samco.mend4.core.exception.CorruptSettingsException;
 import co.samco.mend4.core.exception.MalformedLogFileException;
 import co.samco.mend4.desktop.commands.Decrypt;
+import co.samco.mend4.desktop.exception.FileAlreadyExistsException;
 import co.samco.mend4.desktop.exception.MendLockedException;
 import co.samco.mend4.desktop.exception.SettingRequiredException;
 import org.junit.Assert;
@@ -49,7 +50,7 @@ public class DecryptTest extends TestBase {
             NoSuchAlgorithmException, IllegalBlockSizeException, BadPaddingException, NoSuchPaddingException,
             InvalidAlgorithmParameterException, InvalidKeySpecException, MendLockedException {
         String logFileName = "logFile." + AppProperties.LOG_FILE_EXTENSION;
-        decryptLog(logFileName, false);
+        decryptLog(logFileName);
     }
 
     @Test
@@ -57,13 +58,13 @@ public class DecryptTest extends TestBase {
             InvalidKeyException, NoSuchAlgorithmException, IllegalBlockSizeException, BadPaddingException,
             NoSuchPaddingException, InvalidAlgorithmParameterException, InvalidKeySpecException, MendLockedException {
         String logFileName = "logFile." + AppProperties.LOG_FILE_EXTENSION;
-        decryptLog(logFileName, true);
+        decryptLog(logFileName);
     }
 
     @Test
     public void decryptEnc() throws IOException, CorruptSettingsException, MalformedLogFileException,
             InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchPaddingException, BadPaddingException,
-            IllegalBlockSizeException, InvalidKeyException, InvalidKeySpecException, MendLockedException {
+            IllegalBlockSizeException, InvalidKeyException, InvalidKeySpecException, MendLockedException, FileAlreadyExistsException {
         String encFileName = "sam." + AppProperties.ENC_FILE_EXTENSION;
         decryptEnc(encFileName, Arrays.asList(encFileName), false);
     }
@@ -71,9 +72,9 @@ public class DecryptTest extends TestBase {
     @Test
     public void decryptEncSilent() throws IOException, CorruptSettingsException, MalformedLogFileException,
             InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchPaddingException, BadPaddingException,
-            IllegalBlockSizeException, InvalidKeyException, InvalidKeySpecException, MendLockedException {
+            IllegalBlockSizeException, InvalidKeyException, InvalidKeySpecException, MendLockedException, FileAlreadyExistsException {
         String encFileName = "sam." + AppProperties.ENC_FILE_EXTENSION;
-        decryptEnc(encFileName, Arrays.asList(encFileName, Decrypt.SILENT_FLAG), true);
+        decryptEnc(encFileName, Arrays.asList(Decrypt.SILENT_FLAG, encFileName), true);
     }
 
     @Test
@@ -108,7 +109,7 @@ public class DecryptTest extends TestBase {
 
     private void decryptEnc(String encFileName, List<String> args, boolean silentFlag) throws IOException, CorruptSettingsException,
             MalformedLogFileException, InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, BadPaddingException,
-            IllegalBlockSizeException, InvalidAlgorithmParameterException, InvalidKeySpecException, MendLockedException {
+            IllegalBlockSizeException, InvalidAlgorithmParameterException, InvalidKeySpecException, MendLockedException, FileAlreadyExistsException {
         when(fileResolveHelper.resolveAsEncFilePath(encFileName)).thenReturn(new File(encFileName));
         when(fileResolveHelper.fileExistsAndHasExtension(eq(AppProperties.ENC_FILE_EXTENSION), any(File.class))).thenReturn(true);
         decrypt.execute(args);
@@ -118,15 +119,12 @@ public class DecryptTest extends TestBase {
         Assert.assertEquals(encFileName, fileCaptor.getValue().getName());
     }
 
-    private void decryptLog(String logFileName, boolean silentFlag) throws IOException, CorruptSettingsException,
+    private void decryptLog(String logFileName) throws IOException, CorruptSettingsException,
             MalformedLogFileException, InvalidAlgorithmParameterException, NoSuchAlgorithmException, IllegalBlockSizeException,
             BadPaddingException, NoSuchPaddingException, InvalidKeyException, InvalidKeySpecException, MendLockedException {
         when(fileResolveHelper.resolveAsLogFilePath(anyString())).thenReturn(new File(logFileName));
         List<String> args = new ArrayList<>();
         args.add(logFileName);
-        if (silentFlag) {
-            args.add(Decrypt.SILENT_FLAG);
-        }
         decrypt.execute(args);
         ArgumentCaptor<File> fileCaptor = ArgumentCaptor.forClass(File.class);
         verify(cryptoHelper).decryptLog(fileCaptor.capture());

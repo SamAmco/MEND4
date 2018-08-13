@@ -3,7 +3,9 @@ package commands;
 import co.samco.mend4.core.Settings;
 import co.samco.mend4.core.exception.CorruptSettingsException;
 import co.samco.mend4.desktop.commands.Encrypt;
+import co.samco.mend4.desktop.exception.FileAlreadyExistsException;
 import co.samco.mend4.desktop.exception.SettingRequiredException;
+import co.samco.mend4.desktop.input.InputListener;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -47,6 +49,7 @@ public class EncryptTest extends TestBase {
             NoSuchAlgorithmException, InvalidKeyException, InvalidAlgorithmParameterException, IllegalBlockSizeException,
             BadPaddingException, CorruptSettingsException, InvalidKeySpecException {
         setLogAndEncDir();
+        new Thread(() -> { while (true) { encrypt.onClose(); } }).start();
         encrypt.execute(Collections.emptyList());
         verify(inputHelper).createInputProviderAndRegisterListener(encrypt);
         encrypt.onWrite("hi".toCharArray());
@@ -58,6 +61,7 @@ public class EncryptTest extends TestBase {
             InvalidKeyException, InvalidAlgorithmParameterException, IllegalBlockSizeException, BadPaddingException,
             CorruptSettingsException, InvalidKeySpecException {
         setLogAndEncDir();
+        new Thread(() -> { while (true) { encrypt.onClose(); } }).start();
         encrypt.execute(Arrays.asList(Encrypt.APPEND_FLAG));
         verify(inputHelper).createInputProviderAndRegisterListener(encrypt);
         encrypt.onWrite("hi".toCharArray());
@@ -108,7 +112,7 @@ public class EncryptTest extends TestBase {
     @Test
     public void encryptFile() throws IOException, NoSuchPaddingException, NoSuchAlgorithmException,
             InvalidKeyException, InvalidAlgorithmParameterException, IllegalBlockSizeException, BadPaddingException,
-            CorruptSettingsException, InvalidKeySpecException {
+            CorruptSettingsException, InvalidKeySpecException, FileAlreadyExistsException {
         setLogAndEncDir();
         String fileName = "hi";
         when(fileResolveHelper.resolveFile(eq(fileName))).thenReturn(new File(fileName));
@@ -121,7 +125,7 @@ public class EncryptTest extends TestBase {
     @Test
     public void encryptFileWithName() throws IOException, NoSuchPaddingException, NoSuchAlgorithmException,
             InvalidKeyException, InvalidAlgorithmParameterException, IllegalBlockSizeException, BadPaddingException,
-            CorruptSettingsException, InvalidKeySpecException {
+            CorruptSettingsException, InvalidKeySpecException, FileAlreadyExistsException {
         setLogAndEncDir();
         String fileName1 = "hi1";
         String fileName2 = "hi2";

@@ -24,6 +24,6 @@ public interface OSDao {
     InputStream getStdIn();
     char[] readPassword(String message);
     Path moveFile(Path source, Path target, CopyOption... options) throws IOException;
-    void renameFile(File file, String newName);
+    void renameFile(File file, File newFile);
     byte[] readAllFileBytes(Path path) throws IOException;
 }
