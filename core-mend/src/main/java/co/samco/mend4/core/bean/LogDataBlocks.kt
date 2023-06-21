@@ -4,19 +4,19 @@ import java.nio.ByteBuffer
 
 data class LogDataBlocks(
     val lc1Bytes: ByteArray,
-    val encAesKey: ByteArray,
+    val encKey: ByteArray,
     val lc2Bytes: ByteArray,
+    val iv: ByteArray,
+    val lc3Bytes: ByteArray,
     val encEntry: ByteArray
 ) {
 
     val asOneBlock: ByteArray
         get() {
-            val block = ByteArray(lc1Bytes.size + encAesKey.size + lc2Bytes.size + encEntry.size)
+            val list = listOf(lc1Bytes, encKey, lc2Bytes, iv, lc3Bytes, encEntry)
+            val block = ByteArray(list.sumOf { it.size })
             val buffer = ByteBuffer.wrap(block)
-            buffer.put(lc1Bytes)
-            buffer.put(encAesKey)
-            buffer.put(lc2Bytes)
-            buffer.put(encEntry)
+            list.forEach { buffer.put(it) }
             return block
         }
 
@@ -27,8 +27,10 @@ data class LogDataBlocks(
         other as LogDataBlocks
 
         if (!lc1Bytes.contentEquals(other.lc1Bytes)) return false
-        if (!encAesKey.contentEquals(other.encAesKey)) return false
+        if (!encKey.contentEquals(other.encKey)) return false
         if (!lc2Bytes.contentEquals(other.lc2Bytes)) return false
+        if (!iv.contentEquals(other.iv)) return false
+        if (!lc3Bytes.contentEquals(other.lc3Bytes)) return false
         if (!encEntry.contentEquals(other.encEntry)) return false
 
         return true
@@ -36,8 +38,10 @@ data class LogDataBlocks(
 
     override fun hashCode(): Int {
         var result = lc1Bytes.contentHashCode()
-        result = 31 * result + encAesKey.contentHashCode()
+        result = 31 * result + encKey.contentHashCode()
         result = 31 * result + lc2Bytes.contentHashCode()
+        result = 31 * result + iv.contentHashCode()
+        result = 31 * result + lc3Bytes.contentHashCode()
         result = 31 * result + encEntry.contentHashCode()
         return result
     }
