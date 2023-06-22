@@ -1,35 +1,47 @@
 package crypto
 
-import co.samco.mend4.core.AppProperties
 import co.samco.mend4.core.IBase64EncodingProvider
 import co.samco.mend4.core.Settings
-import co.samco.mend4.core.crypto.CryptoProvider
 import co.samco.mend4.core.crypto.impl.DefaultJCECryptoProvider
-import org.hamcrest.CoreMatchers
+import junit.framework.Assert.assertFalse
+import junit.framework.Assert.assertTrue
+import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.Assert
 import org.junit.Before
 import org.junit.Test
-import org.mockito.Mockito.mock
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.InputStream
 import java.io.PrintStream
 import java.nio.charset.StandardCharsets
-import java.security.KeyPair
-import java.security.KeyPairGenerator
-import java.security.interfaces.RSAPrivateKey
-import java.security.interfaces.RSAPublicKey
+import java.security.PrivateKey
+import java.security.Security
 import java.util.Base64
 
 class DefaultJCECryptoProviderTest {
     private val newLine = System.getProperty("line.separator")
 
-    private var rsaKeyPair: KeyPair? = null
+    private val password = "password"
 
-    private val settings = mock<Settings>()
+    private val settings = object : Settings {
+        private val settingsMap = mutableMapOf<Settings.Name, String>()
+
+        override fun setValue(name: Settings.Name, value: String) {
+            settingsMap[name] = value
+        }
+
+        override fun valueSet(name: Settings.Name): Boolean {
+            return settingsMap.containsKey(name)
+        }
+
+        override fun getValue(name: Settings.Name): String? {
+            return settingsMap[name]
+        }
+
+    }
     private val encodingProvider = object : IBase64EncodingProvider {
         override fun decodeBase64(base64String: String): ByteArray {
-            return Base64.getDecoder().decode(base64String)
+            return Base64.getUrlDecoder().decode(base64String)
         }
 
         override fun encodeBase64URLSafeString(data: ByteArray): String {
@@ -41,142 +53,187 @@ class DefaultJCECryptoProviderTest {
     private val uut = DefaultJCECryptoProvider(settings, encodingProvider)
 
     @Before
-    fun setup() {
-        val keyGen = KeyPairGenerator.getInstance("RSA")
-        keyGen.initialize(AppProperties.PREFERRED_ASYMMETRIC_KEY_SIZE)
-        rsaKeyPair = keyGen.genKeyPair()
+    fun before() {
+        //Provides more algorithms we can test :)
+        // I'm actually only testing ECIES from this provider right now though.
+        Security.addProvider(BouncyCastleProvider())
     }
 
     @Test
-    fun encTest() {
+    fun `RSA-ECB-PKCS1Padding-4096, PBKDF2WithHmacSHA256`() {
+        settings.apply {
+            setValue(Settings.Name.ASYMMETRIC_CIPHER_NAME, "RSA")
+            setValue(Settings.Name.ASYMMETRIC_CIPHER_TRANSFORM, "RSA/ECB/PKCS1Padding")
+            setValue(Settings.Name.ASYMMETRIC_KEY_SIZE, "4096")
+            setValue(Settings.Name.PW_KEY_FACTORY_ALGORITHM, "PBKDF2WithHmacSHA256")
+            setValue(Settings.Name.PW_KEY_FACTORY_ITERATIONS, "65536")
+        }
+        runAllTests()
+    }
+
+    @Test
+    fun `RSA-ECB-OAEPWithSHA-512AndMGF1Padding-4096, PBKDF2WithHmacSHA512`() {
+        settings.apply {
+            setValue(Settings.Name.ASYMMETRIC_CIPHER_NAME, "RSA")
+            setValue(Settings.Name.ASYMMETRIC_CIPHER_TRANSFORM, "RSA/ECB/OAEPWithSHA-512AndMGF1Padding")
+            setValue(Settings.Name.ASYMMETRIC_KEY_SIZE, "4096")
+            setValue(Settings.Name.PW_KEY_FACTORY_ALGORITHM, "PBKDF2WithHmacSHA512")
+            setValue(Settings.Name.PW_KEY_FACTORY_ITERATIONS, "65536")
+        }
+        runAllTests()
+    }
+
+    @Test
+    fun `RSA-ECB-PKCS1Padding-2048, PBKDF2WithHmacSHA1`() {
+        settings.apply {
+            setValue(Settings.Name.ASYMMETRIC_CIPHER_NAME, "RSA")
+            setValue(Settings.Name.ASYMMETRIC_CIPHER_TRANSFORM, "RSA/ECB/PKCS1Padding")
+            setValue(Settings.Name.ASYMMETRIC_KEY_SIZE, "2048")
+            setValue(Settings.Name.PW_KEY_FACTORY_ALGORITHM, "PBKDF2WithHmacSHA1")
+            setValue(Settings.Name.PW_KEY_FACTORY_ITERATIONS, "65536")
+        }
+        runAllTests()
+    }
+
+    @Test
+    fun `RSA-ECB-OAEPWithSHA-256AndMGF1Padding-3072, PBKDF2WithHmacSHA256`() {
+        settings.apply {
+            setValue(Settings.Name.ASYMMETRIC_CIPHER_NAME, "RSA")
+            setValue(Settings.Name.ASYMMETRIC_CIPHER_TRANSFORM, "RSA/ECB/OAEPWithSHA-256AndMGF1Padding")
+            setValue(Settings.Name.ASYMMETRIC_KEY_SIZE, "3072")
+            setValue(Settings.Name.PW_KEY_FACTORY_ALGORITHM, "PBKDF2WithHmacSHA256")
+            setValue(Settings.Name.PW_KEY_FACTORY_ITERATIONS, "65536")
+        }
+        runAllTests()
+    }
+
+    @Test
+    fun `EC-ECIES, PBKDF2WithHmacSHA256`() {
+        settings.apply {
+            setValue(Settings.Name.ASYMMETRIC_CIPHER_NAME, "EC")
+            setValue(Settings.Name.ASYMMETRIC_CIPHER_TRANSFORM, "ECIES")
+            setValue(Settings.Name.ASYMMETRIC_KEY_SIZE, "521")
+            setValue(Settings.Name.PW_KEY_FACTORY_ALGORITHM, "PBKDF2WithHmacSHA256")
+            setValue(Settings.Name.PW_KEY_FACTORY_ITERATIONS, "65536")
+        }
+        runAllTests()
+    }
+
+    private fun runAllTests() {
+        testSetup()
+        testEncFile()
+        testLog()
+        testLogBlockIteration()
+    }
+
+    private fun testSetup() {
+        val keyPair = uut.generateKeyPair()
+        uut.storeEncryptedKeys(password.toCharArray(), keyPair)
+        assertTrue(uut.checkPassword(password.toCharArray()))
+    }
+
+    private fun testEncFile() {
         val plainText = "The quick brown fox jumped over the lazy dog"
         val fileExtension = "extension"
-        var cipherBytes: ByteArray
-        var cipherText: String
-        ByteArrayInputStream(plainText.toByteArray(StandardCharsets.UTF_8)).use { inputStream ->
-            ByteArrayOutputStream().use { outputStream ->
-                uut.encryptEncStream(
-                    rsaKeyPair!!.public as RSAPublicKey,
-                    inputStream,
-                    outputStream,
-                    fileExtension
-                )
-                cipherBytes = outputStream.toByteArray()
-                cipherText = outputStream.toString(StandardCharsets.UTF_8.name())
-                for (s in plainText.split(" ".toRegex()).dropLastWhile { it.isEmpty() }
-                    .toTypedArray()) {
-                    Assert.assertTrue(
-                        "Cipher text should not contain any of the plain text",
-                        !cipherText.contains(
-                            s
-                        )
-                    )
-                }
-            }
-        }
-        ByteArrayInputStream(cipherBytes).use { inputStream ->
-            ByteArrayOutputStream().use { outputStream ->
-                val decExtension = uut.decryptEncStream(
-                    (rsaKeyPair!!.private as RSAPrivateKey),
-                    inputStream,
-                    outputStream
-                )
-                val decPlainText = outputStream.toString(StandardCharsets.UTF_8.name())
-                Assert.assertEquals(
-                    "Decrypted text should be the same as the plain text",
-                    plainText,
-                    decPlainText
-                )
-                Assert.assertEquals(
-                    "Decrypted extension should be the same as the plain extension",
-                    fileExtension,
-                    decExtension
-                )
-            }
-        }
+        val inputStream = ByteArrayInputStream(plainText.toByteArray(StandardCharsets.UTF_8))
+        val outputStream = ByteArrayOutputStream()
+
+        uut.encryptEncStream(inputStream, outputStream, fileExtension)
+
+        val cipherBytes = outputStream.toByteArray()
+        val cipherText = outputStream.toString(StandardCharsets.UTF_8.name())
+
+        assertFalse(
+            "Cipher text should not contain any of the plain text",
+            plainText.split(" ").any { cipherText.contains(it) }
+        )
+        testDecryptEncFile(cipherBytes, plainText, fileExtension)
     }
 
-    @Test
-    fun logTest() {
+    private fun getPrivateKey(): PrivateKey {
+        val privateKeyBytes = uut.decryptEncodedPrivateKey(password.toCharArray())
+        return uut.getPrivateKeyFromBytes(privateKeyBytes)
+    }
+
+    private fun testDecryptEncFile(
+        cipherBytes: ByteArray,
+        plainText: String,
+        fileExtension: String
+    ) {
+        val inputStream = ByteArrayInputStream(cipherBytes)
+        val outputStream = ByteArrayOutputStream()
+
+        val decExtension = uut.decryptEncStream(getPrivateKey(), inputStream, outputStream)
+        val decPlainText = outputStream.toString(StandardCharsets.UTF_8.name())
+        Assert.assertEquals(
+            "Decrypted text should be the same as the plain text",
+            plainText,
+            decPlainText
+        )
+        Assert.assertEquals(
+            "Decrypted extension should be the same as the plain extension",
+            fileExtension,
+            decExtension
+        )
+    }
+
+    private fun testLog() {
         val plainText = "The quick brown fox jumped over the lazy dog"
         val expectedPlainText = plainText + newLine + newLine
         val cipherBytes = encryptNextLog(plainText)
-        ByteArrayInputStream(cipherBytes).use { inputStream ->
-            ByteArrayOutputStream().use { outputStream ->
-                PrintStream(outputStream, true, StandardCharsets.UTF_8.name()).use { printStream ->
-                    uut.decryptLogStream(
-                        (rsaKeyPair!!.private as RSAPrivateKey),
-                        inputStream,
-                        printStream
-                    )
-                    val decPlainText = outputStream.toString(StandardCharsets.UTF_8.name())
-                    Assert.assertEquals(
-                        "Decrypted text should be the same as the plain text",
-                        expectedPlainText,
-                        decPlainText
-                    )
-                }
-            }
-        }
+        val inputStream = ByteArrayInputStream(cipherBytes)
+        val outputStream = ByteArrayOutputStream()
+        val printStream = PrintStream(outputStream, true, StandardCharsets.UTF_8.name())
+        val privateKeyBytes = uut.decryptEncodedPrivateKey(password.toCharArray())
+        val privateKey = uut.getPrivateKeyFromBytes(privateKeyBytes)
+        uut.decryptLogStream(privateKey, inputStream, printStream)
+        val decPlainText = outputStream.toString(StandardCharsets.UTF_8.name())
+        Assert.assertEquals(
+            "Decrypted text should be the same as the plain text",
+            expectedPlainText,
+            decPlainText
+        )
     }
 
-    val nextLogBlockTest: Unit
-        get() {
-            val plainText1 = "The quick brown fox jumped over the lazy dog"
-            val plainText2 = "The smaller red squirrel leaped above the sleepy cat"
-            val cipherBytes1 = encryptNextLog(plainText1)
-            val cipherBytes2 = encryptNextLog(plainText2)
-            val allBytes = ArrayUtils.addAll(cipherBytes1, *cipherBytes2)
-            ByteArrayInputStream(allBytes).use { inputStream ->
-                assertNextLog(inputStream, plainText1, cipherBytes1)
-                assertNextLog(inputStream, plainText2, cipherBytes2)
-            }
+    private fun testLogBlockIteration() {
+        val plainText1 = "The quick brown fox jumped over the lazy dog"
+        val plainText2 = "The smaller red squirrel leaped above the sleepy cat"
+        val cipherBytes1 = encryptNextLog(plainText1)
+        val cipherBytes2 = encryptNextLog(plainText2)
+        val allBytes = cipherBytes1 + cipherBytes2
+        ByteArrayInputStream(allBytes).use { inputStream ->
+            assertNextLog(inputStream, plainText1, cipherBytes1)
+            assertNextLog(inputStream, plainText2, cipherBytes2)
         }
-
-    val encodedKeyInfoCorrectSizeTest: Unit
-        get() {
-            val pass = "hi".toCharArray()
-            val keyInfo: EncodedKeyInfo = uut.storeEncryptedKeys(pass, rsaKeyPair!!)
-            Assert.assertEquals(AppProperties.PREFERRED_ASYMMETRIC_KEY_SIZE, keyInfo.getKeySize())
-        }
+    }
 
     private fun assertNextLog(
         inputStream: InputStream,
         expectedPlainText: String,
         expectedBytes: ByteArray
     ) {
-        val lc = ByteArray(CryptoProvider.LENGTH_CODE_SIZE)
+        val lc = ByteArray(4)
         Assert.assertTrue(uut.logHasNext(inputStream, lc))
-        val (logDataBlocks, entryText) = uut.getNextLogTextWithDataBlocks(
-            inputStream,
-            (rsaKeyPair!!.private as RSAPrivateKey), lc
-        )
+
+        val (logDataBlocks, entryText) =
+            uut.getNextLogTextWithDataBlocks(inputStream, getPrivateKey(), lc)
+
         Assert.assertEquals("Log should have correct plain text", expectedPlainText, entryText)
-        Assert.assertThat(
-            "All cipher bytes should be in the ldb", expectedBytes,
-            CoreMatchers.equalTo(logDataBlocks.asOneBlock)
+        Assert.assertTrue(
+            "All cipher bytes should be in the ldb",
+            expectedBytes.contentEquals(logDataBlocks.asOneBlock)
         )
     }
 
     private fun encryptNextLog(plainText: String): ByteArray {
-        var cipherBytes: ByteArray
-        ByteArrayOutputStream().use { outputStream ->
-            uut.encryptLogStream(
-                rsaKeyPair!!.public as RSAPublicKey,
-                plainText,
-                outputStream
-            )
-            cipherBytes = outputStream.toByteArray()
-            val cipherText = outputStream.toString(StandardCharsets.UTF_8.name())
-            for (s in plainText.split(" ".toRegex()).dropLastWhile { it.isEmpty() }
-                .toTypedArray()) {
-                Assert.assertTrue(
-                    "Cipher text should not contain any of the plain text", !cipherText.contains(
-                        s
-                    )
-                )
-            }
-        }
+        val outputStream = ByteArrayOutputStream()
+        uut.encryptLogStream(plainText, outputStream)
+        val cipherBytes = outputStream.toByteArray()
+        val cipherText = outputStream.toString(StandardCharsets.UTF_8.name())
+        assertFalse(
+            "Cipher text should not contain any of the plain text",
+            plainText.split(" ").any { cipherText.contains(it) }
+        )
         return cipherBytes
     }
 }

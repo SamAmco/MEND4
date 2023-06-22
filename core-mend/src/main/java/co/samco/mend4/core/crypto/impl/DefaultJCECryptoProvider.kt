@@ -13,6 +13,7 @@ import java.io.PrintStream
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
 import java.security.InvalidAlgorithmParameterException
+import java.security.InvalidParameterException
 import java.security.KeyFactory
 import java.security.KeyPair
 import java.security.KeyPairGenerator
@@ -36,13 +37,21 @@ class DefaultJCECryptoProvider(
     private val encoder: IBase64EncodingProvider
 ) : CryptoProvider {
 
-    //common byte lengths
     companion object {
+        //common byte lengths
+        private const val SALT_SIZE = 16
+        private const val IV_SIZE = 16
         //Length code size is 4 bytes for 32 bit integers. Changes to this will require
         // changes in the encoding/decoding of length codes.
         private const val LENGTH_CODE_SIZE = 4
-        private const val SALT_SIZE = 16
-        private const val IV_SIZE = 16
+
+        //These used to be dynamic, but it turns out the implementation pretty much
+        // relies on these settings. CTR will return a ciphertext with the same length.
+        // Key length could be dynamic but 256 is basically the largest broadly supported
+        // length anyway.
+        private const val SYMMETRIC_CIPHER_NAME = "AES"
+        private const val SYMMETRIC_CIPHER_TRANSFORM = "AES/CTR/NoPadding"
+        private const val SYMMETRIC_KEY_SIZE = 256
     }
 
     private val random = SecureRandom()
@@ -54,21 +63,14 @@ class DefaultJCECryptoProvider(
     }
 
     private fun generateSymmetricKey(): SecretKey {
-        val symmetricCipherName = settings.getValue(Settings.Name.SYMMETRIC_CIPHER_NAME)
-            ?: throw NoSuchSettingException(Settings.Name.SYMMETRIC_CIPHER_NAME)
-        val symmetricKeySize = settings.getValue(Settings.Name.SYMMETRIC_KEY_SIZE)?.toInt()
-            ?: throw NoSuchSettingException(Settings.Name.SYMMETRIC_KEY_SIZE)
-        val keyGen = KeyGenerator.getInstance(symmetricCipherName)
-        keyGen.init(symmetricKeySize)
+        val keyGen = KeyGenerator.getInstance(SYMMETRIC_CIPHER_NAME)
+        keyGen.init(SYMMETRIC_KEY_SIZE)
         return keyGen.generateKey()
     }
 
     private fun getSymmetricCipherKeyFromBytes(keyBytes: ByteArray): SecretKey {
-        val symmetricCipherName = settings.getValue(Settings.Name.SYMMETRIC_CIPHER_NAME)
-            ?: throw NoSuchSettingException(Settings.Name.SYMMETRIC_CIPHER_NAME)
-        return SecretKeySpec(keyBytes, 0, keyBytes.size, symmetricCipherName)
+        return SecretKeySpec(keyBytes, 0, keyBytes.size, SYMMETRIC_CIPHER_NAME)
     }
-
 
     private fun getSymmetricCipherFromPassword(
         password: CharArray,
@@ -82,39 +84,24 @@ class DefaultJCECryptoProvider(
         val keyFactoryIterations =
             settings.getValue(Settings.Name.PW_KEY_FACTORY_ITERATIONS)?.toInt()
                 ?: throw NoSuchSettingException(Settings.Name.PW_KEY_FACTORY_ITERATIONS)
-        val keyFactoryKeySize = settings.getValue(Settings.Name.SYMMETRIC_KEY_SIZE)?.toInt()
-            ?: throw NoSuchSettingException(Settings.Name.SYMMETRIC_KEY_SIZE)
-
-        val symmetricCipherName = settings.getValue(Settings.Name.SYMMETRIC_CIPHER_NAME)
-            ?: throw NoSuchSettingException(Settings.Name.SYMMETRIC_CIPHER_NAME)
-        val symmetricCipherTransform = settings.getValue(Settings.Name.SYMMETRIC_CIPHER_TRANSFORM)
-            ?: throw NoSuchSettingException(Settings.Name.SYMMETRIC_CIPHER_TRANSFORM)
 
         val factory = SecretKeyFactory.getInstance(keyFactoryCipherName)
         val spec: KeySpec =
-            PBEKeySpec(password, keyFactorySalt, keyFactoryIterations, keyFactoryKeySize)
+            PBEKeySpec(password, keyFactorySalt, keyFactoryIterations, SYMMETRIC_KEY_SIZE)
         val tmp = factory.generateSecret(spec)
-        val symmetricKey: SecretKey = SecretKeySpec(tmp.encoded, symmetricCipherName)
-        val symmetricCipher = Cipher.getInstance(symmetricCipherTransform)
+        val symmetricKey: SecretKey = SecretKeySpec(tmp.encoded, SYMMETRIC_CIPHER_NAME)
+        val symmetricCipher = Cipher.getInstance(SYMMETRIC_CIPHER_TRANSFORM)
         symmetricCipher.init(mode, symmetricKey, privateKeyCipherIv)
         return symmetricCipher
     }
 
-    private fun getSymmetricEncryptCipher(
-        key: SecretKey,
-        iv: IvParameterSpec
-    ): Cipher {
-        val symmetricCipherTransform = settings.getValue(Settings.Name.SYMMETRIC_CIPHER_TRANSFORM)
-            ?: throw NoSuchSettingException(Settings.Name.SYMMETRIC_CIPHER_TRANSFORM)
-        val cipher = Cipher.getInstance(symmetricCipherTransform)
-        cipher.init(Cipher.ENCRYPT_MODE, key, iv)
-        return cipher
-    }
+    private fun getSymmetricEncryptCipher(key: SecretKey, iv: IvParameterSpec) =
+        Cipher.getInstance(SYMMETRIC_CIPHER_TRANSFORM).apply {
+            init(Cipher.ENCRYPT_MODE, key, iv)
+        }
 
     private fun getSymmetricDecryptCipher(key: SecretKey, iv: IvParameterSpec): Cipher {
-        val symmetricCipherTransform = settings.getValue(Settings.Name.SYMMETRIC_CIPHER_TRANSFORM)
-            ?: throw NoSuchSettingException(Settings.Name.SYMMETRIC_CIPHER_TRANSFORM)
-        val cipher = Cipher.getInstance(symmetricCipherTransform)
+        val cipher = Cipher.getInstance(SYMMETRIC_CIPHER_TRANSFORM)
         cipher.init(Cipher.DECRYPT_MODE, key, iv)
         return cipher
     }
@@ -392,6 +379,9 @@ class DefaultJCECryptoProvider(
     }
 
     override fun storeEncryptedKeys(password: CharArray, keyPair: KeyPair) {
+        if (keyPair.public.format != "X.509") {
+            throw InvalidParameterException("Public key must be in X.509 format")
+        }
 
         val keyFactorySalt = ByteArray(SALT_SIZE)
         random.nextBytes(keyFactorySalt)
@@ -405,6 +395,10 @@ class DefaultJCECryptoProvider(
         )
         val encryptedPrivateKey = cipher.doFinal(keyPair.private.encoded)
 
+        settings.setValue(
+            Settings.Name.PUBLIC_KEY,
+            encoder.encodeBase64URLSafeString(keyPair.public.encoded)
+        )
         settings.setValue(
             Settings.Name.PW_KEY_FACTORY_SALT,
             encoder.encodeBase64URLSafeString(keyFactorySalt)

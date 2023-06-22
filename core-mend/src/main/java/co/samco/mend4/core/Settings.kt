@@ -14,9 +14,6 @@ interface Settings {
     fun getValue(name: Name): String?
 
     enum class Name(val encodedName: String) {
-        SYMMETRIC_CIPHER_NAME("symmetric-cipher-name"),
-        SYMMETRIC_CIPHER_TRANSFORM("symmetric-cipher-transform"),
-        SYMMETRIC_KEY_SIZE("symmetric-key-size"),
         ASYMMETRIC_CIPHER_NAME("asymmetric-cipher-name"),
         ASYMMETRIC_CIPHER_TRANSFORM("asymmetric-cipher-transform"),
         ASYMMETRIC_KEY_SIZE("asymmetric-key-size"),
