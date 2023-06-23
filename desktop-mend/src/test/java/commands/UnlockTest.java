@@ -34,14 +34,14 @@ public class UnlockTest extends TestBase {
     public void setup() {
         super.setup();
         errCaptor = ArgumentCaptor.forClass(String.class);
-        when(fileResolveHelper.getPrivateKeyPath()).thenReturn(privateKeyPath);
-        when(fileResolveHelper.getPublicKeyPath()).thenReturn(publicKeyPath);
+        when(fileResolveHelper.getPrivateKeyFile()).thenReturn(privateKeyPath);
+        when(fileResolveHelper.getPublicKeyFile()).thenReturn(publicKeyPath);
         unlock = new Unlock(strings, osDao, settings, settingsHelper, log, cryptoProvider, shredHelper, fileResolveHelper, keyHelper);
     }
 
     @Test
     public void testCommandWithSettingsDependencies() throws IOException, SettingRequiredException {
-        super.testCommandWithSettingsDependencies(unlock);
+        super.testCommandWithNoSettingsDependencies(unlock);
     }
 
     @Test

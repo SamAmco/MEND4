@@ -1,4 +1,6 @@
 package co.samco.mend4.core.exception
 
-class CorruptSettingsException(message: String?, setting: String?) :
-    Exception(String.format(message!!, setting))
+import co.samco.mend4.core.Settings
+
+class CorruptSettingsException(message: String, setting: Settings.Name) :
+    Exception(String.format(message, setting.encodedName))

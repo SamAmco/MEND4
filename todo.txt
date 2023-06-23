@@ -1,0 +1,13 @@
+- Continue fixing up the desktop tests. I got part way throug SetupTest.
+
+- Add core tests for some different password based key derivation functions. I need to know if we can actually accept config there, so far we've only tested variations of PBKDF2.
+
+- Implement change password. It should just decrypt the private key and re-encrypt it with the new password and the new specs (randomised salt, ask for pbkd algo and iterations) 
+
+- Remove the ability to do setup passing in paths for public and private keys, you should just copy your Settings.xml file across and do mend change-password instead
+
+- Would be really nice if we could write a mend scl command for set current log. In fact can it just be an alias for set? .. I guess the problem is then set receives no args :/ 
+
+- After all this you need a new android app sadly, but hopefully you can blitz this task if you have the core jar ready to go and just do encrypt only version again for now.
+
+- backup all enc files to a usb as they're only on a drive right now

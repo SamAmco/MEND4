@@ -1,8 +1,16 @@
 plugins {
     id "java"
     id "idea"
+    id 'org.jetbrains.kotlin.jvm' version '1.8.22'
 }
+
+repositories {
+    mavenCentral()
+}
+
 dependencies {
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
+
     annotationProcessor group: 'com.google.dagger', name: 'dagger-compiler', version: '2.14.1'
     implementation group: 'com.google.dagger', name: 'dagger', version: '2.14.1'
     implementation group: 'commons-io', name: 'commons-io', version: '2.4'
@@ -14,10 +22,26 @@ dependencies {
 
     testImplementation group: 'junit', name: 'junit', version: '4.12'
     testImplementation group: 'com.github.stefanbirkner', name: 'system-rules', version: '1.18.0'
-    testImplementation group: 'org.mockito', name: 'mockito-all', version: '1.10.19'
+    testImplementation group: 'org.mockito.kotlin', name: 'mockito-kotlin', version: '5.0.0'
 }
 
 version = '4.1.0'
+
+compileKotlin.dependsOn(':core-mend:jar')
+
+sourceCompatibility JavaVersion.VERSION_11
+targetCompatibility JavaVersion.VERSION_11
+
+compileKotlin {
+    kotlinOptions {
+        jvmTarget = "11"
+    }
+}
+compileTestKotlin {
+    kotlinOptions {
+        jvmTarget = "11"
+    }
+}
 
 jar {
 
@@ -37,5 +61,3 @@ jar {
 
     archiveFileName = 'MEND4.jar'
 }
-
-compileJava.dependsOn(':core-mend:jar')

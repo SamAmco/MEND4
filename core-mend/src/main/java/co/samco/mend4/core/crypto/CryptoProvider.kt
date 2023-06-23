@@ -6,6 +6,7 @@ import java.io.OutputStream
 import java.io.PrintStream
 import java.security.KeyPair
 import java.security.PrivateKey
+import java.security.PublicKey
 
 interface CryptoProvider {
     /**
@@ -64,6 +65,11 @@ interface CryptoProvider {
      * Returns a [PrivateKey] from the given byte array. The byte array is expected to be PKCS8 encoded
      */
     fun getPrivateKeyFromBytes(privateKey: ByteArray): PrivateKey
+
+    /**
+     * Returns the public key
+     */
+    fun getPublicKey(): PublicKey
 
     /**
      * Creates a new [KeyPair].
