@@ -172,7 +172,7 @@ class DefaultJCECryptoProvider(
         return LogDataBlocks(lc1Bytes, encSymmetricKey, lc2Bytes, iv, lc3Bytes, encEntry)
     }
 
-    private fun getPublicKey(): PublicKey {
+    override fun getPublicKey(): PublicKey {
         val publicKeyEncoded = settings.getValue(Settings.Name.PUBLIC_KEY)
             ?: throw NoSuchSettingException(Settings.Name.PUBLIC_KEY)
         val asymmetricCipherName = settings.getValue(Settings.Name.ASYMMETRIC_CIPHER_NAME)

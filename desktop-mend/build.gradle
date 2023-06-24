@@ -1,10 +1,15 @@
 plugins {
-    id "java"
-    id "idea"
+    id 'org.jetbrains.kotlin.jvm'
+    id 'kotlin-kapt'
 }
+
 dependencies {
-    annotationProcessor group: 'com.google.dagger', name: 'dagger-compiler', version: '2.14.1'
-    implementation group: 'com.google.dagger', name: 'dagger', version: '2.14.1'
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
+
+    def dagger_version = "2.46.1"
+    implementation "com.google.dagger:dagger:$dagger_version"
+    kapt "com.google.dagger:dagger-compiler:$dagger_version"
+
     implementation group: 'commons-io', name: 'commons-io', version: '2.4'
     implementation group: 'commons-codec', name: 'commons-codec', version: '1.10'
     implementation group: 'org.apache.commons', name: 'commons-lang3', version: '3.7'
@@ -12,12 +17,22 @@ dependencies {
     implementation project(':core-mend')
     implementation files('../core-mend/build/libs/core-mend.jar')
 
-    testImplementation group: 'junit', name: 'junit', version: '4.12'
-    testImplementation group: 'com.github.stefanbirkner', name: 'system-rules', version: '1.18.0'
-    testImplementation group: 'org.mockito', name: 'mockito-all', version: '1.10.19'
+    testImplementation group: 'junit', name: 'junit', version: '4.13.2'
+    testImplementation group: 'org.mockito.kotlin', name: 'mockito-kotlin', version: '5.0.0'
 }
 
 version = '4.1.0'
+
+compileKotlin.dependsOn(':core-mend:jar')
+
+sourceCompatibility JavaVersion.VERSION_11
+targetCompatibility JavaVersion.VERSION_11
+
+tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile) {
+    kotlinOptions {
+        jvmTarget = "11"
+    }
+}
 
 jar {
 
@@ -37,5 +52,3 @@ jar {
 
     archiveFileName = 'MEND4.jar'
 }
-
-compileJava.dependsOn(':core-mend:jar')

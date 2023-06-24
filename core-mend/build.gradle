@@ -1,6 +1,6 @@
 plugins {
     id 'java-library'
-    id 'org.jetbrains.kotlin.jvm' version '1.8.22'
+    id 'org.jetbrains.kotlin.jvm'
 }
 
 dependencies {
@@ -9,9 +9,6 @@ dependencies {
     testImplementation group: 'junit', name: 'junit', version: '4.12'
     testImplementation group: 'org.mockito.kotlin', name: 'mockito-kotlin', version: '5.0.0'
     testImplementation group: 'org.bouncycastle', name: 'bcprov-jdk15on', version: '1.70'
-}
-repositories {
-    mavenCentral()
 }
 
 sourceCompatibility JavaVersion.VERSION_11

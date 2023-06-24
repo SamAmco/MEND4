@@ -1,16 +1,8 @@
 package co.samco.mend4.core
 
-import co.samco.mend4.core.exception.CorruptSettingsException
-import java.io.IOException
-
 interface Settings {
-    @Throws(IOException::class)
     fun setValue(name: Name, value: String)
 
-    @Throws(IOException::class)
-    fun valueSet(name: Name): Boolean
-
-    @Throws(IOException::class, CorruptSettingsException::class)
     fun getValue(name: Name): String?
 
     enum class Name(val encodedName: String) {

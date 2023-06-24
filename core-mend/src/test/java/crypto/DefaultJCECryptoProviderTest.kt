@@ -30,10 +30,6 @@ class DefaultJCECryptoProviderTest {
             settingsMap[name] = value
         }
 
-        override fun valueSet(name: Settings.Name): Boolean {
-            return settingsMap.containsKey(name)
-        }
-
         override fun getValue(name: Settings.Name): String? {
             return settingsMap[name]
         }
