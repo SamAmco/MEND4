@@ -2,6 +2,7 @@ package co.samco.mend4.desktop.commands
 
 import co.samco.mend4.core.Settings
 import co.samco.mend4.desktop.core.I18N
+import co.samco.mend4.desktop.dao.SettingsDao
 import co.samco.mend4.desktop.helper.SettingsHelper
 import co.samco.mend4.desktop.output.PrintStreamProvider
 import java.io.IOException
@@ -11,9 +12,9 @@ import javax.inject.Inject
 class SetProperty @Inject constructor(
     private val log: PrintStreamProvider,
     private val strings: I18N,
-    private val settings: Settings,
+    private val settings: SettingsDao,
     private val settingsHelper: SettingsHelper
-) : Command() {
+) : CommandBase() {
 
     private lateinit var propertyName: String
     private lateinit var value: String
@@ -35,7 +36,7 @@ class SetProperty @Inject constructor(
     private fun assertPropertyExists(args: List<String>): List<String>? {
         propertyName = args[0]
         value = args[1]
-        if (!settingsHelper.settingExists(propertyName)) {
+        if (SettingsDao.ALL_SETTINGS.none { it.encodedName == propertyName }) {
             log.err().println(strings.getf("SetProperty.notRecognised", propertyName))
             log.err().println()
             log.err().println(usageText)
@@ -46,8 +47,7 @@ class SetProperty @Inject constructor(
 
     private fun setProperty(args: List<String>): List<String>? {
         try {
-            val name = Settings.Name.values()
-                .first { n: Settings.Name -> n.toString() == propertyName }
+            val name = SettingsDao.ALL_SETTINGS.first { it.encodedName == propertyName }
             settings.setValue(name, value)
             log.err().println(strings.getf("SetProperty.successful", propertyName, value))
         } catch (e: IOException) {

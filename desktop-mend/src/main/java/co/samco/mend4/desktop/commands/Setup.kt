@@ -4,10 +4,10 @@ import co.samco.mend4.core.Settings
 import co.samco.mend4.core.crypto.CryptoProvider
 import co.samco.mend4.desktop.core.I18N
 import co.samco.mend4.desktop.dao.OSDao
+import co.samco.mend4.desktop.dao.SettingsDao
 import co.samco.mend4.desktop.helper.FileResolveHelper
 import co.samco.mend4.desktop.output.PrintStreamProvider
 import java.io.IOException
-import java.nio.file.Files
 import java.util.function.Function
 import javax.inject.Inject
 
@@ -16,9 +16,9 @@ class Setup @Inject constructor(
     private val strings: I18N,
     private val cryptoProvider: CryptoProvider,
     private val fileResolveHelper: FileResolveHelper,
-    private val settings: Settings,
+    private val settings: SettingsDao,
     private val osDao: OSDao
-) : Command() {
+) : CommandBase() {
 
     private var password: CharArray? = null
 
@@ -35,7 +35,7 @@ class Setup @Inject constructor(
     private fun checkAlreadySetup(args: List<String>): List<String>? {
         if (args.contains(FORCE_FLAG)) {
             return args.minus(FORCE_FLAG)
-        } else if (fileResolveHelper.settingsFile.exists()) {
+        } else if (osDao.exists(fileResolveHelper.settingsFile)) {
             log.err().println(
                 strings.getf(
                     "SetupMend.alreadySetup",

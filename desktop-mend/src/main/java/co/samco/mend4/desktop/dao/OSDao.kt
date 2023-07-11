@@ -9,6 +9,12 @@ import java.nio.file.Path
 interface OSDao {
     fun exists(file: File): Boolean
 
+    fun isFile(file: File): Boolean
+
+    fun isDirectory(file: File): Boolean
+
+    fun canWrite(file: File): Boolean
+
     fun readPassword(hint: String): CharArray
 
     fun readLine(): String
@@ -30,4 +36,8 @@ interface OSDao {
     fun move(source: Path, target: Path, vararg options: CopyOption)
 
     fun exec(args: Array<String>): Process
+
+    fun getHomeDirectory(): String
+
+    fun getSettingsFile(): File
 }

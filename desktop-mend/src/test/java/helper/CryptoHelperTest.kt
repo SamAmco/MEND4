@@ -1,24 +1,27 @@
 package helper
 
 import co.samco.mend4.core.AppProperties
-import co.samco.mend4.core.Settings
 import co.samco.mend4.core.util.LogUtils
+import co.samco.mend4.desktop.dao.SettingsDao
 import co.samco.mend4.desktop.exception.MendLockedException
-import co.samco.mend4.desktop.helper.CryptoHelper
+import co.samco.mend4.desktop.helper.impl.CryptoHelperImpl
 import commands.TestBase
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import org.mockito.kotlin.any
-import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.doThrow
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.mock
-import org.mockito.kotlin.never
-import org.mockito.kotlin.times
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
+import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.argumentCaptor
+import com.nhaarman.mockitokotlin2.doThrow
+import com.nhaarman.mockitokotlin2.eq
+import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.never
+import com.nhaarman.mockitokotlin2.times
+import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.whenever
+import testutils.TestUtils
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
 import java.io.File
 import java.security.PrivateKey
 import java.util.regex.Pattern
@@ -30,7 +33,7 @@ class CryptoHelperTest : TestBase() {
     @Before
     override fun setup() {
         super.setup()
-        cryptoHelper = CryptoHelper(
+        cryptoHelper = CryptoHelperImpl(
             strings = strings,
             log = log,
             fileResolveHelper = fileResolveHelper,
@@ -46,13 +49,18 @@ class CryptoHelperTest : TestBase() {
     fun testEncInputOutputFilesCorrect() {
         val inputFileName = "/input.txt"
         val inputFile = File(inputFileName)
-        whenever(settings.getValue(Settings.Name.ENCDIR)).thenReturn(encDir)
+        whenever(settings.getValue(SettingsDao.ENC_DIR)).thenReturn(encDir)
+        whenever(osDao.fileInputStream(any())).thenReturn(TestUtils.emptyInputStream)
+        whenever(osDao.fileOutputSteam(any(), any())).thenReturn(ByteArrayOutputStream())
+
         cryptoHelper.encryptFile(inputFile, null)
+
         val fileCaptor1 = argumentCaptor<File>()
         verify(osDao).fileInputStream(fileCaptor1.capture())
         assertEquals(inputFileName, fileCaptor1.firstValue.absolutePath)
+
         val fileCaptor2 = argumentCaptor<File>()
-        verify(osDao).fileOutputSteam(fileCaptor2.capture())
+        verify(osDao).fileOutputSteam(fileCaptor2.capture(), eq(false))
         val pattern =
             Pattern.compile(encDir + File.separatorChar + "\\d{17}." + AppProperties.ENC_FILE_EXTENSION)
         val matcher = pattern.matcher(fileCaptor2.firstValue.absolutePath)
@@ -64,7 +72,7 @@ class CryptoHelperTest : TestBase() {
     fun testEncInputFileNoExtension() {
         val inputFileName = "/input"
         val inputFile = File(inputFileName)
-        whenever(settings.getValue(Settings.Name.ENCDIR)).thenReturn(encDir)
+        whenever(settings.getValue(SettingsDao.ENC_DIR)).thenReturn(encDir)
         cryptoHelper.encryptFile(inputFile, null)
         val fileCaptor = argumentCaptor<File>()
         verify(osDao).fileInputStream(fileCaptor.capture())
@@ -74,7 +82,7 @@ class CryptoHelperTest : TestBase() {
     @Test(expected = IllegalArgumentException::class)
     fun testDontOverwriteEncFile() {
         val inputFile = File("input")
-        whenever(settings.getValue(Settings.Name.ENCDIR)).thenReturn(encDir)
+        whenever(settings.getValue(SettingsDao.ENC_DIR)).thenReturn(encDir)
         doThrow(IllegalArgumentException())
             .whenever(fileResolveHelper)
             .assertFileDoesNotExist(any())
@@ -93,7 +101,10 @@ class CryptoHelperTest : TestBase() {
         val message = "hi"
         val logFile = File("/currentLogFile." + AppProperties.LOG_FILE_EXTENSION)
         whenever(fileResolveHelper.currentLogFile).thenReturn(logFile)
+        whenever(osDao.fileOutputSteam(eq(logFile), eq(true))).thenReturn(ByteArrayOutputStream())
+
         cryptoHelper.encryptTextToLog(message.toCharArray(), true)
+
         verify(osDao).createNewFile(any())
         verify(osDao).fileOutputSteam(eq(logFile), eq(true))
         verify(cryptoProvider).encryptLogStream(eq(message), any())
@@ -108,7 +119,10 @@ class CryptoHelperTest : TestBase() {
         val logFile = File("/currentLogFile." + AppProperties.LOG_FILE_EXTENSION)
         whenever(versionHelper.version).thenReturn(version)
         whenever(fileResolveHelper.currentLogFile).thenReturn(logFile)
+        whenever(osDao.fileOutputSteam(eq(logFile), eq(true))).thenReturn(ByteArrayOutputStream())
+
         cryptoHelper.encryptTextToLog(message.toCharArray(), false)
+
         verify(cryptoProvider).encryptLogStream(eq(messageWithHeader), any())
     }
 
@@ -116,7 +130,10 @@ class CryptoHelperTest : TestBase() {
     fun testDecryptLog() {
         val logFile = File("/logfile.log")
         whenever(keyHelper.privateKey).thenReturn(privateKey)
+        whenever(osDao.fileInputStream(eq(logFile))).thenReturn(TestUtils.emptyInputStream)
+
         cryptoHelper.decryptLog(logFile)
+
         verify(osDao).fileInputStream(eq(logFile))
         verify(cryptoProvider).decryptLogStream(any(), any(), eq(out))
     }
@@ -134,22 +151,22 @@ class CryptoHelperTest : TestBase() {
             File(File.separator + "path" + File.separator + encFileName + "." + AppProperties.ENC_FILE_EXTENSION)
         val fileCaptor = argumentCaptor<File>()
         val decDir = File.separator + "decDir"
-        whenever(settings.getValue(Settings.Name.DECDIR)).thenReturn(decDir)
         whenever(cryptoProvider.decryptEncStream(any(), any(), any())).thenReturn(fileExtension)
         whenever(keyHelper.privateKey).thenReturn(privateKey)
+        whenever(osDao.fileOutputSteam(any(), any())).thenReturn(ByteArrayOutputStream())
+        whenever(osDao.fileInputStream(any())).thenReturn(TestUtils.emptyInputStream)
 
-        cryptoHelper.decryptFile(encFile, false)
+        cryptoHelper.decryptFile(encFile, decDir, false)
 
         verify(fileResolveHelper).assertDirWritable(decDir)
-        verify(fileResolveHelper, times(2))
-            .assertFileDoesNotExist(fileCaptor.capture())
+        verify(fileResolveHelper, times(2)).assertFileDoesNotExist(fileCaptor.capture())
         assertEquals(
+            decDir + File.separatorChar + encFileName,
             fileCaptor.allValues[0].absolutePath,
-            decDir + File.separatorChar + encFileName
         )
         assertEquals(
-            fileCaptor.allValues[1].absolutePath,
-            decDir + File.separatorChar + encFileName + "." + fileExtension
+            decDir + File.separatorChar + encFileName + "." + fileExtension,
+            fileCaptor.allValues[1].absolutePath
         )
         verify(cryptoProvider).decryptEncStream(any(), any(), any())
         verify(osDao).renameFile(
@@ -161,6 +178,6 @@ class CryptoHelperTest : TestBase() {
 
     @Test(expected = MendLockedException::class)
     fun testDecryptFileMendLocked() {
-        cryptoHelper.decryptFile(File(""), false)
+        cryptoHelper.decryptFile(File(""), "", false)
     }
 }

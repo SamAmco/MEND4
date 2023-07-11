@@ -2,6 +2,7 @@ package co.samco.mend4.desktop.commands
 
 import co.samco.mend4.core.Settings
 import co.samco.mend4.desktop.core.I18N
+import co.samco.mend4.desktop.dao.SettingsDao
 import co.samco.mend4.desktop.helper.CryptoHelper
 import co.samco.mend4.desktop.helper.FileResolveHelper
 import co.samco.mend4.desktop.helper.InputHelper
@@ -12,14 +13,14 @@ import java.util.function.Function
 import javax.inject.Inject
 
 open class Encrypt @Inject constructor(
-    protected val settings: Settings,
+    protected val settings: SettingsDao,
     protected val settingsHelper: SettingsHelper,
     protected val log: PrintStreamProvider,
     protected val strings: I18N,
     protected val cryptoHelper: CryptoHelper,
     private val inputHelper: InputHelper,
     protected val fileResolveHelper: FileResolveHelper
-) : Command(), InputListener {
+) : CommandBase(), InputListener {
 
     @JvmField
     protected var dropHeader = false
@@ -53,8 +54,8 @@ open class Encrypt @Inject constructor(
                     Settings.Name.ASYMMETRIC_CIPHER_TRANSFORM,
                     Settings.Name.ASYMMETRIC_KEY_SIZE,
                     Settings.Name.PUBLIC_KEY,
-                    Settings.Name.ENCDIR,
-                    Settings.Name.LOGDIR
+                    SettingsDao.ENC_DIR,
+                    SettingsDao.LOG_DIR
                 ),
                 COMMAND_NAME
             )

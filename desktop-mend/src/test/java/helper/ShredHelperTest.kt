@@ -1,6 +1,6 @@
 package helper
 
-import co.samco.mend4.desktop.helper.ShredHelper
+import co.samco.mend4.desktop.helper.impl.ShredHelperImpl
 import commands.TestBase
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -14,7 +14,7 @@ class ShredHelperTest : TestBase() {
         super.setup()
         fileNameRef = strings["Shred.fileName"]
 
-        shredHelper = ShredHelper(
+        shredHelper = ShredHelperImpl(
             strings = strings,
             settings = settings,
             log = log,

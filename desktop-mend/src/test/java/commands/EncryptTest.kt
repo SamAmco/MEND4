@@ -1,14 +1,17 @@
 package commands
 
-import co.samco.mend4.core.Settings
 import co.samco.mend4.desktop.commands.Encrypt
+import co.samco.mend4.desktop.dao.SettingsDao
+import com.nhaarman.mockitokotlin2.argumentCaptor
+import com.nhaarman.mockitokotlin2.eq
+import com.nhaarman.mockitokotlin2.isNull
 import org.junit.Assert
 import org.junit.Before
 import org.junit.Test
 import org.mockito.ArgumentCaptor
-import org.mockito.ArgumentMatchers
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
+import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.whenever
+import org.junit.Assert.assertEquals
 import java.io.File
 
 class EncryptTest : TestBase() {
@@ -34,8 +37,8 @@ class EncryptTest : TestBase() {
     }
 
     private fun setLogAndEncDir() {
-        whenever(settings.getValue(Settings.Name.ENCDIR)).thenReturn("encdir")
-        whenever(settings.getValue(Settings.Name.LOGDIR)).thenReturn("decdir")
+        whenever(settings.getValue(SettingsDao.ENC_DIR)).thenReturn("encdir")
+        whenever(settings.getValue(SettingsDao.LOG_DIR)).thenReturn("decdir")
     }
 
     @Test
@@ -105,15 +108,12 @@ class EncryptTest : TestBase() {
     fun encryptFile() {
         setLogAndEncDir()
         val fileName = "hi"
-        whenever(fileResolveHelper.resolveFile(ArgumentMatchers.eq(fileName)))
+        whenever(fileResolveHelper.resolveFile(eq(fileName)))
             .thenReturn(File(fileName))
         encrypt!!.execute(listOf(fileName))
-        val outCaptor = ArgumentCaptor.forClass(
-            File::class.java
-        )
-        verify(cryptoHelper)
-            .encryptFile(outCaptor.capture(), ArgumentMatchers.isNull<Any>() as String)
-        Assert.assertTrue(outCaptor.value.name == fileName)
+        val outCaptor = argumentCaptor<File>()
+        verify(cryptoHelper).encryptFile(outCaptor.capture(), isNull())
+        assertEquals(fileName, outCaptor.firstValue.name)
     }
 
     @Test
@@ -121,15 +121,13 @@ class EncryptTest : TestBase() {
         setLogAndEncDir()
         val fileName1 = "hi1"
         val fileName2 = "hi2"
-        whenever(fileResolveHelper.resolveFile(ArgumentMatchers.eq(fileName1))).thenReturn(
+        whenever(fileResolveHelper.resolveFile(eq(fileName1))).thenReturn(
             File(fileName1)
         )
         encrypt!!.execute(listOf(fileName1, fileName2))
-        val outCaptor = ArgumentCaptor.forClass(
-            File::class.java
-        )
+        val outCaptor = argumentCaptor<File>()
         verify(cryptoHelper)
-            .encryptFile(outCaptor.capture(), ArgumentMatchers.eq(fileName2))
-        Assert.assertTrue(outCaptor.value.name == fileName1)
+            .encryptFile(outCaptor.capture(), eq(fileName2))
+        Assert.assertTrue(outCaptor.firstValue.name == fileName1)
     }
 }

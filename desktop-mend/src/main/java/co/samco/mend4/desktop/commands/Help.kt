@@ -8,10 +8,8 @@ import javax.inject.Inject
 class Help @Inject constructor(
     private val strings: I18N,
     private val log: PrintStreamProvider,
-    //TODO have to use java.util.Set here because we're using @IntoSet in CommandsModule
-    // would be good to figure this out
     private val commands: Set<@JvmSuppressWildcards Command>
-) : Command() {
+) : CommandBase() {
 
     companion object {
         const val HELP_FLAG = "-h"

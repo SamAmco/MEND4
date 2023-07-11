@@ -1,7 +1,7 @@
 package co.samco.mend4.desktop.commands
 
-import co.samco.mend4.core.Settings
 import co.samco.mend4.desktop.core.I18N
+import co.samco.mend4.desktop.dao.SettingsDao
 import co.samco.mend4.desktop.helper.CryptoHelper
 import co.samco.mend4.desktop.helper.FileResolveHelper
 import co.samco.mend4.desktop.helper.InputHelper
@@ -12,7 +12,7 @@ import java.util.function.Function
 import javax.inject.Inject
 
 class EncryptFromStdIn @Inject constructor(
-    settings: Settings,
+    settings: SettingsDao,
     settingsHelper: SettingsHelper,
     log: PrintStreamProvider,
     strings: I18N,

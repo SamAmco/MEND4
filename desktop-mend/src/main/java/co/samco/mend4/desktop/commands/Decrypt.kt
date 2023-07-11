@@ -2,7 +2,9 @@ package co.samco.mend4.desktop.commands
 
 import co.samco.mend4.core.AppProperties
 import co.samco.mend4.core.Settings
+import co.samco.mend4.core.exception.CorruptSettingsException
 import co.samco.mend4.desktop.core.I18N
+import co.samco.mend4.desktop.dao.SettingsDao
 import co.samco.mend4.desktop.exception.MendLockedException
 import co.samco.mend4.desktop.helper.CryptoHelper
 import co.samco.mend4.desktop.helper.FileResolveHelper
@@ -17,8 +19,9 @@ class Decrypt @Inject constructor(
     private val strings: I18N,
     private val settingsHelper: SettingsHelper,
     private val cryptoHelper: CryptoHelper,
-    private val fileResolveHelper: FileResolveHelper
-) : Command() {
+    private val fileResolveHelper: FileResolveHelper,
+    private val settings: SettingsDao
+) : CommandBase() {
     private var silent = false
     private lateinit var fileIdentifier: String
     private val behaviourChain = listOf(
@@ -42,10 +45,10 @@ class Decrypt @Inject constructor(
                     Settings.Name.PW_PRIVATE_KEY_CIPHER_IV,
                     Settings.Name.ENCRYPTED_PRIVATE_KEY,
                     Settings.Name.PUBLIC_KEY,
-                    Settings.Name.LOGDIR,
-                    Settings.Name.ENCDIR,
-                    Settings.Name.DECDIR,
-                    Settings.Name.SHREDCOMMAND
+                    SettingsDao.LOG_DIR,
+                    SettingsDao.ENC_DIR,
+                    SettingsDao.DEC_DIR,
+                    SettingsDao.SHRED_COMMAND
                 ),
                 COMMAND_NAME
             )
@@ -80,8 +83,17 @@ class Decrypt @Inject constructor(
             val file: File = fileResolveHelper.resolveAsEncFilePath(fileIdentifier)
             val valid = fileResolveHelper
                 .fileExistsAndHasExtension(AppProperties.ENC_FILE_EXTENSION, file)
+
             return if (valid) {
-                cryptoHelper.decryptFile(file, silent)
+                val decDir = settings.getValue(SettingsDao.DEC_DIR)
+                    ?: throw CorruptSettingsException(
+                        strings.getf(
+                            "General.dirRequired",
+                            SettingsDao.DEC_DIR,
+                            COMMAND_NAME
+                        )
+                    )
+                cryptoHelper.decryptFile(file, decDir, silent)
                 null
             } else args
         } catch (e: MendLockedException) {
@@ -94,12 +106,14 @@ class Decrypt @Inject constructor(
 
     private fun tryResolveFileAsLog(): List<String>? {
         try {
-            val file: File = fileResolveHelper.resolveAsLogFilePath(fileIdentifier)
+            val file = fileResolveHelper.resolveAsLogFilePath(fileIdentifier)
+            fileResolveHelper.assertDirWritable("sam")
             fileResolveHelper.assertFileExistsAndHasExtension(
                 fileIdentifier,
                 AppProperties.LOG_FILE_EXTENSION,
                 file
             )
+            println("assert didn't throw")
             cryptoHelper.decryptLog(file)
         } catch (e: MendLockedException) {
             failWithMessage(log, strings.getf("Decrypt.mendLocked", Unlock.COMMAND_NAME))

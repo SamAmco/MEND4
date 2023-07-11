@@ -1,10 +1,11 @@
 package commands
 
-import co.samco.mend4.core.Settings
 import co.samco.mend4.core.crypto.CryptoProvider
 import co.samco.mend4.desktop.commands.Command
 import co.samco.mend4.desktop.core.I18N
+import co.samco.mend4.desktop.core.I18NImpl
 import co.samco.mend4.desktop.dao.OSDao
+import co.samco.mend4.desktop.dao.SettingsDao
 import co.samco.mend4.desktop.exception.SettingRequiredException
 import co.samco.mend4.desktop.helper.CryptoHelper
 import co.samco.mend4.desktop.helper.FileResolveHelper
@@ -17,12 +18,12 @@ import co.samco.mend4.desktop.helper.VersionHelper
 import co.samco.mend4.desktop.output.PrintStreamProvider
 import org.junit.Assert
 import org.junit.Before
-import org.mockito.kotlin.any
-import org.mockito.kotlin.doThrow
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.mock
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
+import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.doThrow
+import com.nhaarman.mockitokotlin2.eq
+import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.whenever
 import java.io.IOException
 import java.io.PrintStream
 
@@ -54,29 +55,29 @@ open class TestBase {
 
     protected lateinit var err: PrintStream
 
-    protected lateinit var settings: Settings
+    protected lateinit var settings: SettingsDao
 
     protected lateinit var osDao: OSDao
 
     @Before
     open fun setup() {
-        strings = I18N("en", "UK")
         err = mock()
         out = mock()
         log = mock()
         whenever(log.err()).thenReturn(err)
         whenever(log.out()).thenReturn(out)
-        cryptoHelper = mock()
         cryptoProvider = mock()
+        settings = mock()
+        osDao = mock()
+        settingsHelper = mock()
+        versionHelper = mock()
+        strings = I18NImpl("en", "UK")
         fileResolveHelper = mock()
         inputHelper = mock()
         keyHelper = mock()
         mergeHelper = mock()
-        settingsHelper = mock()
+        cryptoHelper = mock()
         shredHelper = mock()
-        versionHelper = mock()
-        settings = mock()
-        osDao = mock()
     }
 
     @Throws(IOException::class, SettingRequiredException::class)

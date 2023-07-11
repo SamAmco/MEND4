@@ -1,35 +1,41 @@
 package co.samco.mend4.desktop.commands
 
+import co.samco.mend4.desktop.commands.Command.Companion.HELP_ALIASES
 import co.samco.mend4.desktop.output.PrintStreamProvider
 import java.util.Collections
 import java.util.function.Function
 import java.util.stream.Collectors
 
-abstract class Command {
+interface Command {
+    val usageText: String
+    val descriptionText: String
+    val commandAliases: List<String>
+    val executionResult: Int
+
+    fun executeCommand(args: List<String>)
+
+    fun isCommandForString(name: String): Boolean
+
     companion object {
         @JvmField
         val HELP_ALIASES = listOf("-h", "--help")
     }
+}
 
-    abstract val usageText: String
-    abstract val descriptionText: String
-    abstract val commandAliases: List<String>
+abstract class CommandBase : Command {
 
-    var executionResult = 0
+    override var executionResult = 0
         protected set
 
-    protected abstract fun execute(args: List<String>)
-
-    fun executeCommand(args: List<String>) {
+    override fun executeCommand(args: List<String>) {
         if (Collections.disjoint(args, HELP_ALIASES)) execute(args)
         else System.err.println(usageText)
     }
 
-    fun isCommandForString(name: String): Boolean {
-        return commandAliases.stream()
-            .filter { s: String -> s == name }
-            .findFirst()
-            .isPresent
+    protected abstract fun execute(args: List<String>)
+
+    override fun isCommandForString(name: String): Boolean {
+        return commandAliases.contains(name)
     }
 
     protected fun executeBehaviourChain(

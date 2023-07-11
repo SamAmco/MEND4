@@ -4,6 +4,7 @@ import co.samco.mend4.core.Settings
 import co.samco.mend4.core.crypto.CryptoProvider
 import co.samco.mend4.desktop.core.I18N
 import co.samco.mend4.desktop.dao.OSDao
+import co.samco.mend4.desktop.dao.SettingsDao
 import co.samco.mend4.desktop.helper.FileResolveHelper
 import co.samco.mend4.desktop.helper.SettingsHelper
 import co.samco.mend4.desktop.helper.ShredHelper
@@ -14,14 +15,14 @@ import javax.inject.Inject
 
 class Unlock @Inject constructor(
     private val strings: I18N,
-    private val settings: Settings,
+    private val settings: SettingsDao,
     private val settingsHelper: SettingsHelper,
     private val log: PrintStreamProvider,
     private val cryptoProvider: CryptoProvider,
     private val shredHelper: ShredHelper,
     private val fileResolveHelper: FileResolveHelper,
     private val osDao: OSDao
-) : Command() {
+) : CommandBase() {
 
     private lateinit var password: CharArray
 
@@ -37,7 +38,7 @@ class Unlock @Inject constructor(
         try {
             settingsHelper.assertRequiredSettingsExist(
                 arrayOf(
-                    Settings.Name.SHREDCOMMAND,
+                    SettingsDao.SHRED_COMMAND,
                     Settings.Name.ASYMMETRIC_CIPHER_NAME,
                     Settings.Name.ASYMMETRIC_CIPHER_TRANSFORM,
                     Settings.Name.ASYMMETRIC_KEY_SIZE,
@@ -76,10 +77,10 @@ class Unlock @Inject constructor(
 
     private fun shredExistingKeys(args: List<String>): List<String>? {
         try {
-            if (fileResolveHelper.privateKeyFile.exists()) {
+            if (osDao.exists(fileResolveHelper.privateKeyFile)) {
                 shredHelper.tryShredFile(fileResolveHelper.privateKeyFile.absolutePath)
             }
-            if (fileResolveHelper.publicKeyFile.exists()) {
+            if (osDao.exists(fileResolveHelper.publicKeyFile)) {
                 shredHelper.tryShredFile(fileResolveHelper.publicKeyFile.absolutePath)
             }
         } catch (t: Throwable) {

@@ -5,23 +5,18 @@ interface Settings {
 
     fun getValue(name: Name): String?
 
-    enum class Name(val encodedName: String) {
-        ASYMMETRIC_CIPHER_NAME("asymmetric-cipher-name"),
-        ASYMMETRIC_CIPHER_TRANSFORM("asymmetric-cipher-transform"),
-        ASYMMETRIC_KEY_SIZE("asymmetric-key-size"),
-        PW_KEY_FACTORY_ALGORITHM("pw-key-factory-algorithm"),
-        PW_KEY_FACTORY_ITERATIONS("pw-key-factory-iterations"),
-        PW_KEY_FACTORY_SALT("pw-key-factory-salt"),
-        PW_PRIVATE_KEY_CIPHER_IV("pw-private-key-cipher-iv"),
-        ENCRYPTED_PRIVATE_KEY("encrypted-private-key"),
-        PUBLIC_KEY("public-key"),
-
-        //TODO these should be moved to desktop specific settings
-        CURRENTLOG("currentlog"),
-        LOGDIR("logdir"),
-        ENCDIR("encdir"),
-        DECDIR("decdir"),
-        SHREDCOMMAND("shredcommand");
+    data class Name(val encodedName: String) {
+        companion object {
+            val ASYMMETRIC_CIPHER_NAME = Name("asymmetric-cipher-name")
+            val ASYMMETRIC_CIPHER_TRANSFORM = Name("asymmetric-cipher-transform")
+            val ASYMMETRIC_KEY_SIZE = Name("asymmetric-key-size")
+            val PW_KEY_FACTORY_ALGORITHM = Name("pw-key-factory-algorithm")
+            val PW_KEY_FACTORY_ITERATIONS = Name("pw-key-factory-iterations")
+            val PW_KEY_FACTORY_SALT = Name("pw-key-factory-salt")
+            val PW_PRIVATE_KEY_CIPHER_IV = Name("pw-private-key-cipher-iv")
+            val ENCRYPTED_PRIVATE_KEY = Name("encrypted-private-key")
+            val PUBLIC_KEY = Name("public-key")
+        }
 
         override fun toString(): String {
             return encodedName

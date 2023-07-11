@@ -1,17 +1,18 @@
 package commands
 
 import co.samco.mend4.core.AppProperties
-import co.samco.mend4.core.Settings
 import co.samco.mend4.desktop.commands.StatePrinter
+import co.samco.mend4.desktop.dao.SettingsDao
 import junit.framework.Assert.assertTrue
-import org.junit.Assert
 import org.junit.Before
 import org.junit.Test
-import org.mockito.kotlin.any
-import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
+import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.argumentCaptor
+import com.nhaarman.mockitokotlin2.eq
+import com.nhaarman.mockitokotlin2.times
+import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.whenever
+import org.apache.commons.io.FilenameUtils
 import java.io.File
 
 class StatePrinterTest : TestBase() {
@@ -50,29 +51,29 @@ class StatePrinterTest : TestBase() {
             .thenReturn("")
         val outCaptor = argumentCaptor<String>()
         statePrinter.execute(listOf(StatePrinter.ALL_FLAG))
-        verify(out).println(outCaptor.capture())
-        for (n in Settings.Name.values()) {
-            assertTrue(outCaptor.firstValue.contains(n.toString()))
+        verify(out, times(SettingsDao.ALL_SETTINGS.size)).println(outCaptor.capture())
+        for (n in SettingsDao.ALL_SETTINGS) {
+            assertTrue(outCaptor.allValues.any { it.contains(n.toString()) })
         }
     }
 
     @Test
     fun logFlag() {
         val logDir = "dir"
-        whenever(settings.getValue(eq(Settings.Name.LOGDIR))).thenReturn(logDir)
+        whenever(settings.getValue(eq(SettingsDao.LOG_DIR))).thenReturn(logDir)
         filePrintTest(StatePrinter.LOGS_FLAG, AppProperties.LOG_FILE_EXTENSION)
     }
 
     @Test
     fun encFlag() {
         val encDir = "dir"
-        whenever(settings.getValue(eq(Settings.Name.ENCDIR))).thenReturn(encDir)
+        whenever(settings.getValue(eq(SettingsDao.ENC_DIR))).thenReturn(encDir)
         filePrintTest(StatePrinter.ENCS_FLAG, AppProperties.ENC_FILE_EXTENSION)
     }
 
     @Test
     fun printSetting() {
-        val name = Settings.Name.values()[0]
+        val name = SettingsDao.ALL_SETTINGS[0]
         val value = "hi"
         whenever(settingsHelper.getSettingValueWrapped(eq(name))).thenReturn(value)
         statePrinter.execute(listOf(name.toString()))
@@ -88,15 +89,20 @@ class StatePrinterTest : TestBase() {
     }
 
     private fun filePrintTest(flag: String, extension: String) {
-        val files = arrayOf(File("f1"), File("f2"))
+        val files = arrayOf(File("f1.$extension"), File("f2.$extension"))
         whenever(osDao.listFiles(any())).thenReturn(files)
         val outCaptor = argumentCaptor<String>()
 
         statePrinter.execute(listOf(flag))
 
-        verify(out).println(outCaptor.capture())
+        verify(out, times(2)).println(outCaptor.capture())
+
         for (f in files) {
-            Assert.assertTrue(outCaptor.firstValue.contains(f.name))
+            assertTrue(
+                outCaptor.allValues.contains(
+                    FilenameUtils.getBaseName(f.absolutePath)
+                )
+            )
         }
     }
 }

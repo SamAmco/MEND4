@@ -1,15 +1,14 @@
 package commands
 
-import co.samco.mend4.core.Settings
-import co.samco.mend4.core.exception.CorruptSettingsException
 import co.samco.mend4.desktop.commands.Clean
+import co.samco.mend4.desktop.dao.SettingsDao
+import com.nhaarman.mockitokotlin2.any
 import org.junit.Before
 import org.junit.Test
-import org.mockito.Mockito
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
-import java.io.IOException
+import com.nhaarman.mockitokotlin2.eq
+import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.whenever
+import java.io.File
 
 class CleanTest : TestBase() {
     private lateinit var clean: Clean
@@ -34,19 +33,27 @@ class CleanTest : TestBase() {
     @Test
     fun executesShredCommand() {
         val decDir = "dir"
-        whenever(settings.getValue(eq(Settings.Name.DECDIR))).thenReturn(decDir)
+        whenever(settings.getValue(eq(SettingsDao.DEC_DIR))).thenReturn(decDir)
+        whenever(settings.getValue(eq(SettingsDao.SHRED_COMMAND))).thenReturn(" ")
+        whenever(osDao.listFiles(any())).thenReturn(arrayOf(File("test-file")))
+
         clean.execute(emptyList())
         verify(shredHelper).shredFilesInDirectory(eq(decDir))
         verify(err).println(eq(strings["Clean.cleanComplete"]))
     }
 
     @Test
-    @Throws(CorruptSettingsException::class, IOException::class)
     fun printsException() {
-        val exception = "hi"
-        whenever(settings.getValue(eq(Settings.Name.DECDIR)))
-            .thenThrow(CorruptSettingsException(exception, Settings.Name.DECDIR))
+        whenever(settings.getValue(eq(SettingsDao.DEC_DIR))).thenReturn(null)
         clean.execute(emptyList())
-        verify(err).println(eq(exception))
+        verify(err).println(
+            eq(
+                strings.getf(
+                    "General.dirRequired",
+                    SettingsDao.DEC_DIR.encodedName,
+                    Clean.COMMAND_NAME
+                )
+            )
+        )
     }
 }

@@ -5,19 +5,24 @@ import co.samco.mend4.core.Settings
 import co.samco.mend4.core.bean.LogDataBlocks
 import co.samco.mend4.core.bean.LogDataBlocksAndText
 import co.samco.mend4.core.util.LogUtils
+import co.samco.mend4.desktop.dao.SettingsDao
 import co.samco.mend4.desktop.exception.MendLockedException
 import co.samco.mend4.desktop.helper.MergeHelper
+import co.samco.mend4.desktop.helper.impl.MergeHelperImpl
 import commands.TestBase
 import org.junit.Assert
 import org.junit.Before
 import org.junit.Test
 import org.mockito.invocation.InvocationOnMock
-import org.mockito.kotlin.any
-import org.mockito.kotlin.doAnswer
-import org.mockito.kotlin.mock
-import org.mockito.kotlin.never
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
+import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.doAnswer
+import com.nhaarman.mockitokotlin2.eq
+import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.never
+import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.whenever
+import testutils.TestUtils
+import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.InputStream
 import java.io.PipedInputStream
@@ -51,7 +56,7 @@ class MergeHelperTest : TestBase() {
         val privateKey: PrivateKey = mock()
         whenever(keyHelper.privateKey).thenReturn(privateKey)
 
-        uut = MergeHelper(
+        uut = MergeHelperImpl(
             log = log,
             strings = strings,
             fileResolveHelper = fileResolveHelper,
@@ -148,6 +153,12 @@ class MergeHelperTest : TestBase() {
     fun testMergeMendLockedMergeToExisting() {
         setupInputAndOutput()
         whenever(keyHelper.privateKey).thenReturn(null)
+
+        whenever(osDao.fileInputStream(any())).thenReturn(TestUtils.emptyInputStream)
+        whenever(osDao.fileOutputSteam(any(), any())).thenReturn(ByteArrayOutputStream())
+        whenever(fileResolveHelper.getTempFile(any())).thenReturn(File("temp"))
+        whenever(settings.getValue(eq(SettingsDao.LOG_DIR))).thenReturn("logDir")
+
         uut.mergeToFirstOrSecond(files, true)
         verify(osDao, never()).renameFile(any(), any())
     }
@@ -245,7 +256,7 @@ class MergeHelperTest : TestBase() {
     private fun testMoveToFirstOrSecond(isFirst: Boolean, firstOrSecond: File) {
         val logdir = "logdir"
         val tempFile = File("temp")
-        whenever(settings.getValue(Settings.Name.LOGDIR)).thenReturn(logdir)
+        whenever(settings.getValue(SettingsDao.LOG_DIR)).thenReturn(logdir)
         whenever(fileResolveHelper.getTempFile(logdir)).thenReturn(tempFile)
         uut.mergeToFirstOrSecond(files, isFirst)
         verify(fileResolveHelper).getTempFile(logdir)

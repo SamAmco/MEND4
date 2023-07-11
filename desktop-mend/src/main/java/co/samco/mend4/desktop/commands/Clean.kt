@@ -1,8 +1,8 @@
 package co.samco.mend4.desktop.commands
 
-import co.samco.mend4.core.Settings
 import co.samco.mend4.core.exception.CorruptSettingsException
 import co.samco.mend4.desktop.core.I18N
+import co.samco.mend4.desktop.dao.SettingsDao
 import co.samco.mend4.desktop.helper.SettingsHelper
 import co.samco.mend4.desktop.helper.ShredHelper
 import co.samco.mend4.desktop.output.PrintStreamProvider
@@ -14,8 +14,8 @@ class Clean @Inject constructor(
     private val log: PrintStreamProvider,
     private val settingsHelper: SettingsHelper,
     private val shredHelper: ShredHelper,
-    private val settings: Settings
-) : Command() {
+    private val settings: SettingsDao
+) : CommandBase() {
     private val behaviourChain = listOf(
         Function { a: List<String> -> assertSettingsPresent(a) },
         Function { a: List<String> -> performClean(a) }
@@ -24,9 +24,7 @@ class Clean @Inject constructor(
     private fun assertSettingsPresent(args: List<String>): List<String>? {
         try {
             settingsHelper.assertRequiredSettingsExist(
-                arrayOf(
-                    Settings.Name.DECDIR, Settings.Name.SHREDCOMMAND
-                ),
+                arrayOf(SettingsDao.DEC_DIR, SettingsDao.SHRED_COMMAND),
                 COMMAND_NAME
             )
         } catch (t: Throwable) {
@@ -38,10 +36,13 @@ class Clean @Inject constructor(
 
     private fun performClean(args: List<String>): List<String>? {
         try {
-            val decDir = settings.getValue(Settings.Name.DECDIR)
+            val decDir = settings.getValue(SettingsDao.DEC_DIR)
                 ?: throw CorruptSettingsException(
-                    strings["General.dirRequired"],
-                    Settings.Name.DECDIR
+                    strings.getf(
+                        "General.dirRequired",
+                        SettingsDao.DEC_DIR,
+                        COMMAND_NAME
+                    )
                 )
 
             shredHelper.shredFilesInDirectory(decDir)
@@ -59,7 +60,7 @@ class Clean @Inject constructor(
     override val usageText: String
         get() = strings.getf("Clean.usage", COMMAND_NAME)
     override val descriptionText: String
-        get() = strings.getf("Clean.description", Settings.Name.SHREDCOMMAND.toString())
+        get() = strings.getf("Clean.description", SettingsDao.SHRED_COMMAND.toString())
 
     override val commandAliases: List<String>
         get() = listOf(COMMAND_NAME)

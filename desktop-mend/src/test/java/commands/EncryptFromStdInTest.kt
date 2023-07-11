@@ -1,15 +1,15 @@
 package commands
 
-import co.samco.mend4.core.Settings
 import co.samco.mend4.desktop.commands.Encrypt
 import co.samco.mend4.desktop.commands.EncryptFromStdIn
+import co.samco.mend4.desktop.dao.SettingsDao
 import org.junit.Assert
 import org.junit.Before
 import org.junit.Test
 import org.mockito.ArgumentCaptor
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
+import com.nhaarman.mockitokotlin2.eq
+import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.whenever
 import java.io.ByteArrayInputStream
 import java.io.IOException
 import java.io.InputStream
@@ -22,8 +22,8 @@ class EncryptFromStdInTest : TestBase() {
     override fun setup() {
         super.setup()
         try {
-            whenever(settings.getValue(Settings.Name.ENCDIR)).thenReturn("encdir")
-            whenever(settings.getValue(Settings.Name.LOGDIR)).thenReturn("decdir")
+            whenever(settings.getValue(SettingsDao.ENC_DIR)).thenReturn("encdir")
+            whenever(settings.getValue(SettingsDao.LOG_DIR)).thenReturn("decdir")
         } catch (e: IOException) {
             e.printStackTrace()
         }

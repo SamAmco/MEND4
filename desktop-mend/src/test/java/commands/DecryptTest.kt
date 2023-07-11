@@ -2,15 +2,19 @@ package commands
 
 import co.samco.mend4.core.AppProperties
 import co.samco.mend4.desktop.commands.Decrypt
-import org.junit.Assert
+import co.samco.mend4.desktop.dao.SettingsDao
+import com.nhaarman.mockitokotlin2.whenever
+import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
-import org.mockito.ArgumentCaptor
-import org.mockito.ArgumentMatchers
-import org.mockito.kotlin.doThrow
-import org.mockito.kotlin.times
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
+import org.mockito.ArgumentMatchers.anyString
+import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.argumentCaptor
+import com.nhaarman.mockitokotlin2.doAnswer
+import com.nhaarman.mockitokotlin2.eq
+import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.times
+import com.nhaarman.mockitokotlin2.verify
 import java.io.File
 import java.io.FileNotFoundException
 
@@ -25,7 +29,8 @@ class DecryptTest : TestBase() {
             strings = strings,
             settingsHelper = settingsHelper,
             cryptoHelper = cryptoHelper,
-            fileResolveHelper = fileResolveHelper
+            fileResolveHelper = fileResolveHelper,
+            settings = settings,
         )
     }
 
@@ -37,13 +42,22 @@ class DecryptTest : TestBase() {
     @Test
     fun decryptLog() {
         val logFileName = "logFile." + AppProperties.LOG_FILE_EXTENSION
-        decryptLog(logFileName)
-    }
+        whenever(keyHelper.privateKey).thenReturn(mock())
+        whenever(
+            fileResolveHelper.fileExistsAndHasExtension(
+                eq(AppProperties.ENC_FILE_EXTENSION),
+                any()
+            )
+        )
+            .thenReturn(false)
+        whenever(fileResolveHelper.resolveAsLogFilePath(anyString()))
+            .thenReturn(File(logFileName))
 
-    @Test
-    fun decryptLogWithSilentFlag() {
-        val logFileName = "logFile." + AppProperties.LOG_FILE_EXTENSION
-        decryptLog(logFileName)
+        decrypt.execute(listOf(logFileName))
+
+        val fileCaptor = argumentCaptor<File>()
+        verify(cryptoHelper).decryptLog(fileCaptor.capture())
+        assertEquals(logFileName, fileCaptor.firstValue.name)
     }
 
     @Test
@@ -60,46 +74,40 @@ class DecryptTest : TestBase() {
 
     @Test
     fun logFileDoesntExist() {
-        val fileName = "unkown.extension"
-        val exceptionText = "hi"
-        doThrow(FileNotFoundException(exceptionText)).`when`(fileResolveHelper)
+        val fileName = "unknown.extension"
+        val exception = "exception test"
+
+        doAnswer { throw FileNotFoundException(exception) }
+            .whenever(fileResolveHelper)
             .assertFileExistsAndHasExtension(
-                ArgumentMatchers.anyString(), ArgumentMatchers.anyString(), ArgumentMatchers.any(
-                    File::class.java
-                )
+                anyString(),
+                anyString(),
+                //Bit of a hack using an argument captor otherwise mockito doesn't match the call.
+                argumentCaptor<File>().capture()
             )
+
         decrypt.execute(listOf(fileName))
-        val errCapture = ArgumentCaptor.forClass(
-            String::class.java
-        )
-        verify(err).println(errCapture.capture())
-        Assert.assertEquals(exceptionText, errCapture.value)
+
+        verify(err).println(eq(exception))
     }
 
     @Test
     fun encFileDoesntExist() {
         val fileName = "unkown.extension"
         whenever(fileResolveHelper.resolveAsEncFilePath(fileName)).thenReturn(File(fileName))
-        whenever(
-            fileResolveHelper.fileExistsAndHasExtension(
-                ArgumentMatchers.anyString(), ArgumentMatchers.any(
-                    File::class.java
-                )
-            )
-        ).thenReturn(false)
+        whenever(fileResolveHelper.fileExistsAndHasExtension(anyString(), any()))
+            .thenReturn(false)
         decrypt.execute(listOf(fileName))
-        verify(fileResolveHelper).resolveAsLogFilePath(ArgumentMatchers.eq(fileName))
+        verify(fileResolveHelper).resolveAsLogFilePath(eq(fileName))
     }
 
     @Test
     fun noArgs() {
         decrypt.execute(emptyList())
-        val errCapture = ArgumentCaptor.forClass(
-            String::class.java
-        )
+        val errCapture = argumentCaptor<String>()
         verify(err, times(2)).println(errCapture.capture())
-        Assert.assertEquals(strings["Decrypt.noFile"], errCapture.allValues[0])
-        Assert.assertEquals(
+        assertEquals(strings["Decrypt.noFile"], errCapture.allValues[0])
+        assertEquals(
             strings.getf(
                 "Decrypt.usage",
                 Decrypt.COMMAND_NAME,
@@ -113,37 +121,20 @@ class DecryptTest : TestBase() {
             .thenReturn(File(encFileName))
         whenever(
             fileResolveHelper.fileExistsAndHasExtension(
-                ArgumentMatchers.eq(AppProperties.ENC_FILE_EXTENSION), ArgumentMatchers.any(
-                    File::class.java
-                )
+                eq(AppProperties.ENC_FILE_EXTENSION),
+                any()
             )
         ).thenReturn(true)
-        decrypt.execute(args)
-        val fileCaptor = ArgumentCaptor.forClass(
-            File::class.java
-        )
-        verify(fileResolveHelper).fileExistsAndHasExtension(
-            ArgumentMatchers.eq(AppProperties.ENC_FILE_EXTENSION), ArgumentMatchers.any(
-                File::class.java
-            )
-        )
-        verify(cryptoHelper)
-            .decryptFile(fileCaptor.capture(), ArgumentMatchers.eq(silentFlag))
-        Assert.assertEquals(encFileName, fileCaptor.value.name)
-    }
+        whenever(settings.getValue(eq(SettingsDao.DEC_DIR))).thenReturn("decDir")
 
-    private fun decryptLog(logFileName: String) {
-        whenever(fileResolveHelper.resolveAsLogFilePath(ArgumentMatchers.anyString()))
-            .thenReturn(
-                File(logFileName)
-            )
-        val args: MutableList<String> = ArrayList()
-        args.add(logFileName)
         decrypt.execute(args)
-        val fileCaptor = ArgumentCaptor.forClass(
-            File::class.java
+
+        val fileCaptor = argumentCaptor<File>()
+        verify(fileResolveHelper).fileExistsAndHasExtension(
+            eq(AppProperties.ENC_FILE_EXTENSION),
+            any()
         )
-        verify(cryptoHelper).decryptLog(fileCaptor.capture())
-        Assert.assertEquals(logFileName, fileCaptor.value.name)
+        verify(cryptoHelper).decryptFile(fileCaptor.capture(), eq("decDir"), eq(silentFlag))
+        assertEquals(encFileName, fileCaptor.firstValue.name)
     }
 }

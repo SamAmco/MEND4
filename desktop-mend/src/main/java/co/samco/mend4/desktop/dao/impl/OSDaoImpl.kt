@@ -1,6 +1,9 @@
 package co.samco.mend4.desktop.dao.impl
 
+import co.samco.mend4.core.AppProperties
 import co.samco.mend4.desktop.dao.OSDao
+import org.apache.commons.io.FileUtils
+import org.apache.commons.io.FilenameUtils
 import java.awt.Desktop
 import java.io.File
 import java.io.FileInputStream
@@ -14,6 +17,12 @@ import javax.inject.Inject
 
 class OSDaoImpl @Inject constructor() : OSDao {
     override fun exists(file: File): Boolean = file.exists()
+
+    override fun isFile(file: File): Boolean = file.isFile
+
+    override fun isDirectory(file: File): Boolean = file.isDirectory
+
+    override fun canWrite(file: File): Boolean = file.canWrite()
 
     override fun readPassword(hint: String): CharArray = System.console().readPassword(hint)
 
@@ -40,4 +49,13 @@ class OSDaoImpl @Inject constructor() : OSDao {
     }
 
     override fun exec(args: Array<String>): Process = Runtime.getRuntime().exec(args)
+
+    override fun getHomeDirectory(): String = System.getProperty("user.home")
+
+    override fun getSettingsFile(): File = FileUtils.getFile(
+        getHomeDirectory(),
+        AppProperties.CONFIG_DIR_NAME,
+        AppProperties.SETTINGS_FILE_NAME
+    )
+
 }

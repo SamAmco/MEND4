@@ -1,8 +1,8 @@
 package co.samco.mend4.desktop.commands
 
-import co.samco.mend4.core.Settings
 import co.samco.mend4.desktop.core.I18N
 import co.samco.mend4.desktop.dao.OSDao
+import co.samco.mend4.desktop.dao.SettingsDao
 import co.samco.mend4.desktop.helper.FileResolveHelper
 import co.samco.mend4.desktop.helper.SettingsHelper
 import co.samco.mend4.desktop.helper.ShredHelper
@@ -18,7 +18,7 @@ class Lock @Inject constructor(
     private val strings: I18N,
     private val fileResolveHelper: FileResolveHelper,
     private val osDao: OSDao
-) : Command() {
+) : CommandBase() {
     companion object {
         private const val COMMAND_NAME = "lock"
     }
@@ -43,7 +43,7 @@ class Lock @Inject constructor(
     private fun assertSettingsPresent(args: List<String>): List<String>? {
         try {
             settingsHelper.assertRequiredSettingsExist(
-                arrayOf(Settings.Name.SHREDCOMMAND),
+                arrayOf(SettingsDao.SHRED_COMMAND),
                 COMMAND_NAME
             )
         } catch (t: Throwable) {

@@ -1,14 +1,12 @@
 package commands
 
-import co.samco.mend4.core.Settings
 import co.samco.mend4.desktop.commands.SetProperty
+import co.samco.mend4.desktop.dao.SettingsDao
 import org.junit.Before
 import org.junit.Test
-import org.mockito.ArgumentMatchers.anyString
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.mock
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
+import com.nhaarman.mockitokotlin2.eq
+import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.verify
 import java.io.IOException
 
 class SetPropertyTest : TestBase() {
@@ -19,15 +17,19 @@ class SetPropertyTest : TestBase() {
     override fun setup() {
         super.setup()
         strings = mock()
-        setter = SetProperty(log, strings, settings, settingsHelper)
+        setter = SetProperty(
+            log = log,
+            strings = strings,
+            settings = settings,
+            settingsHelper = settingsHelper
+        )
     }
 
     @Test
     @Throws(IOException::class)
     fun setProperty() {
-        val setting = Settings.Name.values()[0]
+        val setting = SettingsDao.ALL_SETTINGS[0]
         val value = "value"
-        whenever(settingsHelper.settingExists(anyString())).thenReturn(true)
         setter.execute(listOf(setting.toString(), value))
         verify(settings).setValue(eq(setting), eq(value))
     }
@@ -35,7 +37,6 @@ class SetPropertyTest : TestBase() {
     @Test
     fun setUnknownProperty() {
         val property = "anunknownproperty"
-        whenever(settingsHelper.settingExists(anyString())).thenReturn(false)
         setter.execute(listOf(property, "value"))
         verify(strings).getf(eq("SetProperty.notRecognised"), eq(property))
     }

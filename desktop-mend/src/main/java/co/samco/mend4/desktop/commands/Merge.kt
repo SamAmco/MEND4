@@ -19,7 +19,7 @@ class Merge @Inject constructor(
     private val fileResolveHelper: FileResolveHelper,
     private val settingsHelper: SettingsHelper,
     private val mergeHelper: MergeHelper
-) : Command() {
+) : CommandBase() {
     private val behaviourChain = listOf(
         Function { a: List<String> -> assertSettingsPresent(a) },
         Function { a: List<String> -> assertCorrectNumOfArgs(a) },

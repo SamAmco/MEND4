@@ -10,7 +10,7 @@ class Version @Inject constructor(
     private val strings: I18N,
     private val log: PrintStreamProvider,
     private val versionHelper: VersionHelper
-) : Command() {
+) : CommandBase() {
     override val commandAliases = listOf(COMMAND_NAME, "--version", "-version", "-V")
 
     public override fun execute(args: List<String>) {
