@@ -182,10 +182,12 @@ class SetupTest : TestBase() {
             eq(Settings.Name.ASYMMETRIC_KEY_SIZE),
             eq(asymmetricKeySize.toString())
         )
+/*
         verify(settings).setValue(
             eq(Settings.Name.PW_KEY_FACTORY_ALGORITHM),
             eq(pwKeyFactoryAlgorithm)
         )
+*/
         verify(settings).setValue(
             eq(Settings.Name.PW_KEY_FACTORY_ITERATIONS),
             eq(pwKeyFactoryIterations.toString())

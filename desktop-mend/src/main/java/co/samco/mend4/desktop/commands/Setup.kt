@@ -77,23 +77,79 @@ class Setup @Inject constructor(
 
     private fun setEncryptionProperties(args: List<String>): List<String>? {
         try {
-            log.out().println(strings["SetupMend.cipherHelpLink"])
-            log.out().println(strings["SetupMend.asymmetricCipherName"])
-            settings.setValue(Settings.Name.ASYMMETRIC_CIPHER_NAME, readString("RSA"))
-            log.out().println(strings["SetupMend.asymmetricCipherTransform"])
+            log.out().println(strings["SetupMend.cipherHint"])
+
+            val defaultAsymmetricCipher = "EC"
+            log.out().println(
+                strings.getf(
+                    "SetupMend.asymmetricCipherName",
+                    defaultAsymmetricCipher
+                )
+            )
+            settings.setValue(
+                Settings.Name.ASYMMETRIC_CIPHER_NAME,
+                readString(defaultAsymmetricCipher)
+            )
+
+            val defaultAsymmetricCipherTransform = "ECIES"
+            log.out().println(
+                strings.getf(
+                    "SetupMend.asymmetricCipherTransform",
+                    defaultAsymmetricCipherTransform
+                )
+            )
             settings.setValue(
                 Settings.Name.ASYMMETRIC_CIPHER_TRANSFORM,
-                readString("RSA/ECB/OAEPWithSHA-256AndMGF1Padding")
+                readString(defaultAsymmetricCipherTransform)
             )
-            log.out().println(strings["SetupMend.asymmetricKeySize"])
-            settings.setValue(Settings.Name.ASYMMETRIC_KEY_SIZE, readInt(4096))
-            log.out().println(strings["SetupMend.pwKeyFactoryAlgorithm"])
+
+            val defaultKeySize = 448
+            log.out().println(
+                strings.getf(
+                    "SetupMend.asymmetricKeySize",
+                    defaultKeySize.toString()
+                )
+            )
+            settings.setValue(Settings.Name.ASYMMETRIC_KEY_SIZE, readInt(defaultKeySize))
+
+            log.out().println(strings["SetupMend.argon2Hint"])
+
+            val defaultPwFactoryIterations = 2
+            log.out().println(
+                strings.getf(
+                    "SetupMend.pwKeyFactoryIterations",
+                    defaultPwFactoryIterations
+                )
+            )
             settings.setValue(
-                Settings.Name.PW_KEY_FACTORY_ALGORITHM,
-                readString("PBKDF2WithHmacSHA256")
+                Settings.Name.PW_KEY_FACTORY_ITERATIONS,
+                readInt(defaultPwFactoryIterations)
             )
-            log.out().println(strings["SetupMend.pwKeyFactoryIterations"])
-            settings.setValue(Settings.Name.PW_KEY_FACTORY_ITERATIONS, readInt(500_000))
+
+            val defaultPwFactoryParallelism = 8
+            log.out().println(
+                strings.getf(
+                    "SetupMend.pwKeyFactoryParallelism",
+                    defaultPwFactoryParallelism
+                )
+            )
+            settings.setValue(
+                Settings.Name.PW_KEY_FACTORY_PARALLELISM,
+                readInt(defaultPwFactoryParallelism)
+            )
+
+            //1GB in KB
+            val defaultPwFactoryMemory = 1048576
+            log.out().println(
+                strings.getf(
+                    "SetupMend.pwKeyFactoryMemory",
+                    defaultPwFactoryMemory
+                )
+            )
+            settings.setValue(
+                Settings.Name.PW_KEY_FACTORY_MEMORY_KB,
+                readInt(defaultPwFactoryMemory)
+            )
         } catch (e: IOException) {
             failWithMessage(log, e.message)
             return null

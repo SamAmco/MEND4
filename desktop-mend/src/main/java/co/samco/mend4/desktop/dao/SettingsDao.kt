@@ -22,7 +22,6 @@ interface SettingsDao : Settings {
             Settings.Name.ASYMMETRIC_CIPHER_NAME,
             Settings.Name.ASYMMETRIC_CIPHER_TRANSFORM,
             Settings.Name.ASYMMETRIC_KEY_SIZE,
-            Settings.Name.PW_KEY_FACTORY_ALGORITHM,
             Settings.Name.PW_KEY_FACTORY_ITERATIONS,
             Settings.Name.PW_KEY_FACTORY_SALT,
             Settings.Name.PW_PRIVATE_KEY_CIPHER_IV,

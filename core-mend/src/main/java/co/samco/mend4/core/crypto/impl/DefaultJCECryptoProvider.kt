@@ -7,6 +7,9 @@ import co.samco.mend4.core.bean.LogDataBlocksAndText
 import co.samco.mend4.core.crypto.CryptoProvider
 import co.samco.mend4.core.exception.MalformedLogFileException
 import co.samco.mend4.core.exception.NoSuchSettingException
+import org.bouncycastle.crypto.generators.Argon2BytesGenerator
+import org.bouncycastle.crypto.params.Argon2Parameters
+import org.bouncycastle.jce.spec.IESParameterSpec
 import java.io.InputStream
 import java.io.OutputStream
 import java.io.PrintStream
@@ -20,16 +23,14 @@ import java.security.KeyPairGenerator
 import java.security.PrivateKey
 import java.security.PublicKey
 import java.security.SecureRandom
-import java.security.spec.KeySpec
+import java.security.spec.AlgorithmParameterSpec
 import java.security.spec.PKCS8EncodedKeySpec
 import java.security.spec.X509EncodedKeySpec
 import javax.crypto.Cipher
 import javax.crypto.CipherOutputStream
 import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
-import javax.crypto.SecretKeyFactory
 import javax.crypto.spec.IvParameterSpec
-import javax.crypto.spec.PBEKeySpec
 import javax.crypto.spec.SecretKeySpec
 
 class DefaultJCECryptoProvider(
@@ -41,6 +42,7 @@ class DefaultJCECryptoProvider(
         //common byte lengths
         private const val SALT_SIZE = 16
         private const val IV_SIZE = 16
+
         //Length code size is 4 bytes for 32 bit integers. Changes to this will require
         // changes in the encoding/decoding of length codes.
         private const val LENGTH_CODE_SIZE = 4
@@ -78,18 +80,34 @@ class DefaultJCECryptoProvider(
         keyFactorySalt: ByteArray,
         privateKeyCipherIv: IvParameterSpec,
     ): Cipher {
+        val argon2 = Argon2BytesGenerator()
 
-        val keyFactoryCipherName = settings.getValue(Settings.Name.PW_KEY_FACTORY_ALGORITHM)
-            ?: throw NoSuchSettingException(Settings.Name.PW_KEY_FACTORY_ALGORITHM)
-        val keyFactoryIterations =
+        val iterations =
             settings.getValue(Settings.Name.PW_KEY_FACTORY_ITERATIONS)?.toInt()
                 ?: throw NoSuchSettingException(Settings.Name.PW_KEY_FACTORY_ITERATIONS)
 
-        val factory = SecretKeyFactory.getInstance(keyFactoryCipherName)
-        val spec: KeySpec =
-            PBEKeySpec(password, keyFactorySalt, keyFactoryIterations, SYMMETRIC_KEY_SIZE)
-        val tmp = factory.generateSecret(spec)
-        val symmetricKey: SecretKey = SecretKeySpec(tmp.encoded, SYMMETRIC_CIPHER_NAME)
+        val parallelism =
+            settings.getValue(Settings.Name.PW_KEY_FACTORY_PARALLELISM)?.toInt()
+                ?: throw NoSuchSettingException(Settings.Name.PW_KEY_FACTORY_PARALLELISM)
+
+        val memoryKb =
+            settings.getValue(Settings.Name.PW_KEY_FACTORY_MEMORY_KB)?.toInt()
+                ?: throw NoSuchSettingException(Settings.Name.PW_KEY_FACTORY_MEMORY_KB)
+
+        argon2.init(
+            Argon2Parameters.Builder(Argon2Parameters.ARGON2_id)
+                .withVersion(Argon2Parameters.ARGON2_VERSION_13)
+                .withSalt(keyFactorySalt)
+                .withIterations(iterations)
+                .withParallelism(parallelism)
+                .withMemoryAsKB(memoryKb)
+                .build()
+        )
+
+        val secretBytes = ByteArray(SYMMETRIC_KEY_SIZE / 8)
+        argon2.generateBytes(password, secretBytes)
+
+        val symmetricKey: SecretKey = SecretKeySpec(secretBytes, SYMMETRIC_CIPHER_NAME)
         val symmetricCipher = Cipher.getInstance(SYMMETRIC_CIPHER_TRANSFORM)
         symmetricCipher.init(mode, symmetricKey, privateKeyCipherIv)
         return symmetricCipher
@@ -106,19 +124,44 @@ class DefaultJCECryptoProvider(
         return cipher
     }
 
+    private fun getAsymmetricCipherParamSpec(cipherTransform: String): AlgorithmParameterSpec? {
+        if (!cipherTransform.startsWith("ECIES")
+            && !cipherTransform.startsWith("XIES")
+        ) return null
+
+        if (cipherTransform != "ECIES" && cipherTransform != "XIES") {
+            throw InvalidAlgorithmParameterException(
+                "IES with explicit parameters is not yet supported."
+            )
+        }
+
+        //We are not using a nonce, but the only thing this cipher ever encrypts is unique
+        // randomly generated AES keys, so it should be fine.
+        return IESParameterSpec(
+            /* derivation = */ null,
+            /* encoding = */ null,
+            /* macKeySize = */ 256,
+            /* cipherKeySize = */ 256,
+            /* nonce = */ null,
+            /* usePointCompression = */ false
+        )
+    }
+
     private fun getAsymmetricEncryptCipher(): Cipher {
         val cipherTransform = settings.getValue(Settings.Name.ASYMMETRIC_CIPHER_TRANSFORM)
             ?: throw NoSuchSettingException(Settings.Name.ASYMMETRIC_CIPHER_TRANSFORM)
-        val asymmetricCipher = Cipher.getInstance(cipherTransform)
-        asymmetricCipher.init(Cipher.ENCRYPT_MODE, getPublicKey())
-        return asymmetricCipher
+        val cipher = Cipher.getInstance(cipherTransform)
+        val cipherParamSpec = getAsymmetricCipherParamSpec(cipherTransform)
+        cipher.init(Cipher.ENCRYPT_MODE, getPublicKey(), cipherParamSpec)
+        return cipher
     }
 
     private fun getAsymmetricDecryptCipher(privateKey: PrivateKey): Cipher {
-        val asymmetricCipherTransform = settings.getValue(Settings.Name.ASYMMETRIC_CIPHER_TRANSFORM)
+        val cipherTransform = settings.getValue(Settings.Name.ASYMMETRIC_CIPHER_TRANSFORM)
             ?: throw NoSuchSettingException(Settings.Name.ASYMMETRIC_CIPHER_TRANSFORM)
-        val cipher = Cipher.getInstance(asymmetricCipherTransform)
-        cipher.init(Cipher.DECRYPT_MODE, privateKey)
+        val cipher = Cipher.getInstance(cipherTransform)
+        val cipherParamSpec = getAsymmetricCipherParamSpec(cipherTransform)
+        cipher.init(Cipher.DECRYPT_MODE, privateKey, cipherParamSpec)
         return cipher
     }
 

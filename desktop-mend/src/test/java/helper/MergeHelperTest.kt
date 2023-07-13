@@ -1,7 +1,6 @@
 package helper
 
 import co.samco.mend4.core.AppProperties
-import co.samco.mend4.core.Settings
 import co.samco.mend4.core.bean.LogDataBlocks
 import co.samco.mend4.core.bean.LogDataBlocksAndText
 import co.samco.mend4.core.util.LogUtils

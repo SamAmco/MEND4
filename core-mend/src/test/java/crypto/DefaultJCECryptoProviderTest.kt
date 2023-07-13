@@ -14,6 +14,7 @@ import java.io.ByteArrayOutputStream
 import java.io.InputStream
 import java.io.PrintStream
 import java.nio.charset.StandardCharsets
+import java.security.InvalidAlgorithmParameterException
 import java.security.PrivateKey
 import java.security.Security
 import java.util.Base64
@@ -53,64 +54,100 @@ class DefaultJCECryptoProviderTest {
         //Provides more algorithms we can test :)
         // I'm actually only testing ECIES from this provider right now though.
         Security.addProvider(BouncyCastleProvider())
+
+        settings.apply {
+            setValue(Settings.Name.PW_KEY_FACTORY_MEMORY_KB, "2")
+            setValue(Settings.Name.PW_KEY_FACTORY_PARALLELISM, "1")
+            setValue(Settings.Name.PW_KEY_FACTORY_ITERATIONS, "1")
+        }
     }
 
     @Test
-    fun `RSA-ECB-PKCS1Padding-4096, PBKDF2WithHmacSHA256`() {
+    fun `Print out the ciphers etc provided by BountyCastle` () {
+        //Not a real test, but handy for debugging
+        //Security.getProviders().forEach { println(it) }
+        Security.getProvider("BC").services
+            .filter {
+                it.toString().contains("Cipher", ignoreCase = true)
+                        && it.toString().contains("edec", ignoreCase = true)
+            }
+            .forEach { println(it) }
+    }
+
+
+    @Test
+    fun `RSA-ECB-PKCS1Padding-4096`() {
         settings.apply {
             setValue(Settings.Name.ASYMMETRIC_CIPHER_NAME, "RSA")
             setValue(Settings.Name.ASYMMETRIC_CIPHER_TRANSFORM, "RSA/ECB/PKCS1Padding")
             setValue(Settings.Name.ASYMMETRIC_KEY_SIZE, "4096")
-            setValue(Settings.Name.PW_KEY_FACTORY_ALGORITHM, "PBKDF2WithHmacSHA256")
-            setValue(Settings.Name.PW_KEY_FACTORY_ITERATIONS, "65536")
         }
         runAllTests()
     }
 
     @Test
-    fun `RSA-ECB-OAEPWithSHA-512AndMGF1Padding-4096, PBKDF2WithHmacSHA512`() {
+    fun `RSA-ECB-OAEPWithSHA-512AndMGF1Padding-4096`() {
         settings.apply {
             setValue(Settings.Name.ASYMMETRIC_CIPHER_NAME, "RSA")
-            setValue(Settings.Name.ASYMMETRIC_CIPHER_TRANSFORM, "RSA/ECB/OAEPWithSHA-512AndMGF1Padding")
+            setValue(
+                Settings.Name.ASYMMETRIC_CIPHER_TRANSFORM,
+                "RSA/ECB/OAEPWithSHA-512AndMGF1Padding"
+            )
             setValue(Settings.Name.ASYMMETRIC_KEY_SIZE, "4096")
-            setValue(Settings.Name.PW_KEY_FACTORY_ALGORITHM, "PBKDF2WithHmacSHA512")
-            setValue(Settings.Name.PW_KEY_FACTORY_ITERATIONS, "65536")
         }
         runAllTests()
     }
 
     @Test
-    fun `RSA-ECB-PKCS1Padding-2048, PBKDF2WithHmacSHA1`() {
+    fun `RSA-ECB-PKCS1Padding-2048`() {
         settings.apply {
             setValue(Settings.Name.ASYMMETRIC_CIPHER_NAME, "RSA")
             setValue(Settings.Name.ASYMMETRIC_CIPHER_TRANSFORM, "RSA/ECB/PKCS1Padding")
             setValue(Settings.Name.ASYMMETRIC_KEY_SIZE, "2048")
-            setValue(Settings.Name.PW_KEY_FACTORY_ALGORITHM, "PBKDF2WithHmacSHA1")
-            setValue(Settings.Name.PW_KEY_FACTORY_ITERATIONS, "65536")
         }
         runAllTests()
     }
 
     @Test
-    fun `RSA-ECB-OAEPWithSHA-256AndMGF1Padding-3072, PBKDF2WithHmacSHA256`() {
+    fun `RSA-ECB-OAEPWithSHA-256AndMGF1Padding-3072`() {
         settings.apply {
             setValue(Settings.Name.ASYMMETRIC_CIPHER_NAME, "RSA")
-            setValue(Settings.Name.ASYMMETRIC_CIPHER_TRANSFORM, "RSA/ECB/OAEPWithSHA-256AndMGF1Padding")
+            setValue(
+                Settings.Name.ASYMMETRIC_CIPHER_TRANSFORM,
+                "RSA/ECB/OAEPWithSHA-256AndMGF1Padding"
+            )
             setValue(Settings.Name.ASYMMETRIC_KEY_SIZE, "3072")
-            setValue(Settings.Name.PW_KEY_FACTORY_ALGORITHM, "PBKDF2WithHmacSHA256")
-            setValue(Settings.Name.PW_KEY_FACTORY_ITERATIONS, "65536")
+        }
+        runAllTests()
+    }
+
+    //Not currently supporting XIES/ECIES with more complex transforms
+    @Test(expected = InvalidAlgorithmParameterException::class)
+    fun `X448-XIESWithAES-CBC 448`() {
+        settings.apply {
+            setValue(Settings.Name.ASYMMETRIC_CIPHER_NAME, "X448")
+            setValue(Settings.Name.ASYMMETRIC_CIPHER_TRANSFORM, "XIESWithAES-CBC")
+            setValue(Settings.Name.ASYMMETRIC_KEY_SIZE, "448")
         }
         runAllTests()
     }
 
     @Test
-    fun `EC-ECIES, PBKDF2WithHmacSHA256`() {
+    fun `X448-XIES 448`() {
+        settings.apply {
+            setValue(Settings.Name.ASYMMETRIC_CIPHER_NAME, "X448")
+            setValue(Settings.Name.ASYMMETRIC_CIPHER_TRANSFORM, "XIES")
+            setValue(Settings.Name.ASYMMETRIC_KEY_SIZE, "448")
+        }
+        runAllTests()
+    }
+
+    @Test
+    fun `EC-ECIES 521`() {
         settings.apply {
             setValue(Settings.Name.ASYMMETRIC_CIPHER_NAME, "EC")
             setValue(Settings.Name.ASYMMETRIC_CIPHER_TRANSFORM, "ECIES")
             setValue(Settings.Name.ASYMMETRIC_KEY_SIZE, "521")
-            setValue(Settings.Name.PW_KEY_FACTORY_ALGORITHM, "PBKDF2WithHmacSHA256")
-            setValue(Settings.Name.PW_KEY_FACTORY_ITERATIONS, "65536")
         }
         runAllTests()
     }
