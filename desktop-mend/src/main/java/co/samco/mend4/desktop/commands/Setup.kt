@@ -79,7 +79,7 @@ class Setup @Inject constructor(
         try {
             log.out().println(strings["SetupMend.cipherHint"])
 
-            val defaultAsymmetricCipher = "EC"
+            val defaultAsymmetricCipher = "X448"
             log.out().println(
                 strings.getf(
                     "SetupMend.asymmetricCipherName",
@@ -91,7 +91,7 @@ class Setup @Inject constructor(
                 readString(defaultAsymmetricCipher)
             )
 
-            val defaultAsymmetricCipherTransform = "ECIES"
+            val defaultAsymmetricCipherTransform = "XIES"
             log.out().println(
                 strings.getf(
                     "SetupMend.asymmetricCipherTransform",
@@ -175,8 +175,8 @@ class Setup @Inject constructor(
         try {
             val keys = if (args.size == 2) {
                 val privateKey = osDao.readAllBytes(fileResolveHelper.resolveFile(args[0]))
-                val publicKeyFile = osDao.readAllBytes(fileResolveHelper.resolveFile(args[1]))
-                cryptoProvider.getKeyPairFromBytes(privateKey, publicKeyFile)
+                val publicKey = osDao.readAllBytes(fileResolveHelper.resolveFile(args[1]))
+                cryptoProvider.getKeyPairFromBytes(privateKey, publicKey)
             } else {
                 cryptoProvider.generateKeyPair()
             }

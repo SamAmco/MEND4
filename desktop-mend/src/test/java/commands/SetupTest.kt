@@ -9,7 +9,6 @@ import org.mockito.ArgumentMatchers.anyString
 import com.nhaarman.mockitokotlin2.KArgumentCaptor
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
-import com.nhaarman.mockitokotlin2.doThrow
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.times
@@ -18,6 +17,7 @@ import com.nhaarman.mockitokotlin2.whenever
 import java.io.File
 import java.io.FileNotFoundException
 import java.io.IOException
+import java.security.KeyPair
 
 class SetupTest : TestBase() {
 
@@ -79,6 +79,7 @@ class SetupTest : TestBase() {
         val passOne = "passOne"
         val passTwo = "passTwo"
         whenever(osDao.readLine()).thenReturn(" ")
+        whenever(osDao.exists(eq(settingsFilePath))).thenReturn(false)
         var count = 0
         whenever(osDao.readPassword(anyString())).thenAnswer {
             return@thenAnswer if (count++ == 0) {
@@ -88,9 +89,8 @@ class SetupTest : TestBase() {
             }
         }
 
-        whenever(cryptoProvider.storeEncryptedKeys(any(), any()))
-
         setup.execute(emptyList())
+
         verify(err, times(2)).println(errCaptor.capture())
         verify(cryptoProvider, never()).storeEncryptedKeys(any(), any())
         Assert.assertEquals(strings["SetupMend.passwordMismatch"], errCaptor.allValues[0])
@@ -110,6 +110,7 @@ class SetupTest : TestBase() {
     fun setupFromKeyFilesNotFound() {
         val exception = "exception"
         whenever(osDao.readPassword(anyString())).thenReturn("password".toCharArray())
+        whenever(osDao.readLine()).thenReturn(" ")
         whenever(fileResolveHelper.resolveFile(anyString()))
             .thenThrow(FileNotFoundException(exception))
 
@@ -125,50 +126,38 @@ class SetupTest : TestBase() {
         whenever(osDao.readLine()).thenReturn(" ")
         whenever(osDao.readPassword(anyString()))
             .thenReturn("password".toCharArray())
-        doThrow(IOException(exception))
-            .whenever(settings)
-            .setValue(any(), anyString())
+        whenever(settings.setValue(any(), anyString()))
+            .thenAnswer { throw IOException(exception) }
 
         setup.execute(listOf("x", "y"))
 
-        verify(cryptoProvider.storeEncryptedKeys(any(), any()))
         verify(err).println(errCaptor.capture())
         Assert.assertEquals(exception, errCaptor.firstValue)
-    }
-
-    @Test
-    fun doesntOverrideSettingsAlreadySet() {
-        whenever(osDao.readLine()).thenReturn(" ")
-        whenever(settings.getValue(eq(Settings.Name.ASYMMETRIC_CIPHER_NAME)))
-            .thenReturn("RSA")
-        whenever(osDao.readPassword(anyString()))
-            .thenReturn("password".toCharArray())
-
-        doSetupFromKeyFiles()
-
-        verify(settings, never()).setValue(eq(Settings.Name.ASYMMETRIC_CIPHER_NAME), anyString())
-        Assert.assertEquals(strings["SetupMend.complete"], errCaptor.firstValue)
-        verify(cryptoProvider, never()).storeEncryptedKeys(any(), any())
     }
 
     private fun doSetupFromKeyFiles() {
         whenever(osDao.readPassword(anyString())).thenReturn("password".toCharArray())
         whenever(fileResolveHelper.resolveFile(anyString()))
             .thenReturn(File(""))
+        whenever(osDao.readLine()).thenReturn(" ")
         whenever(osDao.readAllBytes(any())).thenReturn("".toByteArray())
+        whenever(cryptoProvider.getKeyPairFromBytes(any(), any()))
+            .thenReturn(KeyPair(null, null))
 
         setup.execute(listOf("x", "y"))
 
         verify(cryptoProvider).getKeyPairFromBytes(any(), any())
+        verify(osDao, times(2)).readAllBytes(eq(File("")))
         verify(err).println(errCaptor.capture())
     }
 
     private fun verifySettingsSetup(
-        asymmetricCipherName: String = "RSA",
-        asymmetricCipherTransform: String = "RSA/ECB/OAEPWithSHA-256AndMGF1Padding",
-        asymmetricKeySize: Int = 4096,
-        pwKeyFactoryAlgorithm: String = "PBKDF2WithHmacSHA256",
-        pwKeyFactoryIterations: Int = 500_000,
+        asymmetricCipherName: String = "X448",
+        asymmetricCipherTransform: String = "XIES",
+        asymmetricKeySize: Int = 448,
+        pwKeyFactoryIterations: Int = 2,
+        pwKeyFactoryParallelism: Int = 8,
+        pwKeyFactoryMemory: Int = 1048576
     ) {
         verify(settings).setValue(
             eq(Settings.Name.ASYMMETRIC_CIPHER_NAME),
@@ -182,15 +171,17 @@ class SetupTest : TestBase() {
             eq(Settings.Name.ASYMMETRIC_KEY_SIZE),
             eq(asymmetricKeySize.toString())
         )
-/*
-        verify(settings).setValue(
-            eq(Settings.Name.PW_KEY_FACTORY_ALGORITHM),
-            eq(pwKeyFactoryAlgorithm)
-        )
-*/
         verify(settings).setValue(
             eq(Settings.Name.PW_KEY_FACTORY_ITERATIONS),
             eq(pwKeyFactoryIterations.toString())
+        )
+        verify(settings).setValue(
+            eq(Settings.Name.PW_KEY_FACTORY_PARALLELISM),
+            eq(pwKeyFactoryParallelism.toString())
+        )
+        verify(settings).setValue(
+            eq(Settings.Name.PW_KEY_FACTORY_MEMORY_KB),
+            eq(pwKeyFactoryMemory.toString())
         )
     }
 }
