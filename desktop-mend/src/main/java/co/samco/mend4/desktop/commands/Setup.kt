@@ -7,6 +7,7 @@ import co.samco.mend4.desktop.dao.OSDao
 import co.samco.mend4.desktop.dao.SettingsDao
 import co.samco.mend4.desktop.helper.FileResolveHelper
 import co.samco.mend4.desktop.output.PrintStreamProvider
+import java.io.File
 import java.io.IOException
 import java.util.function.Function
 import javax.inject.Inject
@@ -29,7 +30,13 @@ class Setup @Inject constructor(
         const val DEFAULT_KEY_SIZE = 521
         const val DEFAULT_PW_FACTORY_ITERATIONS = 3
         const val DEFAULT_PW_FACTORY_PARALLELISM = 8
-        const val DEFAULT_PW_FACTORY_MEMORY_KB = 256*1000
+        const val DEFAULT_PW_FACTORY_MEMORY_KB = 256 * 1000
+
+        const val DEFAULT_LOG_DIR_NAME = "log-dir"
+        const val DEFAULT_ENC_DIR_NAME = "enc-dir"
+        const val DEFAULT_DEC_DIR_NAME = "dec-dir"
+        const val DEFAULT_SHRED_COMMAND = "rm -f <filename>"
+        const val DEFAULT_LOG_FILE_NAME = "Log"
     }
 
     private var password: CharArray? = null
@@ -41,7 +48,7 @@ class Setup @Inject constructor(
         Function { a: List<String> -> ensureSettingsPathExists(a) },
         Function { a: List<String> -> setEncryptionProperties(a) },
         Function { a: List<String> -> setKeys(a) },
-        Function { _: List<String> -> printSuccess() }
+        Function { _: List<String> -> finishSetup() }
     )
 
     private fun checkAlreadySetup(args: List<String>): List<String>? {
@@ -85,7 +92,7 @@ class Setup @Inject constructor(
     private fun ensureSettingsPathExists(args: List<String>): List<String> {
         log.out().println(strings.getf("SetupMend.creating", fileResolveHelper.mendDirFile))
         log.out().println()
-        fileResolveHelper.mendDirFile.mkdirs()
+        osDao.mkdirs(fileResolveHelper.mendDirFile)
         return args
     }
 
@@ -213,8 +220,66 @@ class Setup @Inject constructor(
         return args
     }
 
-    private fun printSuccess(): List<String>? {
-        log.err().println(strings["SetupMend.complete"])
+    private fun finishSetup(): List<String>? {
+        val logDir = File(fileResolveHelper.mendDirFile, DEFAULT_LOG_DIR_NAME)
+        val encDir = File(fileResolveHelper.mendDirFile, DEFAULT_ENC_DIR_NAME)
+        val decDir = File(fileResolveHelper.mendDirFile, DEFAULT_DEC_DIR_NAME)
+
+        try {
+            osDao.mkdirs(logDir)
+            osDao.mkdirs(encDir)
+            osDao.mkdirs(decDir)
+
+            settings.setValue(SettingsDao.LOG_DIR, logDir.absolutePath)
+            settings.setValue(SettingsDao.ENC_DIR, encDir.absolutePath)
+            settings.setValue(SettingsDao.DEC_DIR, decDir.absolutePath)
+            settings.setValue(SettingsDao.SHRED_COMMAND, DEFAULT_SHRED_COMMAND)
+            settings.setValue(SettingsDao.CURRENT_LOG, DEFAULT_LOG_FILE_NAME)
+
+        } catch (t: Throwable) {
+            //delete the settings file if we failed to setup for any reason
+            // otherwise it will block subsequent setup attempts
+            destroyConfigFile()
+            failWithMessage(log, t.message)
+            return null
+        }
+
+        log.out().println(
+            strings.getf(
+                "SetupMend.yourLogDirIs",
+                logDir.absolutePath,
+                SettingsDao.LOG_DIR.encodedName
+            )
+        )
+        log.out().println()
+        log.out().println(
+            strings.getf(
+                "SetupMend.yourEncDirIs",
+                encDir.absolutePath,
+                SettingsDao.ENC_DIR.encodedName
+            )
+        )
+        log.out().println()
+        log.out().println(
+            strings.getf(
+                "SetupMend.yourDecDirIs",
+                decDir.absolutePath,
+                SettingsDao.DEC_DIR.encodedName
+            )
+        )
+        log.out().println()
+        log.out().println(strings.getf("SetupMend.yourShredCommandIs", DEFAULT_SHRED_COMMAND))
+        log.out().println()
+        log.out().println(
+            strings.getf(
+                "SetupMend.yourCurrentLogIs",
+                DEFAULT_LOG_FILE_NAME,
+                SettingsDao.CURRENT_LOG.encodedName
+            )
+        )
+
+        log.out().println()
+        log.out().println(strings["SetupMend.complete"])
         return null
     }
 

@@ -2,6 +2,7 @@ package commands
 
 import co.samco.mend4.core.Settings
 import co.samco.mend4.desktop.commands.Setup
+import co.samco.mend4.desktop.dao.SettingsDao
 import org.junit.Assert
 import org.junit.Before
 import org.junit.Test
@@ -9,6 +10,7 @@ import org.mockito.ArgumentMatchers.anyString
 import com.nhaarman.mockitokotlin2.KArgumentCaptor
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
+import com.nhaarman.mockitokotlin2.atLeastOnce
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.times
@@ -23,6 +25,7 @@ class SetupTest : TestBase() {
 
     private lateinit var setup: Setup
     private lateinit var errCaptor: KArgumentCaptor<String>
+    private lateinit var outCaptor: KArgumentCaptor<String>
     private val mendDirPath = File("settingspath")
     private val settingsFilePath = File(mendDirPath, "settings.file")
 
@@ -30,6 +33,7 @@ class SetupTest : TestBase() {
     override fun setup() {
         super.setup()
         errCaptor = argumentCaptor()
+        outCaptor = argumentCaptor()
         whenever(fileResolveHelper.settingsFile).thenReturn(settingsFilePath)
         whenever(fileResolveHelper.mendDirFile).thenReturn(mendDirPath)
 
@@ -91,17 +95,16 @@ class SetupTest : TestBase() {
 
         setup.execute(emptyList())
 
-        verify(err, times(2)).println(errCaptor.capture())
+        verify(err, times(1)).println(errCaptor.capture())
         verify(cryptoProvider, never()).storeEncryptedKeys(any(), any())
         Assert.assertEquals(strings["SetupMend.passwordMismatch"], errCaptor.allValues[0])
-        Assert.assertEquals(strings["SetupMend.complete"], errCaptor.allValues[1])
     }
 
     @Test
     fun setupFromKeyFiles() {
         doSetupFromKeyFiles()
         verifySettingsSetup()
-        Assert.assertEquals(strings["SetupMend.complete"], errCaptor.firstValue)
+        Assert.assertEquals(strings["SetupMend.complete"], outCaptor.lastValue)
         verify(cryptoProvider, times(1))
             .storeEncryptedKeys(eq("password".toCharArray()), any())
     }
@@ -154,7 +157,7 @@ class SetupTest : TestBase() {
 
         verify(cryptoProvider).getKeyPairFromBytes(any(), any())
         verify(osDao, times(2)).readAllBytes(eq(File("")))
-        verify(err).println(errCaptor.capture())
+        verify(out, atLeastOnce()).println(outCaptor.capture())
     }
 
     private fun verifySettingsSetup(
@@ -163,7 +166,7 @@ class SetupTest : TestBase() {
         asymmetricKeySize: Int = Setup.DEFAULT_KEY_SIZE,
         pwKeyFactoryIterations: Int = Setup.DEFAULT_PW_FACTORY_ITERATIONS,
         pwKeyFactoryParallelism: Int = Setup.DEFAULT_PW_FACTORY_PARALLELISM,
-        pwKeyFactoryMemory: Int = Setup.DEFAULT_PW_FACTORY_MEMORY_KB
+        pwKeyFactoryMemory: Int = Setup.DEFAULT_PW_FACTORY_MEMORY_KB,
     ) {
         verify(settings).setValue(
             eq(Settings.Name.ASYMMETRIC_CIPHER_NAME),
@@ -188,6 +191,38 @@ class SetupTest : TestBase() {
         verify(settings).setValue(
             eq(Settings.Name.PW_KEY_FACTORY_MEMORY_KB),
             eq(pwKeyFactoryMemory.toString())
+        )
+
+        val logDir = File(mendDirPath, Setup.DEFAULT_LOG_DIR_NAME)
+        val encDir = File(mendDirPath, Setup.DEFAULT_ENC_DIR_NAME)
+        val decDir = File(mendDirPath, Setup.DEFAULT_DEC_DIR_NAME)
+        val shredCommand: String = Setup.DEFAULT_SHRED_COMMAND
+        val currentLog: String = Setup.DEFAULT_LOG_FILE_NAME
+
+        verify(osDao).mkdirs(eq(mendDirPath))
+        verify(osDao).mkdirs(eq(logDir))
+        verify(osDao).mkdirs(eq(encDir))
+        verify(osDao).mkdirs(eq(decDir))
+
+        verify(settings).setValue(
+            eq(SettingsDao.LOG_DIR),
+            eq(logDir.absolutePath)
+        )
+        verify(settings).setValue(
+            eq(SettingsDao.ENC_DIR),
+            eq(encDir.absolutePath)
+        )
+        verify(settings).setValue(
+            eq(SettingsDao.DEC_DIR),
+            eq(decDir.absolutePath)
+        )
+        verify(settings).setValue(
+            eq(SettingsDao.SHRED_COMMAND),
+            eq(shredCommand)
+        )
+        verify(settings).setValue(
+            eq(SettingsDao.CURRENT_LOG),
+            eq(currentLog)
         )
     }
 }

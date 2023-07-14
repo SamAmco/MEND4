@@ -17,6 +17,8 @@ interface OSDao {
 
     fun readPassword(hint: String): CharArray
 
+    fun mkdirs(file: File): Boolean
+
     fun delete(file: File): Boolean
 
     fun readLine(): String
