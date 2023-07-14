@@ -3,6 +3,7 @@ package commands
 import co.samco.mend4.core.AppProperties
 import co.samco.mend4.desktop.commands.StatePrinter
 import co.samco.mend4.desktop.dao.SettingsDao
+import co.samco.mend4.desktop.helper.impl.SettingsHelperImpl
 import junit.framework.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -86,6 +87,23 @@ class StatePrinterTest : TestBase() {
         statePrinter.execute(listOf(unknown))
         verify(err)
             .println(eq(strings.getf("StatePrinter.settingNotFound", unknown)))
+    }
+
+    @Test
+    fun helpPrintsAllSettings() {
+        val settingsHelperImpl = SettingsHelperImpl(
+            strings = strings,
+            settings = settings,
+        )
+
+        whenever(settingsHelper.settingDescriptions)
+            .thenReturn(settingsHelperImpl.settingDescriptions)
+
+        val usageText = statePrinter.usageText
+        assertTrue(usageText.contains("Usage:"))
+        SettingsDao.ALL_SETTINGS.forEach {
+            assertTrue(usageText.contains(it.toString()))
+        }
     }
 
     private fun filePrintTest(flag: String, extension: String) {

@@ -1,6 +1,5 @@
 package co.samco.mend4.desktop.commands
 
-import co.samco.mend4.core.Settings
 import co.samco.mend4.desktop.core.I18N
 import co.samco.mend4.desktop.dao.SettingsDao
 import co.samco.mend4.desktop.helper.SettingsHelper

@@ -44,7 +44,7 @@ class SettingsHelperImpl @Inject constructor(
     }
 
     companion object {
-        private const val SETTING_DESCRIPTION_PREFIX = "Settings.descriptions"
+        private const val SETTING_DESCRIPTION_PREFIX = "Settings.descriptions."
     }
 
 }
