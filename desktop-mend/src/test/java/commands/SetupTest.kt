@@ -126,12 +126,18 @@ class SetupTest : TestBase() {
         whenever(osDao.readLine()).thenReturn(" ")
         whenever(osDao.readPassword(anyString()))
             .thenReturn("password".toCharArray())
-        whenever(settings.setValue(any(), anyString()))
-            .thenAnswer { throw IOException(exception) }
+        var settingsExists = false
+        whenever(settings.setValue(any(), anyString())).thenAnswer {
+            settingsExists = true
+            throw IOException(exception)
+        }
+        whenever(osDao.exists(eq(settingsFilePath)))
+            .thenAnswer { settingsExists }
 
         setup.execute(listOf("x", "y"))
 
         verify(err).println(errCaptor.capture())
+        verify(osDao).delete(eq(settingsFilePath))
         Assert.assertEquals(exception, errCaptor.firstValue)
     }
 
@@ -152,12 +158,12 @@ class SetupTest : TestBase() {
     }
 
     private fun verifySettingsSetup(
-        asymmetricCipherName: String = "X448",
-        asymmetricCipherTransform: String = "XIES",
-        asymmetricKeySize: Int = 448,
-        pwKeyFactoryIterations: Int = 2,
-        pwKeyFactoryParallelism: Int = 8,
-        pwKeyFactoryMemory: Int = 1048576
+        asymmetricCipherName: String = Setup.DEFAULT_ASYMMETRIC_CIPHER,
+        asymmetricCipherTransform: String = Setup.DEFAULT_ASYMMETRIC_CIPHER_TRANSFORM,
+        asymmetricKeySize: Int = Setup.DEFAULT_KEY_SIZE,
+        pwKeyFactoryIterations: Int = Setup.DEFAULT_PW_FACTORY_ITERATIONS,
+        pwKeyFactoryParallelism: Int = Setup.DEFAULT_PW_FACTORY_PARALLELISM,
+        pwKeyFactoryMemory: Int = Setup.DEFAULT_PW_FACTORY_MEMORY_KB
     ) {
         verify(settings).setValue(
             eq(Settings.Name.ASYMMETRIC_CIPHER_NAME),

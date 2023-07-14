@@ -17,6 +17,8 @@ interface OSDao {
 
     fun readPassword(hint: String): CharArray
 
+    fun delete(file: File): Boolean
+
     fun readLine(): String
 
     fun readAllBytes(file: File): ByteArray

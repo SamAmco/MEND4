@@ -161,6 +161,9 @@ class Setup @Inject constructor(
                 readInt(DEFAULT_PW_FACTORY_MEMORY_KB)
             )
         } catch (e: IOException) {
+            //delete the settings file if we failed to setup for any reason
+            // otherwise it will block subsequent setup attempts
+            destroyConfigFile()
             failWithMessage(log, e.message)
             return null
         }
@@ -181,9 +184,14 @@ class Setup @Inject constructor(
         }
     }
 
+    private fun destroyConfigFile() {
+        if (osDao.exists(fileResolveHelper.settingsFile)) {
+            osDao.delete(fileResolveHelper.settingsFile)
+        }
+    }
+
     private fun setKeys(args: List<String>): List<String>? {
         try {
-
             log.out().println(strings["SetupMend.storingKeys"])
             log.out().println()
 
@@ -196,6 +204,9 @@ class Setup @Inject constructor(
             }
             cryptoProvider.storeEncryptedKeys(password!!, keys)
         } catch (t: Throwable) {
+            //delete the settings file if we failed to setup for any reason
+            // otherwise it will block subsequent setup attempts
+            destroyConfigFile()
             failWithMessage(log, t.message)
             return null
         }

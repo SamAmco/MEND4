@@ -25,6 +25,7 @@ class OSDaoImpl @Inject constructor() : OSDao {
     override fun canWrite(file: File): Boolean = file.canWrite()
 
     override fun readPassword(hint: String): CharArray = System.console().readPassword(hint)
+    override fun delete(file: File): Boolean = file.delete()
 
     override fun readLine(): String = System.console().readLine()
 
