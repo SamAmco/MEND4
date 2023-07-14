@@ -7,13 +7,14 @@ import co.samco.mend4.desktop.core.I18N
 import co.samco.mend4.desktop.output.ExitManager
 import co.samco.mend4.desktop.output.PrintStreamProvider
 import dagger.Component
-import java.lang.Exception
+import org.bouncycastle.jce.provider.BouncyCastleProvider
+import java.security.Security
 import javax.inject.Inject
 import javax.inject.Named
 import javax.inject.Singleton
-import kotlin.system.exitProcess
 
 fun main(args: Array<String>) {
+    Security.addProvider(BouncyCastleProvider())
     val runner = DaggerCommandRunnerComponent.create()
     runner.main.run(runner, args.toList())
 }
@@ -37,6 +38,7 @@ class Main @Inject constructor(
     private val log: PrintStreamProvider,
     private val exitManager: ExitManager
 ) {
+
     fun run(commandRunnerComponent: CommandRunnerComponent, args: List<String>) {
         if (args.isEmpty()) {
             commandRunnerComponent.defaultCommand().executeCommand(args)

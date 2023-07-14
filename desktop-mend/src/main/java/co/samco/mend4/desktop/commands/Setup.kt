@@ -20,6 +20,18 @@ class Setup @Inject constructor(
     private val osDao: OSDao
 ) : CommandBase() {
 
+    companion object {
+        const val COMMAND_NAME = "setup"
+        const val FORCE_FLAG = "-f"
+
+        const val DEFAULT_ASYMMETRIC_CIPHER = "EC"
+        const val DEFAULT_ASYMMETRIC_CIPHER_TRANSFORM = "ECIES"
+        const val DEFAULT_KEY_SIZE = 521
+        const val DEFAULT_PW_FACTORY_ITERATIONS = 3
+        const val DEFAULT_PW_FACTORY_PARALLELISM = 8
+        const val DEFAULT_PW_FACTORY_MEMORY_KB = 256*1000
+    }
+
     private var password: CharArray? = null
 
     private val behaviourChain: List<Function<List<String>, List<String>?>> = listOf(
@@ -66,11 +78,13 @@ class Setup @Inject constructor(
                 log.err().println(strings["SetupMend.passwordMismatch"])
             }
         }
+        log.out().println()
         return args
     }
 
     private fun ensureSettingsPathExists(args: List<String>): List<String> {
         log.out().println(strings.getf("SetupMend.creating", fileResolveHelper.mendDirFile))
+        log.out().println()
         fileResolveHelper.mendDirFile.mkdirs()
         return args
     }
@@ -78,77 +92,73 @@ class Setup @Inject constructor(
     private fun setEncryptionProperties(args: List<String>): List<String>? {
         try {
             log.out().println(strings["SetupMend.cipherHint"])
+            log.out().println()
 
-            val defaultAsymmetricCipher = "X448"
             log.out().println(
                 strings.getf(
                     "SetupMend.asymmetricCipherName",
-                    defaultAsymmetricCipher
+                    DEFAULT_ASYMMETRIC_CIPHER
                 )
             )
             settings.setValue(
                 Settings.Name.ASYMMETRIC_CIPHER_NAME,
-                readString(defaultAsymmetricCipher)
+                readString(DEFAULT_ASYMMETRIC_CIPHER)
             )
 
-            val defaultAsymmetricCipherTransform = "XIES"
             log.out().println(
                 strings.getf(
                     "SetupMend.asymmetricCipherTransform",
-                    defaultAsymmetricCipherTransform
+                    DEFAULT_ASYMMETRIC_CIPHER_TRANSFORM
                 )
             )
             settings.setValue(
                 Settings.Name.ASYMMETRIC_CIPHER_TRANSFORM,
-                readString(defaultAsymmetricCipherTransform)
+                readString(DEFAULT_ASYMMETRIC_CIPHER_TRANSFORM)
             )
 
-            val defaultKeySize = 448
             log.out().println(
                 strings.getf(
                     "SetupMend.asymmetricKeySize",
-                    defaultKeySize.toString()
+                    DEFAULT_KEY_SIZE.toString()
                 )
             )
-            settings.setValue(Settings.Name.ASYMMETRIC_KEY_SIZE, readInt(defaultKeySize))
+            settings.setValue(Settings.Name.ASYMMETRIC_KEY_SIZE, readInt(DEFAULT_KEY_SIZE))
 
             log.out().println(strings["SetupMend.argon2Hint"])
+            log.out().println()
 
-            val defaultPwFactoryIterations = 2
             log.out().println(
                 strings.getf(
                     "SetupMend.pwKeyFactoryIterations",
-                    defaultPwFactoryIterations
+                    DEFAULT_PW_FACTORY_ITERATIONS
                 )
             )
             settings.setValue(
                 Settings.Name.PW_KEY_FACTORY_ITERATIONS,
-                readInt(defaultPwFactoryIterations)
+                readInt(DEFAULT_PW_FACTORY_ITERATIONS)
             )
 
-            val defaultPwFactoryParallelism = 8
             log.out().println(
                 strings.getf(
                     "SetupMend.pwKeyFactoryParallelism",
-                    defaultPwFactoryParallelism
+                    DEFAULT_PW_FACTORY_PARALLELISM
                 )
             )
             settings.setValue(
                 Settings.Name.PW_KEY_FACTORY_PARALLELISM,
-                readInt(defaultPwFactoryParallelism)
+                readInt(DEFAULT_PW_FACTORY_PARALLELISM)
             )
 
             //1GB in KB
-            val defaultPwFactoryMemory = 1048576
             log.out().println(
                 strings.getf(
                     "SetupMend.pwKeyFactoryMemory",
-                    defaultPwFactoryMemory
+                    DEFAULT_PW_FACTORY_MEMORY_KB
                 )
             )
             settings.setValue(
                 Settings.Name.PW_KEY_FACTORY_MEMORY_KB,
-                readInt(defaultPwFactoryMemory)
+                readInt(DEFAULT_PW_FACTORY_MEMORY_KB)
             )
         } catch (e: IOException) {
             failWithMessage(log, e.message)
@@ -173,6 +183,10 @@ class Setup @Inject constructor(
 
     private fun setKeys(args: List<String>): List<String>? {
         try {
+
+            log.out().println(strings["SetupMend.storingKeys"])
+            log.out().println()
+
             val keys = if (args.size == 2) {
                 val privateKey = osDao.readAllBytes(fileResolveHelper.resolveFile(args[0]))
                 val publicKey = osDao.readAllBytes(fileResolveHelper.resolveFile(args[1]))
@@ -203,9 +217,4 @@ class Setup @Inject constructor(
         get() = strings["SetupMend.description"]
     override val commandAliases: List<String>
         get() = listOf(COMMAND_NAME)
-
-    companion object {
-        const val COMMAND_NAME = "setup"
-        const val FORCE_FLAG = "-f"
-    }
 }

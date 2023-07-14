@@ -108,13 +108,11 @@ class Decrypt @Inject constructor(
     private fun tryResolveFileAsLog(): List<String>? {
         try {
             val file = fileResolveHelper.resolveAsLogFilePath(fileIdentifier)
-            fileResolveHelper.assertDirWritable("sam")
             fileResolveHelper.assertFileExistsAndHasExtension(
                 fileIdentifier,
                 AppProperties.LOG_FILE_EXTENSION,
                 file
             )
-            println("assert didn't throw")
             cryptoHelper.decryptLog(file)
         } catch (e: MendLockedException) {
             failWithMessage(log, strings.getf("Decrypt.mendLocked", Unlock.COMMAND_NAME))

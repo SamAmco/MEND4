@@ -10,18 +10,17 @@ dependencies {
     implementation "com.google.dagger:dagger:$dagger_version"
     kapt "com.google.dagger:dagger-compiler:$dagger_version"
 
-    implementation group: 'commons-io', name: 'commons-io', version: '2.4'
-    implementation group: 'commons-codec', name: 'commons-codec', version: '1.10'
-    implementation group: 'org.apache.commons', name: 'commons-lang3', version: '3.7'
+    implementation 'commons-io:commons-io:2.4'
+    implementation 'commons-codec:commons-codec:1.10'
+    implementation 'org.apache.commons:commons-lang3:3.7'
 
     implementation project(':core-mend')
-    implementation files('../core-mend/build/libs/core-mend.jar')
 
     testImplementation 'junit:junit:4.13.2'
     testImplementation 'com.nhaarman.mockitokotlin2:mockito-kotlin:2.2.0'
 }
 
-version = '4.1.0'
+version = '5.0.0'
 
 compileKotlin.dependsOn(':core-mend:jar')
 
@@ -35,14 +34,17 @@ tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile) {
 }
 
 jar {
-
     duplicatesStrategy = 'exclude'
+
+    //Have to exclude the signature files from bouncy castle or you
+    // get a SecurityException: Invalid signature file digest for Manifest main attributes
+    exclude 'META-INF/*.RSA', 'META-INF/*.SF', 'META-INF/*.DSA'
 
     manifest {
         attributes(
-            'Implementation-Title': 'MEND',
-            'Implementation-Version': project.version,
-            'Main-Class': 'co.samco.mend4.desktop.Main'
+                'Implementation-Title': 'MEND',
+                'Implementation-Version': project.version,
+                'Main-Class': 'co.samco.mend4.desktop.MainKt'
         )
     }
 

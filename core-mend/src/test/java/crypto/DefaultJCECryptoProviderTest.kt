@@ -134,6 +134,9 @@ class DefaultJCECryptoProviderTest {
 
     @Test
     fun `X448-XIES 448`() {
+        //This seems to crash on JRE 11 but works on 20
+        // I was planning on using this as standard but the compatibility issue is pretty bad
+        // so I guess i'm going to have to use ECIES until it's fixed.
         settings.apply {
             setValue(Settings.Name.ASYMMETRIC_CIPHER_NAME, "X448")
             setValue(Settings.Name.ASYMMETRIC_CIPHER_TRANSFORM, "XIES")

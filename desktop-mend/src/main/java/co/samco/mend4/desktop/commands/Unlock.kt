@@ -68,6 +68,8 @@ class Unlock @Inject constructor(
 
     private fun checkPassword(args: List<String>): List<String>? {
         try {
+            log.err().println()
+            log.err().println(strings["Unlock.unlocking"])
             if (!cryptoProvider.checkPassword(password)) {
                 log.err().println(strings["Unlock.incorrectPassword"])
                 return null
