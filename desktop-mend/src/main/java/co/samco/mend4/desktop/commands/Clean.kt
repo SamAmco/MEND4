@@ -39,7 +39,7 @@ class Clean @Inject constructor(
             val decDir = settings.getValue(SettingsDao.DEC_DIR)
                 ?: throw CorruptSettingsException(
                     strings.getf(
-                        "General.dirRequired",
+                        "General.propertyNotSet",
                         SettingsDao.DEC_DIR,
                         COMMAND_NAME
                     )

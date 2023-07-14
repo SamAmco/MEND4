@@ -49,7 +49,7 @@ class CleanTest : TestBase() {
         verify(err).println(
             eq(
                 strings.getf(
-                    "General.dirRequired",
+                    "General.propertyNotSet",
                     SettingsDao.DEC_DIR.encodedName,
                     Clean.COMMAND_NAME
                 )

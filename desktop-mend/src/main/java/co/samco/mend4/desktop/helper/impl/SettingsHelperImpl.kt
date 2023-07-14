@@ -18,7 +18,7 @@ class SettingsHelperImpl @Inject constructor(
     override fun assertRequiredSettingsExist(required: Array<Settings.Name>, commandName: String) {
         settings.firstNonExistent(required)?.let {
             throw SettingRequiredException(
-                strings.getf("General.unknownIdentifier", it, commandName)
+                strings.getf("General.propertyNotSet", it, commandName)
             )
         }
     }

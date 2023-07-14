@@ -71,7 +71,7 @@ class StatePrinter @Inject constructor(
             ?.let { File(it) }
             ?: throw throw CorruptSettingsException(
                 strings.getf(
-                    "General.dirRequired",
+                    "General.propertyNotSet",
                     SettingsDao.CURRENT_LOG,
                     COMMAND_NAME
                 )
@@ -89,7 +89,7 @@ class StatePrinter @Inject constructor(
             ?.let { File(it) }
             ?: throw CorruptSettingsException(
                 strings.getf(
-                    "General.dirRequired",
+                    "General.propertyNotSet",
                     SettingsDao.LOG_DIR,
                     COMMAND_NAME
                 )
