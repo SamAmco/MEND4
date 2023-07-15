@@ -68,7 +68,7 @@ class Setup @Inject constructor(
     }
 
     private fun checkArgNum(args: List<String>): List<String>? {
-        if (args.size != 2 && args.isNotEmpty()) {
+        if (args.isNotEmpty()) {
             log.err().println(strings.getf("General.invalidArgNum", COMMAND_NAME))
             return null
         }
@@ -202,13 +202,7 @@ class Setup @Inject constructor(
             log.out().println(strings["SetupMend.storingKeys"])
             log.out().println()
 
-            val keys = if (args.size == 2) {
-                val privateKey = osDao.readAllBytes(fileResolveHelper.resolveFile(args[0]))
-                val publicKey = osDao.readAllBytes(fileResolveHelper.resolveFile(args[1]))
-                cryptoProvider.getKeyPairFromBytes(privateKey, publicKey)
-            } else {
-                cryptoProvider.generateKeyPair()
-            }
+            val keys = cryptoProvider.generateKeyPair()
             cryptoProvider.storeEncryptedKeys(password!!, keys)
         } catch (t: Throwable) {
             //delete the settings file if we failed to setup for any reason
