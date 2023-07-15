@@ -22,6 +22,12 @@ open class Encrypt @Inject constructor(
     protected val fileResolveHelper: FileResolveHelper
 ) : CommandBase(), InputListener {
 
+    companion object {
+        const val COMMAND_NAME = "enc"
+        const val APPEND_FLAG = "-a"
+        const val FROM_ARG_FLAG = "-d"
+    }
+
     @JvmField
     protected var dropHeader = false
     private var waitingForInputListener = false
@@ -141,11 +147,5 @@ open class Encrypt @Inject constructor(
 
     override fun onClose() {
         waitingForInputListener = false
-    }
-
-    companion object {
-        const val COMMAND_NAME = "enc"
-        const val APPEND_FLAG = "-a"
-        const val FROM_ARG_FLAG = "-d"
     }
 }

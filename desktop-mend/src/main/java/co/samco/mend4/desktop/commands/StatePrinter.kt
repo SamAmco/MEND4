@@ -126,9 +126,6 @@ class StatePrinter @Inject constructor(
             ALL_FLAG,
             LOGS_FLAG,
             ENCS_FLAG,
-            ALL_FLAG,
-            LOGS_FLAG,
-            ENCS_FLAG,
             settingsHelper.settingDescriptions
         )
     override val descriptionText: String

@@ -22,6 +22,12 @@ class Decrypt @Inject constructor(
     private val fileResolveHelper: FileResolveHelper,
     private val settings: SettingsDao
 ) : CommandBase() {
+
+    companion object {
+        const val COMMAND_NAME = "dec"
+        const val SILENT_FLAG = "-s"
+    }
+
     private var silent = false
     private lateinit var fileIdentifier: String
     private val behaviourChain = listOf(
@@ -132,9 +138,4 @@ class Decrypt @Inject constructor(
         get() = strings["Decrypt.description"]
     override val commandAliases: List<String>
         get() = listOf(COMMAND_NAME)
-
-    companion object {
-        const val COMMAND_NAME = "dec"
-        const val SILENT_FLAG = "-s"
-    }
 }

@@ -288,7 +288,7 @@ class Setup @Inject constructor(
     }
 
     override val usageText: String
-        get() = strings.getf("SetupMend.usage", COMMAND_NAME)
+        get() = strings.getf("SetupMend.usage", COMMAND_NAME, FORCE_FLAG)
     override val descriptionText: String
         get() = strings["SetupMend.description"]
     override val commandAliases: List<String>
