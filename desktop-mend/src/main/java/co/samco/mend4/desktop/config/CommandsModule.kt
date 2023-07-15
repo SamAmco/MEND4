@@ -5,9 +5,11 @@ import co.samco.mend4.desktop.commands.Command
 import co.samco.mend4.desktop.commands.Decrypt
 import co.samco.mend4.desktop.commands.Encrypt
 import co.samco.mend4.desktop.commands.EncryptFromStdIn
+import co.samco.mend4.desktop.commands.Gcl
 import co.samco.mend4.desktop.commands.Help
 import co.samco.mend4.desktop.commands.Lock
 import co.samco.mend4.desktop.commands.Merge
+import co.samco.mend4.desktop.commands.Scl
 import co.samco.mend4.desktop.commands.SetProperty
 import co.samco.mend4.desktop.commands.Setup
 import co.samco.mend4.desktop.commands.StatePrinter
@@ -63,6 +65,14 @@ abstract class CommandsModule {
     @IntoSet
     @Binds
     abstract fun provideUnlock(c: Unlock): Command
+
+    @IntoSet
+    @Binds
+    abstract fun provideScl(c: Scl): Command
+
+    @IntoSet
+    @Binds
+    abstract fun provideGcl(c: Gcl): Command
 
     @Binds
     @Named(HELP_COMMAND_NAME)
