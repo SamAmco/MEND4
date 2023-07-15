@@ -17,7 +17,6 @@ import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import java.io.File
-import java.io.FileNotFoundException
 import java.io.IOException
 import java.security.KeyPair
 
@@ -101,26 +100,10 @@ class SetupTest : TestBase() {
     }
 
     @Test
-    fun setupFromKeyFiles() {
-        doSetupFromKeyFiles()
+    fun setupDefaultParameters() {
+        doSetup()
         verifySettingsSetup()
         Assert.assertEquals(strings["SetupMend.complete"], outCaptor.lastValue)
-        verify(cryptoProvider, times(1))
-            .storeEncryptedKeys(eq("password".toCharArray()), any())
-    }
-
-    @Test
-    fun setupFromKeyFilesNotFound() {
-        val exception = "exception"
-        whenever(osDao.readPassword(anyString())).thenReturn("password".toCharArray())
-        whenever(osDao.readLine()).thenReturn(" ")
-        whenever(fileResolveHelper.resolveFile(anyString()))
-            .thenThrow(FileNotFoundException(exception))
-
-        setup.execute(listOf("x", "y"))
-
-        verify(err).println(errCaptor.capture())
-        Assert.assertEquals(exception, errCaptor.firstValue)
     }
 
     @Test
@@ -137,26 +120,24 @@ class SetupTest : TestBase() {
         whenever(osDao.exists(eq(settingsFilePath)))
             .thenAnswer { settingsExists }
 
-        setup.execute(listOf("x", "y"))
+        setup.execute(emptyList())
 
         verify(err).println(errCaptor.capture())
         verify(osDao).delete(eq(settingsFilePath))
         Assert.assertEquals(exception, errCaptor.firstValue)
     }
 
-    private fun doSetupFromKeyFiles() {
+    private fun doSetup() {
         whenever(osDao.readPassword(anyString())).thenReturn("password".toCharArray())
-        whenever(fileResolveHelper.resolveFile(anyString()))
-            .thenReturn(File(""))
         whenever(osDao.readLine()).thenReturn(" ")
-        whenever(osDao.readAllBytes(any())).thenReturn("".toByteArray())
-        whenever(cryptoProvider.getKeyPairFromBytes(any(), any()))
+        whenever(cryptoProvider.generateKeyPair())
             .thenReturn(KeyPair(null, null))
 
-        setup.execute(listOf("x", "y"))
+        setup.execute(emptyList())
 
-        verify(cryptoProvider).getKeyPairFromBytes(any(), any())
-        verify(osDao, times(2)).readAllBytes(eq(File("")))
+        verify(cryptoProvider).generateKeyPair()
+        verify(cryptoProvider, times(1))
+            .storeEncryptedKeys(eq("password".toCharArray()), any())
         verify(out, atLeastOnce()).println(outCaptor.capture())
     }
 
