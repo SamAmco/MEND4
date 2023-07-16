@@ -1,5 +1,6 @@
 package co.samco.mend4.desktop.config
 
+import co.samco.mend4.desktop.commands.ChangePassword
 import co.samco.mend4.desktop.commands.Clean
 import co.samco.mend4.desktop.commands.Command
 import co.samco.mend4.desktop.commands.Decrypt
@@ -73,6 +74,10 @@ abstract class CommandsModule {
     @IntoSet
     @Binds
     abstract fun provideGcl(c: Gcl): Command
+
+    @IntoSet
+    @Binds
+    abstract fun provideChangePassword(c: ChangePassword): Command
 
     @Binds
     @Named(HELP_COMMAND_NAME)

@@ -156,7 +156,6 @@ class Setup @Inject constructor(
                 readInt(DEFAULT_PW_FACTORY_PARALLELISM)
             )
 
-            //1GB in KB
             log.out().println(
                 strings.getf(
                     "SetupMend.pwKeyFactoryMemory",
