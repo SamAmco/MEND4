@@ -17,7 +17,21 @@ interface Settings {
             val PW_PRIVATE_KEY_CIPHER_IV = Name("pw-private-key-cipher-iv")
             val ENCRYPTED_PRIVATE_KEY = Name("encrypted-private-key")
             val PUBLIC_KEY = Name("public-key")
+
+            val All = listOf(
+                ASYMMETRIC_CIPHER_NAME,
+                ASYMMETRIC_CIPHER_TRANSFORM,
+                ASYMMETRIC_KEY_SIZE,
+                PW_KEY_FACTORY_ITERATIONS,
+                PW_KEY_FACTORY_PARALLELISM,
+                PW_KEY_FACTORY_SALT,
+                PW_KEY_FACTORY_MEMORY_KB,
+                PW_PRIVATE_KEY_CIPHER_IV,
+                ENCRYPTED_PRIVATE_KEY,
+                PUBLIC_KEY
+            )
         }
+
 
         override fun toString(): String {
             return encodedName
