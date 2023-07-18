@@ -1,4 +1,4 @@
-package co.samco.mendroid
+package co.samco.mendroid.viewmodel
 
 import android.app.Application
 import android.content.Intent
@@ -8,6 +8,8 @@ import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import co.samco.mend4.core.Settings
+import co.samco.mendroid.PropertyManager
+import co.samco.mendroid.R
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow

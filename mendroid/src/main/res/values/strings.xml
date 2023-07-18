@@ -13,4 +13,6 @@
     <string name="enc_dir_error">Failed to load selected enc-dir.</string>
     <string name="settings">Settings</string>
     <string name="close_settings">Close settings</string>
+    <string name="tab_enc">Encrypt</string>
+    <string name="tab_dec">Decrypt</string>
 </resources>
