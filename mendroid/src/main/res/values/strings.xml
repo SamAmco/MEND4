@@ -9,4 +9,6 @@
     <string name="config_import_error_missing_text">Expected text after key %s</string>
     <string name="config_import_duplicate">Duplicate key in xml file: %s</string>
     <string name="config_import_missing">Xml file missing keys: %s</string>
+    <string name="log_dir_error">Failed to load selected log-dir.</string>
+    <string name="enc_dir_error">Failed to load selected enc-dir.</string>
 </resources>

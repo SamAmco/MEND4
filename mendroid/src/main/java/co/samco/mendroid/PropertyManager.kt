@@ -21,7 +21,6 @@ interface PropertyManager : Settings {
     fun setLogDirUri(uri: String)
     fun setEncDirUri(uri: String)
 
-    //TODO clear old settings before importing new xml file
     fun clearSettings()
     fun setConfigUriPath(path: String)
 }
@@ -78,11 +77,19 @@ class PropertyManagerImpl @Inject constructor(
         get() = onChange(CONFIG_URI)
             .map { it.getString(CONFIG_URI, null) }
 
-    override fun setLogDirUri(uri: String) =
+    override fun setLogDirUri(uri: String) {
+        //First remove it because if you select the same directory you still want the
+        // onchange listener to fire
+        prefs.edit().remove(LOG_DIR_URI).apply()
         prefs.edit().putString(LOG_DIR_URI, uri).apply()
+    }
 
-    override fun setEncDirUri(uri: String) =
+    override fun setEncDirUri(uri: String) {
+        //First remove it because if you select the same directory you still want the
+        // onchange listener to fire
+        prefs.edit().remove(ENC_DIR_URI).apply()
         prefs.edit().putString(ENC_DIR_URI, uri).apply()
+    }
 
     override fun clearSettings() {
         prefs.edit().apply {

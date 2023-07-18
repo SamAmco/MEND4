@@ -1,8 +1,10 @@
 package co.samco.mendroid
 
 import android.app.Application
+import android.content.Intent
 import android.net.Uri
 import android.util.Xml
+import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import co.samco.mend4.core.Settings
@@ -31,8 +33,10 @@ class SettingsViewModel @Inject constructor(
     val configPath = propertyManager.configUri
         .stateIn(viewModelScope, SharingStarted.Lazily, null)
     val logDirText = propertyManager.logDirUri
+        .map { getDirectoryString(it) }
         .stateIn(viewModelScope, SharingStarted.Lazily, null)
     val encDirText = propertyManager.encDirUri
+        .map { getDirectoryString(it) }
         .stateIn(viewModelScope, SharingStarted.Lazily, null)
 
     data class ConfigImportException(val messageId: Int, val formatArgs: List<String>) : Exception()
@@ -40,9 +44,17 @@ class SettingsViewModel @Inject constructor(
     private val _errorToasts = MutableSharedFlow<ErrorToast>()
     val errorToasts: SharedFlow<ErrorToast> = _errorToasts
 
-    val hasLogDir = propertyManager.logDirUri.map { it != null }
+    private fun getDirectoryString(uriStr: String?): String? {
+        if (uriStr == null) return null
+        val uri = Uri.parse(uriStr)
+        return uri.path ?: uri.toString()
+    }
+
+    val logDirGood = propertyManager.logDirUri
+        .map { it != null && Uri.parse(it).assertValidDirectory() }
         .stateIn(viewModelScope, SharingStarted.Lazily, false)
-    val hasEncDir = propertyManager.encDirUri.map { it != null }
+    val encDirGood = propertyManager.encDirUri
+        .map { it != null && Uri.parse(it).assertValidDirectory() }
         .stateIn(viewModelScope, SharingStarted.Lazily, false)
     val hasConfig = propertyManager.hasConfig
         .stateIn(viewModelScope, SharingStarted.Lazily, false)
@@ -50,8 +62,8 @@ class SettingsViewModel @Inject constructor(
     val showSettings = combine(
         listOf(
             hasConfig,
-            hasLogDir,
-            hasEncDir
+            logDirGood,
+            encDirGood
         )
     ) { list -> list.any { !it } }
         .stateIn(viewModelScope, SharingStarted.Lazily, true)
@@ -124,11 +136,40 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    fun onSetLogDir(uri: Uri?) {
+    private fun Uri.assertValidDirectory(): Boolean {
+        val documentFile = DocumentFile.fromTreeUri(context, this)
 
+        if (documentFile == null || !documentFile.isDirectory
+            || !documentFile.canRead() || !documentFile.canWrite()
+        ) {
+            return false
+        }
+
+        return true
+    }
+
+    private fun claimPersistentUriPermission(uri: Uri) {
+        context.contentResolver.takePersistableUriPermission(
+            uri,
+            Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+        )
+    }
+
+    fun onSetLogDir(uri: Uri?) {
+        if (uri == null || !uri.assertValidDirectory()) {
+            showErrorToast(R.string.log_dir_error, emptyList())
+            return
+        }
+        claimPersistentUriPermission(uri)
+        propertyManager.setLogDirUri(uri.toString())
     }
 
     fun onSetEncDir(uri: Uri?) {
-
+        if (uri == null || !uri.assertValidDirectory()) {
+            showErrorToast(R.string.enc_dir_error, emptyList())
+            return
+        }
+        claimPersistentUriPermission(uri)
+        propertyManager.setEncDirUri(uri.toString())
     }
 }

@@ -104,7 +104,7 @@ fun SettingsScreen() {
             )
             Spacer(modifier = Modifier.size(48.dp))
             ButtonSettingRow(
-                complete = settingsViewModel.hasLogDir.collectAsState().value,
+                complete = settingsViewModel.logDirGood.collectAsState().value,
                 buttonText = stringResource(id = R.string.log_dir_button_text),
                 contract = ActivityResultContracts.OpenDocumentTree(),
                 value = logDirText,
@@ -112,7 +112,7 @@ fun SettingsScreen() {
             )
             Spacer(modifier = Modifier.size(48.dp))
             ButtonSettingRow(
-                complete = settingsViewModel.hasEncDir.collectAsState().value,
+                complete = settingsViewModel.encDirGood.collectAsState().value,
                 buttonText = stringResource(id = R.string.enc_dir_button_text),
                 contract = ActivityResultContracts.OpenDocumentTree(),
                 value = encDirText,
