@@ -13,9 +13,12 @@ import javax.inject.Inject
 class SettingsViewModel @Inject constructor(
     private val propertyManager: PropertyManager
 ) : ViewModel() {
-    private val hasLogDir = propertyManager.logDirUri.map { it != null }
-    private val hasEncDir = propertyManager.encDirUri.map { it != null }
-    private val hasConfig = propertyManager.hasConfig
+    val hasLogDir = propertyManager.logDirUri.map { it != null }
+        .stateIn(viewModelScope, SharingStarted.Lazily,false)
+    val hasEncDir = propertyManager.encDirUri.map { it != null }
+        .stateIn(viewModelScope, SharingStarted.Lazily,false)
+    val hasConfig = propertyManager.hasConfig
+        .stateIn(viewModelScope, SharingStarted.Lazily, false)
 
     val showSettings = combine(
         listOf(
@@ -25,5 +28,4 @@ class SettingsViewModel @Inject constructor(
         )
     ) { list -> list.any { !it } }
         .stateIn(viewModelScope, SharingStarted.Lazily, true)
-
 }

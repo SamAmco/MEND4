@@ -40,6 +40,7 @@ class PropertyManagerImpl @Inject constructor(
                 }
 
             prefs.registerOnSharedPreferenceChangeListener(listener)
+            trySendBlocking(prefs)
             awaitClose {
                 prefs.unregisterOnSharedPreferenceChangeListener(listener)
             }
