@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">mendroid</string>
+    <string name="app_name">MEND</string>
     <string name="config_button_text">config.xml</string>
     <string name="log_dir_button_text">log-dir</string>
     <string name="enc_dir_button_text">enc-dir</string>
@@ -11,4 +11,6 @@
     <string name="config_import_missing">Xml file missing keys: %s</string>
     <string name="log_dir_error">Failed to load selected log-dir.</string>
     <string name="enc_dir_error">Failed to load selected enc-dir.</string>
+    <string name="settings">Settings</string>
+    <string name="close_settings">Close settings</string>
 </resources>

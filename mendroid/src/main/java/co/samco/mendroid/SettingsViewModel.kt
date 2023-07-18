@@ -14,6 +14,8 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.merge
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import org.xmlpull.v1.XmlPullParser
@@ -59,7 +61,10 @@ class SettingsViewModel @Inject constructor(
     val hasConfig = propertyManager.hasConfig
         .stateIn(viewModelScope, SharingStarted.Lazily, false)
 
-    val showSettings = combine(
+    private val _userRequestShowSettings = MutableSharedFlow<Unit>()
+    private val _userRequestCloseSettings = MutableSharedFlow<Unit>()
+
+    private val forceShowSettings = combine(
         listOf(
             hasConfig,
             logDirGood,
@@ -67,6 +72,27 @@ class SettingsViewModel @Inject constructor(
         )
     ) { list -> list.any { !it } }
         .stateIn(viewModelScope, SharingStarted.Lazily, true)
+
+    private val userShowingSettings = combine(
+        forceShowSettings,
+        merge(
+            _userRequestShowSettings.map { true },
+            _userRequestCloseSettings.map { false }
+        ).onStart { emit(false) }
+    ) { force, show -> !force && show }
+        .stateIn(viewModelScope, SharingStarted.Lazily, false)
+
+    val showSettings = combine(
+        forceShowSettings,
+        userShowingSettings
+    ) { force, show -> force || show }
+        .stateIn(viewModelScope, SharingStarted.Lazily, false)
+
+    val showCloseButton = combine(
+        forceShowSettings,
+        userShowingSettings
+    ) { force, show -> !force && show }
+        .stateIn(viewModelScope, SharingStarted.Lazily, false)
 
     private val context get() = this.getApplication<Application>().applicationContext
 
@@ -171,5 +197,17 @@ class SettingsViewModel @Inject constructor(
         }
         claimPersistentUriPermission(uri)
         propertyManager.setEncDirUri(uri.toString())
+    }
+
+    fun onUserShowSettings() {
+        viewModelScope.launch {
+            _userRequestShowSettings.emit(Unit)
+        }
+    }
+
+    fun onUserCloseSettings() {
+        viewModelScope.launch {
+            _userRequestCloseSettings.emit(Unit)
+        }
     }
 }

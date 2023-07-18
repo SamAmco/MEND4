@@ -12,6 +12,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContract
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -24,9 +25,14 @@ import androidx.compose.material.Button
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.Icon
+import androidx.compose.material.IconButton
 import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Scaffold
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
+import androidx.compose.material.TopAppBar
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -70,6 +76,7 @@ fun SettingsScreen() {
     val configText = settingsViewModel.configPath.collectAsState().value
     val logDirText = settingsViewModel.logDirText.collectAsState().value
     val encDirText = settingsViewModel.encDirText.collectAsState().value
+    val showCloseButton = settingsViewModel.showCloseButton.collectAsState().value
     val context = LocalContext.current
 
     LaunchedEffect(Unit) {
@@ -88,36 +95,51 @@ fun SettingsScreen() {
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colors.background
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 32.dp),
-            verticalArrangement = Arrangement.Center
-        ) {
-            ButtonSettingRow(
-                complete = settingsViewModel.hasConfig.collectAsState().value,
-                buttonText = stringResource(id = R.string.config_button_text),
-                contract = ActivityResultContracts.OpenDocument(),
-                value = configText,
-                launchArgs = arrayOf("application/xml", "text/xml"),
-                onUriSelected = settingsViewModel::onSetConfig
-            )
-            Spacer(modifier = Modifier.size(48.dp))
-            ButtonSettingRow(
-                complete = settingsViewModel.logDirGood.collectAsState().value,
-                buttonText = stringResource(id = R.string.log_dir_button_text),
-                contract = ActivityResultContracts.OpenDocumentTree(),
-                value = logDirText,
-                onUriSelected = settingsViewModel::onSetLogDir
-            )
-            Spacer(modifier = Modifier.size(48.dp))
-            ButtonSettingRow(
-                complete = settingsViewModel.encDirGood.collectAsState().value,
-                buttonText = stringResource(id = R.string.enc_dir_button_text),
-                contract = ActivityResultContracts.OpenDocumentTree(),
-                value = encDirText,
-                onUriSelected = settingsViewModel::onSetEncDir
-            )
+        Box {
+            if (showCloseButton) {
+                IconButton(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(8.dp),
+                    onClick = { settingsViewModel.onUserCloseSettings() }) {
+                    Icon(
+                        imageVector = Icons.Filled.Close,
+                        contentDescription = stringResource(id = R.string.close_settings)
+                    )
+                }
+            }
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 32.dp),
+                verticalArrangement = Arrangement.Center
+            ) {
+                ButtonSettingRow(
+                    complete = settingsViewModel.hasConfig.collectAsState().value,
+                    buttonText = stringResource(id = R.string.config_button_text),
+                    contract = ActivityResultContracts.OpenDocument(),
+                    value = configText,
+                    launchArgs = arrayOf("application/xml", "text/xml"),
+                    onUriSelected = settingsViewModel::onSetConfig
+                )
+                Spacer(modifier = Modifier.size(48.dp))
+                ButtonSettingRow(
+                    complete = settingsViewModel.logDirGood.collectAsState().value,
+                    buttonText = stringResource(id = R.string.log_dir_button_text),
+                    contract = ActivityResultContracts.OpenDocumentTree(),
+                    value = logDirText,
+                    onUriSelected = settingsViewModel::onSetLogDir
+                )
+                Spacer(modifier = Modifier.size(48.dp))
+                ButtonSettingRow(
+                    complete = settingsViewModel.encDirGood.collectAsState().value,
+                    buttonText = stringResource(id = R.string.enc_dir_button_text),
+                    contract = ActivityResultContracts.OpenDocumentTree(),
+                    value = encDirText,
+                    onUriSelected = settingsViewModel::onSetEncDir
+                )
+                Spacer(modifier = Modifier.size(48.dp))
+            }
         }
     }
 }
@@ -188,10 +210,35 @@ fun <T> ButtonSettingRow(
 
 @Composable
 fun HomeScreen() {
-    Surface(
-        modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colors.background
-    ) {
-        Text(text = "Hello!")
-    }
+    Scaffold(
+        topBar = {
+            Mend4TopAppBar()
+        },
+        content = {
+            Mend4Content()
+        }
+    )
+}
+
+@Composable
+fun Mend4Content() {
+
+}
+
+@Composable
+fun Mend4TopAppBar() {
+    TopAppBar(
+        title = {
+            Text(text = stringResource(id = R.string.app_name) + " " + BuildConfig.VERSION_NAME)
+        },
+        actions = {
+            val settingsViewModel = viewModel<SettingsViewModel>()
+            IconButton(onClick = { settingsViewModel.onUserShowSettings() }) {
+                Icon(
+                    imageVector = Icons.Filled.Settings,
+                    contentDescription = stringResource(id = R.string.settings)
+                )
+            }
+        }
+    )
 }
