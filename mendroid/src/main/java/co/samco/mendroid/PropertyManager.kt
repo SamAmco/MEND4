@@ -16,9 +16,14 @@ interface PropertyManager : Settings {
     val logDirUri: Flow<String?>
     val encDirUri: Flow<String?>
     val hasConfig: Flow<Boolean>
+    val configUri: Flow<String?>
 
     fun setLogDirUri(uri: String)
     fun setEncDirUri(uri: String)
+
+    //TODO clear old settings before importing new xml file
+    fun clearSettings()
+    fun setConfigUriPath(path: String)
 }
 
 class PropertyManagerImpl @Inject constructor(
@@ -50,6 +55,7 @@ class PropertyManagerImpl @Inject constructor(
     companion object {
         private const val LOG_DIR_URI = "logDirUri"
         private const val ENC_DIR_URI = "encDirUri"
+        private const val CONFIG_URI = "configUri"
     }
 
     override val logDirUri: Flow<String?>
@@ -68,11 +74,26 @@ class PropertyManagerImpl @Inject constructor(
             }
         ) { flows -> flows.all { it != null } }
 
+    override val configUri: Flow<String?>
+        get() = onChange(CONFIG_URI)
+            .map { it.getString(CONFIG_URI, null) }
+
     override fun setLogDirUri(uri: String) =
         prefs.edit().putString(LOG_DIR_URI, uri).apply()
 
     override fun setEncDirUri(uri: String) =
         prefs.edit().putString(ENC_DIR_URI, uri).apply()
+
+    override fun clearSettings() {
+        prefs.edit().apply {
+            Settings.Name.All.forEach { remove(it.encodedName) }
+            remove(CONFIG_URI)
+        }.apply()
+    }
+
+    override fun setConfigUriPath(path: String) {
+        prefs.edit().putString(CONFIG_URI, path).apply()
+    }
 
     override fun setValue(name: Settings.Name, value: String) {
         prefs.edit().putString(name.encodedName, value).apply()

@@ -3,4 +3,10 @@
     <string name="config_button_text">config.xml</string>
     <string name="log_dir_button_text">log-dir</string>
     <string name="enc_dir_button_text">enc-dir</string>
+
+    <string name="not_set">NOT SET</string>
+    <string name="config_import_error">Failed to import XML file.</string>
+    <string name="config_import_error_missing_text">Expected text after key %s</string>
+    <string name="config_import_duplicate">Duplicate key in xml file: %s</string>
+    <string name="config_import_missing">Xml file missing keys: %s</string>
 </resources>
