@@ -18,11 +18,16 @@ interface PropertyManager : Settings {
     val hasConfig: Flow<Boolean>
     val configUri: Flow<String?>
 
+    fun getCurrentLogName(): String
+
     fun setLogDirUri(uri: String)
     fun setEncDirUri(uri: String)
+    fun getEncDirUri(): String?
+    fun getLogDirUri(): String?
 
     fun clearSettings()
     fun setConfigUriPath(path: String)
+    fun setCurrentLogName(name: String)
 }
 
 class PropertyManagerImpl @Inject constructor(
@@ -55,6 +60,7 @@ class PropertyManagerImpl @Inject constructor(
         private const val LOG_DIR_URI = "logDirUri"
         private const val ENC_DIR_URI = "encDirUri"
         private const val CONFIG_URI = "configUri"
+        private const val CURRENT_LOG_NAME = "currentLogName"
     }
 
     override val logDirUri: Flow<String?>
@@ -77,6 +83,10 @@ class PropertyManagerImpl @Inject constructor(
         get() = onChange(CONFIG_URI)
             .map { it.getString(CONFIG_URI, null) }
 
+    override fun getCurrentLogName(): String {
+        return prefs.getString(CURRENT_LOG_NAME, "Log") ?: "Log"
+    }
+
     override fun setLogDirUri(uri: String) {
         //First remove it because if you select the same directory you still want the
         // onchange listener to fire
@@ -91,6 +101,14 @@ class PropertyManagerImpl @Inject constructor(
         prefs.edit().putString(ENC_DIR_URI, uri).apply()
     }
 
+    override fun getEncDirUri(): String? {
+        return prefs.getString(ENC_DIR_URI, null)
+    }
+
+    override fun getLogDirUri(): String? {
+        return prefs.getString(LOG_DIR_URI, null)
+    }
+
     override fun clearSettings() {
         prefs.edit().apply {
             Settings.Name.All.forEach { remove(it.encodedName) }
@@ -100,6 +118,10 @@ class PropertyManagerImpl @Inject constructor(
 
     override fun setConfigUriPath(path: String) {
         prefs.edit().putString(CONFIG_URI, path).apply()
+    }
+
+    override fun setCurrentLogName(name: String) {
+        prefs.edit().putString(CURRENT_LOG_NAME, name).apply()
     }
 
     override fun setValue(name: Settings.Name, value: String) {

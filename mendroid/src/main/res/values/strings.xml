@@ -15,4 +15,9 @@
     <string name="close_settings">Close settings</string>
     <string name="tab_enc">Encrypt</string>
     <string name="tab_dec">Decrypt</string>
+    <string name="no_file">No file was found</string>
+    <string name="no_enc_dir">Failed to access enc-dir</string>
+    <string name="failed_to_create_file">Failed to create a new file.</string>
+    <string name="no_log_dir">Could not find log-dir</string>
+    <string name="invalid_log_name">Log name invalid</string>
 </resources>

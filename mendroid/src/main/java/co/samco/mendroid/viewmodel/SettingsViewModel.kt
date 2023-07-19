@@ -8,6 +8,7 @@ import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import co.samco.mend4.core.Settings
+import co.samco.mendroid.ErrorToastManager
 import co.samco.mendroid.PropertyManager
 import co.samco.mendroid.R
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -25,13 +26,12 @@ import java.io.FileInputStream
 import java.io.InputStream
 import javax.inject.Inject
 
-data class ErrorToast(val messageId: Int, val formatArgs: List<String>)
-
 @HiltViewModel
 //Don't know why it thinks i'm leaking a context but it's application context so we're fine
 class SettingsViewModel @Inject constructor(
     private val propertyManager: PropertyManager,
-    application: Application
+    application: Application,
+    private val errorToastManager: ErrorToastManager
 ) : AndroidViewModel(application) {
 
     val configPath = propertyManager.configUri
@@ -44,9 +44,6 @@ class SettingsViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.Lazily, null)
 
     data class ConfigImportException(val messageId: Int, val formatArgs: List<String>) : Exception()
-
-    private val _errorToasts = MutableSharedFlow<ErrorToast>()
-    val errorToasts: SharedFlow<ErrorToast> = _errorToasts
 
     private fun getDirectoryString(uriStr: String?): String? {
         if (uriStr == null) return null
@@ -99,9 +96,7 @@ class SettingsViewModel @Inject constructor(
     private val context get() = this.getApplication<Application>().applicationContext
 
     private fun showErrorToast(messageId: Int, formatArgs: List<String>) {
-        viewModelScope.launch {
-            _errorToasts.emit(ErrorToast(messageId, formatArgs))
-        }
+        errorToastManager.showErrorToast(messageId, formatArgs)
     }
 
     fun onSetConfig(uri: Uri?) {

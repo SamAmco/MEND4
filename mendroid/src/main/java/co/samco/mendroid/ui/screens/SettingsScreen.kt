@@ -3,7 +3,6 @@ package co.samco.mendroid.ui.screens
 import android.net.Uri
 import android.text.TextUtils
 import android.widget.TextView
-import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContract
 import androidx.activity.result.contract.ActivityResultContracts
@@ -27,11 +26,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -48,19 +45,6 @@ fun SettingsScreen() {
     val logDirText = settingsViewModel.logDirText.collectAsState().value
     val encDirText = settingsViewModel.encDirText.collectAsState().value
     val showCloseButton = settingsViewModel.showCloseButton.collectAsState().value
-    val context = LocalContext.current
-
-    LaunchedEffect(Unit) {
-        settingsViewModel.errorToasts.collect { error ->
-            error.let {
-                Toast.makeText(
-                    context,
-                    context.getString(error.messageId, error.formatArgs),
-                    Toast.LENGTH_LONG
-                ).show()
-            }
-        }
-    }
 
     Surface(
         modifier = Modifier.fillMaxSize(),
