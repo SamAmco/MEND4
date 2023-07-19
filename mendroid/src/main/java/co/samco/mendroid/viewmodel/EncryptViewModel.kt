@@ -15,11 +15,10 @@ import co.samco.mend4.core.AppProperties
 import co.samco.mend4.core.crypto.CryptoProvider
 import co.samco.mend4.core.util.LogUtils
 import co.samco.mendroid.BuildConfig
+import co.samco.mendroid.ErrorToastManager
 import co.samco.mendroid.PropertyManager
 import co.samco.mendroid.R
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
@@ -36,11 +35,9 @@ import javax.inject.Inject
 class EncryptViewModel @Inject constructor(
     application: Application,
     private val cryptoProvider: CryptoProvider,
-    private val propertyManager: PropertyManager
+    private val propertyManager: PropertyManager,
+    private val errorToastManager: ErrorToastManager
 ) : AndroidViewModel(application) {
-
-    private val _errorToasts = MutableSharedFlow<ErrorToast>()
-    val errorToasts: SharedFlow<ErrorToast> = _errorToasts
 
     private val context get() = this.getApplication<Application>().applicationContext
 
@@ -96,117 +93,109 @@ class EncryptViewModel @Inject constructor(
         ).none { logName.contains(it) }
     }
 
-    //TODO get an output stream for the file and ensure it's appendable
-    // do all this eagerly and show some sort of red button state if it's not valid
-    // on encrypt request encrypt to log file as output stream
-
     fun encryptText() {
-        viewModelScope.launch {
-            val logDir = getLogDir()
-            if (logDir == null) {
-                _errorToasts.emit(ErrorToast(R.string.no_log_dir))
-                return@launch
-            }
-
-            val logName = currentLogName.text
-            if (!validLogName(logName)) {
-                _errorToasts.emit(ErrorToast(R.string.invalid_log_name))
-                return@launch
-            }
-            val logNameWithExtension = "$logName.${AppProperties.LOG_FILE_EXTENSION}"
-
-            val logFile = logDir.findFile(logNameWithExtension)
-                ?: logDir.createFile("application/octet-stream", logNameWithExtension)
-
-            if (logFile == null || !logFile.isFile || !logFile.canWrite()) {
-                _errorToasts.emit(ErrorToast(R.string.failed_to_create_file))
-                return@launch
-            }
-
-            val outputStream = context.contentResolver.openOutputStream(logFile.uri, "wa")
-            if (outputStream == null) {
-                _errorToasts.emit(ErrorToast(R.string.failed_to_create_file))
-                return@launch
-            }
-
-            val logText = LogUtils.addHeaderToLogText(
-                currentEntryText.text,
-                "ANDROID",
-                BuildConfig.VERSION_NAME,
-                "\n"
-            )
-
-            cryptoProvider.encryptLogStream(logText, outputStream)
-
-            currentEntryText = TextFieldValue("")
+        val logDir = getLogDir()
+        if (logDir == null) {
+            errorToastManager.showErrorToast(R.string.no_log_dir)
+            return
         }
+
+        val logName = currentLogName.text
+        if (!validLogName(logName)) {
+            errorToastManager.showErrorToast(R.string.invalid_log_name)
+            return
+        }
+        val logNameWithExtension = "$logName.${AppProperties.LOG_FILE_EXTENSION}"
+
+        val logFile = logDir.findFile(logNameWithExtension)
+            ?: logDir.createFile("application/octet-stream", logNameWithExtension)
+
+        if (logFile == null || !logFile.isFile || !logFile.canWrite()) {
+            errorToastManager.showErrorToast(R.string.failed_to_create_file)
+            return
+        }
+
+        val outputStream = context.contentResolver.openOutputStream(logFile.uri, "wa")
+        if (outputStream == null) {
+            errorToastManager.showErrorToast(R.string.failed_to_create_file)
+            return
+        }
+
+        val logText = LogUtils.addHeaderToLogText(
+            currentEntryText.text,
+            "ANDROID",
+            BuildConfig.VERSION_NAME,
+            "\n"
+        )
+
+        cryptoProvider.encryptLogStream(logText, outputStream)
+
+        currentEntryText = TextFieldValue("")
     }
 
     fun encryptFile(uri: Uri?) {
-        viewModelScope.launch {
-            if (uri == null) {
-                _errorToasts.emit(ErrorToast(R.string.no_file))
-                return@launch
-            }
-
-            val documentFile = DocumentFile.fromSingleUri(context, uri)
-            if (documentFile == null || !documentFile.isFile || !documentFile.canRead()) {
-                _errorToasts.emit(ErrorToast(R.string.no_file))
-                return@launch
-            }
-
-            val inputStream = context.contentResolver.openInputStream(uri)
-            if (inputStream == null) {
-                _errorToasts.emit(ErrorToast(R.string.no_file))
-                return@launch
-            }
-
-            val encDirUri = propertyManager.getEncDirUri()
-            if (encDirUri == null) {
-                _errorToasts.emit(ErrorToast(R.string.no_enc_dir))
-                return@launch
-            }
-
-            val encDirFile = DocumentFile.fromTreeUri(context, Uri.parse(encDirUri))
-            if (encDirFile == null || !encDirFile.isDirectory
-                || !encDirFile.canRead() || !encDirFile.canWrite()
-            ) {
-                _errorToasts.emit(ErrorToast(R.string.no_enc_dir))
-                return@launch
-            }
-
-            val fileName = SimpleDateFormat(
-                AppProperties.ENC_FILE_NAME_FORMAT,
-                Locale.getDefault()
-            ).format(Date())
-
-            val newFile = encDirFile.createFile(
-                "application/octet-stream",
-                "$fileName.${AppProperties.ENC_FILE_EXTENSION}"
-            )
-            if (newFile == null || !newFile.isFile || !newFile.canWrite()) {
-                _errorToasts.emit(ErrorToast(R.string.failed_to_create_file))
-                return@launch
-            }
-
-            val outputStream = context.contentResolver.openOutputStream(newFile.uri)
-            if (outputStream == null) {
-                _errorToasts.emit(ErrorToast(R.string.failed_to_create_file))
-                return@launch
-            }
-
-            val fileExtension = documentFile.name
-                ?.substringAfterLast('.', "")
-                ?: ""
-
-            cryptoProvider.encryptEncStream(inputStream, outputStream, fileExtension)
-
-            val newText = currentEntryText.text + fileName
-            currentEntryText = currentEntryText.copy(
-                text = newText,
-                selection = TextRange(newText.length)
-            )
+        if (uri == null) {
+            errorToastManager.showErrorToast(R.string.no_file)
+            return
         }
+
+        val documentFile = DocumentFile.fromSingleUri(context, uri)
+        if (documentFile == null || !documentFile.isFile || !documentFile.canRead()) {
+            errorToastManager.showErrorToast(R.string.no_file)
+            return
+        }
+
+        val inputStream = context.contentResolver.openInputStream(uri)
+        if (inputStream == null) {
+            errorToastManager.showErrorToast(R.string.no_file)
+            return
+        }
+
+        val encDirUri = propertyManager.getEncDirUri()
+        if (encDirUri == null) {
+            errorToastManager.showErrorToast(R.string.no_enc_dir)
+            return
+        }
+
+        val encDirFile = DocumentFile.fromTreeUri(context, Uri.parse(encDirUri))
+        if (encDirFile == null || !encDirFile.isDirectory
+            || !encDirFile.canRead() || !encDirFile.canWrite()
+        ) {
+            errorToastManager.showErrorToast(R.string.no_enc_dir)
+            return
+        }
+
+        val fileName = SimpleDateFormat(
+            AppProperties.ENC_FILE_NAME_FORMAT,
+            Locale.getDefault()
+        ).format(Date())
+
+        val newFile = encDirFile.createFile(
+            "application/octet-stream",
+            "$fileName.${AppProperties.ENC_FILE_EXTENSION}"
+        )
+        if (newFile == null || !newFile.isFile || !newFile.canWrite()) {
+            errorToastManager.showErrorToast(R.string.failed_to_create_file)
+            return
+        }
+
+        val outputStream = context.contentResolver.openOutputStream(newFile.uri)
+        if (outputStream == null) {
+            errorToastManager.showErrorToast(R.string.failed_to_create_file)
+            return
+        }
+
+        val fileExtension = documentFile.name
+            ?.substringAfterLast('.', "")
+            ?: ""
+
+        cryptoProvider.encryptEncStream(inputStream, outputStream, fileExtension)
+
+        val newText = currentEntryText.text + fileName
+        currentEntryText = currentEntryText.copy(
+            text = newText,
+            selection = TextRange(newText.length)
+        )
     }
 
     init {
