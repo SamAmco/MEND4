@@ -12,7 +12,12 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 
+enum class Theme {
+    LIGHT, DARK
+}
+
 interface PropertyManager : Settings {
+    val selectedTheme: Flow<Theme?>
     val logDirUri: Flow<String?>
     val encDirUri: Flow<String?>
     val hasConfig: Flow<Boolean>
@@ -22,8 +27,10 @@ interface PropertyManager : Settings {
 
     fun setLogDirUri(uri: String)
     fun setEncDirUri(uri: String)
+    fun setTheme(theme: Theme?)
     fun getEncDirUri(): String?
     fun getLogDirUri(): String?
+    fun getSelectedTheme(): Theme?
 
     fun clearSettings()
     fun setConfigUriPath(path: String)
@@ -61,7 +68,12 @@ class PropertyManagerImpl @Inject constructor(
         private const val ENC_DIR_URI = "encDirUri"
         private const val CONFIG_URI = "configUri"
         private const val CURRENT_LOG_NAME = "currentLogName"
+        private const val THEME = "theme"
     }
+
+    override val selectedTheme: Flow<Theme?>
+        get() = onChange(THEME)
+            .map { prefs -> prefs.getString(THEME, null)?.let { Theme.valueOf(it) } }
 
     override val logDirUri: Flow<String?>
         get() = onChange(LOG_DIR_URI)
@@ -101,12 +113,21 @@ class PropertyManagerImpl @Inject constructor(
         prefs.edit().putString(ENC_DIR_URI, uri).apply()
     }
 
+    override fun setTheme(theme: Theme?) {
+        if (theme == null) prefs.edit().remove(THEME).apply()
+        else prefs.edit().putString(THEME, theme.name).apply()
+    }
+
     override fun getEncDirUri(): String? {
         return prefs.getString(ENC_DIR_URI, null)
     }
 
     override fun getLogDirUri(): String? {
         return prefs.getString(LOG_DIR_URI, null)
+    }
+
+    override fun getSelectedTheme(): Theme? {
+        return prefs.getString(THEME, null)?.let { Theme.valueOf(it) }
     }
 
     override fun clearSettings() {

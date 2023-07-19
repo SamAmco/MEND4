@@ -11,10 +11,11 @@ import co.samco.mend4.core.Settings
 import co.samco.mendroid.ErrorToastManager
 import co.samco.mendroid.PropertyManager
 import co.samco.mendroid.R
+import co.samco.mendroid.Theme
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
@@ -33,6 +34,17 @@ class SettingsViewModel @Inject constructor(
     application: Application,
     private val errorToastManager: ErrorToastManager
 ) : AndroidViewModel(application) {
+
+    val selectedTheme: StateFlow<Theme?> = propertyManager.selectedTheme
+        .stateIn(viewModelScope, SharingStarted.Lazily, null)
+
+    fun onThemeClicked(selection: Theme) {
+        val currentTheme = propertyManager.getSelectedTheme()
+        propertyManager.setTheme(
+            if (currentTheme == selection) null
+            else selection
+        )
+    }
 
     val configPath = propertyManager.configUri
         .stateIn(viewModelScope, SharingStarted.Lazily, null)
@@ -70,7 +82,7 @@ class SettingsViewModel @Inject constructor(
             encDirGood
         )
     ) { list -> list.any { !it } }
-        .stateIn(viewModelScope, SharingStarted.Lazily, true)
+        .stateIn(viewModelScope, SharingStarted.Lazily, false)
 
     private val userShowingSettings = combine(
         forceShowSettings,

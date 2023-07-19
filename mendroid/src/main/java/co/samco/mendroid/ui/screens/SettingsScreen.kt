@@ -6,6 +6,9 @@ import android.widget.TextView
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContract
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,6 +20,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.material.Button
+import androidx.compose.material.Card
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.material.MaterialTheme
@@ -36,6 +40,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.viewmodel.compose.viewModel
 import co.samco.mendroid.R
+import co.samco.mendroid.Theme
+import co.samco.mendroid.ui.theme.Charcoal1
+import co.samco.mendroid.ui.theme.White1
 import co.samco.mendroid.viewmodel.SettingsViewModel
 
 @Composable
@@ -95,8 +102,67 @@ fun SettingsScreen() {
                     onUriSelected = settingsViewModel::onSetEncDir
                 )
                 Spacer(modifier = Modifier.size(48.dp))
+                ThemeButtons()
+                Spacer(modifier = Modifier.size(48.dp))
             }
         }
+    }
+}
+
+
+@Composable
+fun ThemeButtons() = Row(
+    Modifier.fillMaxWidth(),
+    horizontalArrangement = Arrangement.Center
+) {
+    val settingsViewModel = viewModel<SettingsViewModel>()
+    val selectedTheme = settingsViewModel.selectedTheme.collectAsState().value
+
+    ThemeButton(
+        theme = Theme.LIGHT,
+        selectedTheme = selectedTheme
+    ) { settingsViewModel.onThemeClicked(Theme.LIGHT) }
+
+    Spacer(modifier = Modifier.size(8.dp))
+
+    ThemeButton(
+        theme = Theme.DARK,
+        selectedTheme = selectedTheme
+    ) { settingsViewModel.onThemeClicked(Theme.DARK) }
+}
+
+@Composable
+fun ThemeButton(
+    theme: Theme,
+    selectedTheme: Theme?,
+    onClick: () -> Unit,
+) = Card(
+    modifier = Modifier
+        .padding(8.dp)
+        .let {
+            return@let if (selectedTheme == theme) it.border(
+                border = BorderStroke(2.dp, MaterialTheme.colors.primary),
+                shape = MaterialTheme.shapes.small
+            )
+            else it
+        }
+        .clickable { onClick() },
+    backgroundColor = if (theme == Theme.LIGHT) White1 else Charcoal1
+) {
+    val icon =
+        if (theme == Theme.LIGHT) painterResource(id = R.drawable.day)
+        else painterResource(id = R.drawable.night)
+
+    Box(
+        modifier = Modifier.padding(horizontal = 32.dp, vertical = 10.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            modifier = Modifier.size(38.dp),
+            painter = icon,
+            contentDescription = null,
+            tint = if (theme == Theme.LIGHT) Charcoal1 else White1
+        )
     }
 }
 
@@ -127,10 +193,10 @@ fun <T> ButtonSettingRow(
                     ellipsize = TextUtils.TruncateAt.START
                     setSingleLine()
                     textSize = 16f
-                    setTextColor(textColor)
                 }
             },
             update = { view ->
+                view.setTextColor(textColor)
                 view.text = value ?: view.context.getString(R.string.not_set)
             }
         )

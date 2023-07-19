@@ -29,14 +29,21 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
+
     @Inject
     lateinit var errorToastManager: ErrorToastManager
+
+    @Inject
+    lateinit var propertyManager: PropertyManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            MEND4Theme {
-                Mend4App()
+            val selectedTheme = propertyManager.selectedTheme.collectAsState(null).value
+            if (selectedTheme != null) {
+                MEND4Theme(darkTheme = selectedTheme == Theme.DARK) { Mend4App() }
+            } else {
+                MEND4Theme { Mend4App() }
             }
         }
     }

@@ -21,8 +21,12 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.material.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
@@ -30,11 +34,19 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import co.samco.mendroid.R
 import co.samco.mendroid.ui.theme.mendTextFieldColors
 import co.samco.mendroid.viewmodel.EncryptViewModel
+import kotlinx.coroutines.delay
 
 @Composable
 fun EncryptScreen(modifier: Modifier = Modifier) = Column(modifier) {
 
     val viewModel = viewModel<EncryptViewModel>()
+
+    val focusRequester = remember { FocusRequester() }
+
+    LaunchedEffect(Unit) {
+        delay(10)
+        focusRequester.requestFocus()
+    }
 
     Spacer(modifier = Modifier.size(8.dp))
 
@@ -48,6 +60,7 @@ fun EncryptScreen(modifier: Modifier = Modifier) = Column(modifier) {
             ),
     ) {
         TextField(
+            modifier = Modifier.focusRequester(focusRequester),
             value = viewModel.currentEntryText,
             onValueChange = { viewModel.currentEntryText = it },
             keyboardOptions = KeyboardOptions.Default.copy(
