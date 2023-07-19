@@ -13,6 +13,8 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import co.samco.mend4.core.AppProperties
 import co.samco.mend4.core.crypto.CryptoProvider
+import co.samco.mend4.core.util.LogUtils
+import co.samco.mendroid.BuildConfig
 import co.samco.mendroid.PropertyManager
 import co.samco.mendroid.R
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -127,10 +129,14 @@ class EncryptViewModel @Inject constructor(
                 return@launch
             }
 
-            cryptoProvider.encryptLogStream(
+            val logText = LogUtils.addHeaderToLogText(
                 currentEntryText.text,
-                outputStream
+                "Android",
+                BuildConfig.VERSION_NAME,
+                "\n"
             )
+
+            cryptoProvider.encryptLogStream(logText, outputStream)
 
             currentEntryText = TextFieldValue("")
         }
@@ -195,7 +201,11 @@ class EncryptViewModel @Inject constructor(
 
             cryptoProvider.encryptEncStream(inputStream, outputStream, fileExtension)
 
-            currentEntryText = currentEntryText.copy(text = currentEntryText.text + fileName)
+            val newText = currentEntryText.text + fileName
+            currentEntryText = currentEntryText.copy(
+                text = newText,
+                selection = TextRange(newText.length)
+            )
         }
     }
 

@@ -20,4 +20,6 @@
     <string name="failed_to_create_file">Failed to create a new file.</string>
     <string name="no_log_dir">Could not find log-dir</string>
     <string name="invalid_log_name">Log name invalid</string>
+    <string name="file">File</string>
+    <string name="submit">Submit</string>
 </resources>
