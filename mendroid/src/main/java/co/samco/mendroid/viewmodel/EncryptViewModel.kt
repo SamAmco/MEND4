@@ -131,7 +131,7 @@ class EncryptViewModel @Inject constructor(
 
             val logText = LogUtils.addHeaderToLogText(
                 currentEntryText.text,
-                "Android",
+                "ANDROID",
                 BuildConfig.VERSION_NAME,
                 "\n"
             )
