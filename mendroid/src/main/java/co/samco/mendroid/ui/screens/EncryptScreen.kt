@@ -28,6 +28,7 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import co.samco.mendroid.R
+import co.samco.mendroid.ui.theme.mendTextFieldColors
 import co.samco.mendroid.viewmodel.EncryptViewModel
 
 @Composable
@@ -41,7 +42,6 @@ fun EncryptScreen(modifier: Modifier = Modifier) = Column(modifier) {
         modifier = Modifier
             .weight(1f)
             .fillMaxWidth()
-            .padding(horizontal = 8.dp)
             .border(
                 border = BorderStroke(1.dp, MaterialTheme.colors.primary),
                 shape = MaterialTheme.shapes.small
@@ -52,16 +52,15 @@ fun EncryptScreen(modifier: Modifier = Modifier) = Column(modifier) {
             onValueChange = { viewModel.currentEntryText = it },
             keyboardOptions = KeyboardOptions.Default.copy(
                 capitalization = KeyboardCapitalization.Sentences
-            )
+            ),
+            colors = mendTextFieldColors()
         )
     }
 
     Spacer(modifier = Modifier.size(8.dp))
 
     Row(
-        modifier = Modifier
-            .padding(horizontal = 8.dp)
-            .height(IntrinsicSize.Min)
+        modifier = Modifier.height(IntrinsicSize.Min)
     ) {
         TextField(
             modifier = Modifier
@@ -74,6 +73,7 @@ fun EncryptScreen(modifier: Modifier = Modifier) = Column(modifier) {
             value = viewModel.currentLogName,
             onValueChange = { viewModel.currentLogName = it },
             maxLines = 1,
+            colors = mendTextFieldColors()
         )
 
         Spacer(modifier = Modifier.size(8.dp))
@@ -93,8 +93,6 @@ fun EncryptScreen(modifier: Modifier = Modifier) = Column(modifier) {
             viewModel.encryptText()
         }
     }
-
-    Spacer(modifier = Modifier.size(8.dp))
 }
 
 @Composable

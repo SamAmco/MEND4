@@ -17,11 +17,17 @@ import co.samco.mendroid.R
 import co.samco.mendroid.viewmodel.HomeViewModel
 
 @Composable
-fun HomeScreen(modifier: Modifier) = Column(modifier) {
+fun HomeScreen(modifier: Modifier) = Column(
+    modifier.padding(8.dp)
+) {
     val homeViewModel = viewModel<HomeViewModel>()
     val selectedTabIndex = homeViewModel.state.collectAsState().value.index
 
-    TabRow(selectedTabIndex = selectedTabIndex) {
+    TabRow(
+        backgroundColor = MaterialTheme.colors.background,
+        contentColor = MaterialTheme.colors.onBackground.copy(alpha = 0.6f),
+        selectedTabIndex = selectedTabIndex
+    ) {
         Tab(
             text = { TabText(stringResource(id = R.string.tab_enc)) },
             selected = selectedTabIndex == 0,

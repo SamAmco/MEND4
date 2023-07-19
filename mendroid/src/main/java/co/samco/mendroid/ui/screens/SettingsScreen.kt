@@ -29,6 +29,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -109,6 +110,7 @@ fun <T> ButtonSettingRow(
     onUriSelected: (Uri?) -> Unit = {}
 ) {
     val launcher = rememberLauncherForActivityResult(contract, onUriSelected)
+    val textColor = MaterialTheme.colors.onSurface.toArgb()
 
     Row(
         modifier = Modifier
@@ -125,6 +127,7 @@ fun <T> ButtonSettingRow(
                     ellipsize = TextUtils.TruncateAt.START
                     setSingleLine()
                     textSize = 16f
+                    setTextColor(textColor)
                 }
             },
             update = { view ->
