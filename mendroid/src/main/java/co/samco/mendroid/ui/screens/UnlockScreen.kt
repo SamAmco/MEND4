@@ -76,7 +76,9 @@ fun UnlockScreen(modifier: Modifier = Modifier) = Column(
             onDone = { unlockViewModel.onUnlockPressed() }
         )
     )
+
     Spacer(modifier = Modifier.width(16.dp))
+
     Button(
         onClick = unlockViewModel::onUnlockPressed,
         enabled = !unlockViewModel.unlocking

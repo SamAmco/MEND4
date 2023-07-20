@@ -13,6 +13,7 @@ import co.samco.mendroid.R
 import co.samco.mendroid.model.LockEventManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.security.PrivateKey
 import javax.inject.Inject
@@ -36,6 +37,9 @@ class UnlockViewModel @Inject constructor(
         viewModelScope.launch {
             lockEventManager.lockEvents.collect {
                 privateKey = null
+                //Short delay before setting password to empty because if we're navigating away we
+                // can get a race condition where the UI tries to set it back to the old value
+                delay(10)
                 password = TextFieldValue("")
             }
         }
