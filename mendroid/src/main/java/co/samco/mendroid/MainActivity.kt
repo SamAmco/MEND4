@@ -16,8 +16,13 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.lifecycleScope
+import co.samco.mendroid.model.ErrorToastManager
+import co.samco.mendroid.model.LockEventManager
+import co.samco.mendroid.model.PropertyManager
+import co.samco.mendroid.model.Theme
 import co.samco.mendroid.ui.screens.HomeScreen
 import co.samco.mendroid.ui.screens.SettingsScreen
 import co.samco.mendroid.ui.theme.MEND4Theme
@@ -29,12 +34,14 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
-
     @Inject
     lateinit var errorToastManager: ErrorToastManager
 
     @Inject
     lateinit var propertyManager: PropertyManager
+
+    @Inject
+    lateinit var lockEventManager: LockEventManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -50,12 +57,18 @@ class MainActivity : ComponentActivity() {
 
     override fun onStart() {
         super.onStart()
+        lockEventManager.onActivityStart()
         lifecycleScope.launch {
             errorToastManager.errorToast.collect {
                 val text = getString(it.messageId, *it.formatArgs.toTypedArray())
                 Toast.makeText(this@MainActivity, text, Toast.LENGTH_SHORT).show()
             }
         }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        lockEventManager.onActivityStop()
     }
 }
 
@@ -66,6 +79,7 @@ fun Mend4App() {
     HomeScreenScaffold()
 
     if (settingsViewModel.showSettings.collectAsState().value) {
+        LocalFocusManager.current.clearFocus()
         SettingsScreen()
     }
 }

@@ -34,13 +34,14 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.viewmodel.compose.viewModel
 import co.samco.mendroid.R
-import co.samco.mendroid.Theme
+import co.samco.mendroid.model.Theme
 import co.samco.mendroid.ui.theme.Charcoal1
 import co.samco.mendroid.ui.theme.White1
 import co.samco.mendroid.viewmodel.SettingsViewModel

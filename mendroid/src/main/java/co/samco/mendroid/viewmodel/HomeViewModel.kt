@@ -1,19 +1,23 @@
 package co.samco.mendroid.viewmodel
 
 import androidx.lifecycle.ViewModel
+import co.samco.mendroid.model.LockEventManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import javax.inject.Inject
 
 @HiltViewModel
-class HomeViewModel @Inject constructor() : ViewModel() {
+class HomeViewModel @Inject constructor(
+    private val lockEventManager: LockEventManager
+) : ViewModel() {
     enum class HomeState(val index: Int) { ENCRYPT(0), DECRYPT(1) }
 
     private val _state = MutableStateFlow(HomeState.ENCRYPT)
     val state: StateFlow<HomeState> = _state
 
     fun onUserClickedEncrypt() {
+        lockEventManager.onGoToEncrypt()
         _state.value = HomeState.ENCRYPT
     }
 

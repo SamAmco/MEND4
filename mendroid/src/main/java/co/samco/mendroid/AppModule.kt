@@ -4,7 +4,12 @@ import android.util.Base64
 import co.samco.mend4.core.IBase64EncodingProvider
 import co.samco.mend4.core.crypto.CryptoProvider
 import co.samco.mend4.core.crypto.impl.DefaultJCECryptoProvider
-import dagger.Binds
+import co.samco.mendroid.model.ErrorToastManager
+import co.samco.mendroid.model.ErrorToastManagerImpl
+import co.samco.mendroid.model.LockEventManager
+import co.samco.mendroid.model.LockEventManagerImpl
+import co.samco.mendroid.model.PropertyManager
+import co.samco.mendroid.model.PropertyManagerImpl
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -38,4 +43,8 @@ class AppModule {
     @Provides
     @Singleton
     fun provideErrorToastManager(impl: ErrorToastManagerImpl): ErrorToastManager = impl
+
+    @Provides
+    @Singleton
+    fun provideLockEventManager(impl: LockEventManagerImpl): LockEventManager = impl
 }

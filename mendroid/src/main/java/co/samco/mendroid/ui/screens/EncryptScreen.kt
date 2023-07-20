@@ -44,7 +44,6 @@ fun EncryptScreen(modifier: Modifier = Modifier) = Column(modifier) {
     val focusRequester = remember { FocusRequester() }
 
     LaunchedEffect(Unit) {
-        delay(10)
         focusRequester.requestFocus()
     }
 

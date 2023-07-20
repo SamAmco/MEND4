@@ -1,4 +1,4 @@
-package co.samco.mendroid
+package co.samco.mendroid.model
 
 import android.content.Context
 import android.content.SharedPreferences

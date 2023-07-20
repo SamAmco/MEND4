@@ -15,8 +15,8 @@ import co.samco.mend4.core.AppProperties
 import co.samco.mend4.core.crypto.CryptoProvider
 import co.samco.mend4.core.util.LogUtils
 import co.samco.mendroid.BuildConfig
-import co.samco.mendroid.ErrorToastManager
-import co.samco.mendroid.PropertyManager
+import co.samco.mendroid.model.ErrorToastManager
+import co.samco.mendroid.model.PropertyManager
 import co.samco.mendroid.R
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted

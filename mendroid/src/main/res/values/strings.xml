@@ -22,4 +22,8 @@
     <string name="invalid_log_name">Log name invalid</string>
     <string name="file">File</string>
     <string name="submit">Submit</string>
+    <string name="password">Password:</string>
+    <string name="unlock">Unlock</string>
+    <string name="unlock_crashed">Unlock crashed, may need more memory.</string>
+    <string name="unlock_failed">Incorrect password.</string>
 </resources>

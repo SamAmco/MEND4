@@ -1,3 +1,5 @@
+@file:OptIn(FlowPreview::class)
+
 package co.samco.mendroid.viewmodel
 
 import android.app.Application
@@ -8,17 +10,20 @@ import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import co.samco.mend4.core.Settings
-import co.samco.mendroid.ErrorToastManager
-import co.samco.mendroid.PropertyManager
+import co.samco.mendroid.model.ErrorToastManager
+import co.samco.mendroid.model.PropertyManager
 import co.samco.mendroid.R
-import co.samco.mendroid.Theme
+import co.samco.mendroid.model.Theme
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -79,9 +84,10 @@ class SettingsViewModel @Inject constructor(
         listOf(
             hasConfig,
             logDirGood,
-            encDirGood
+            encDirGood,
         )
     ) { list -> list.any { !it } }
+        .debounce(10)
         .stateIn(viewModelScope, SharingStarted.Lazily, false)
 
     private val userShowingSettings = combine(
@@ -95,7 +101,7 @@ class SettingsViewModel @Inject constructor(
 
     val showSettings = combine(
         forceShowSettings,
-        userShowingSettings
+        userShowingSettings,
     ) { force, show -> force || show }
         .stateIn(viewModelScope, SharingStarted.Lazily, false)
 
