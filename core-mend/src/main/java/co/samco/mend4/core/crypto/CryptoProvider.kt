@@ -8,6 +8,11 @@ import java.security.KeyPair
 import java.security.PrivateKey
 import java.security.PublicKey
 
+sealed class UnlockResult {
+    object Failure : UnlockResult()
+    data class Success(val privateKey: PrivateKey) : UnlockResult()
+}
+
 interface CryptoProvider {
     /**
      * Encrypts the input stream and file extension and writes the encrypted data to the output stream.
@@ -83,15 +88,10 @@ interface CryptoProvider {
     fun getKeyPairFromBytes(privateKey: ByteArray, publicKey: ByteArray): KeyPair
 
     /**
-     * @return true if the given password is correct, false otherwise.
-     */
-    fun checkPassword(password: CharArray): Boolean
-
-    /**
      * Decrypts the stored private key using the given password and returns a PKCS8 encoded key
-     * as a ByteArray
+     * as a ByteArray or null if the password is incorrect.
      */
-    fun decryptEncodedPrivateKey(password: CharArray): ByteArray
+    fun unlock(password: CharArray): UnlockResult
 
     /**
      * Encrypts the given private key using the given password and store the key pair.

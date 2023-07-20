@@ -5,6 +5,7 @@ import co.samco.mend4.core.Settings
 import co.samco.mend4.core.bean.LogDataBlocks
 import co.samco.mend4.core.bean.LogDataBlocksAndText
 import co.samco.mend4.core.crypto.CryptoProvider
+import co.samco.mend4.core.crypto.UnlockResult
 import co.samco.mend4.core.exception.MalformedLogFileException
 import co.samco.mend4.core.exception.NoSuchSettingException
 import org.bouncycastle.crypto.generators.Argon2BytesGenerator
@@ -456,30 +457,7 @@ class DefaultJCECryptoProvider(
         )
     }
 
-    override fun checkPassword(password: CharArray): Boolean {
-        //Generate some random set of bytes
-        val passCheck = ByteArray(20)
-        random.nextBytes(passCheck)
-
-        //encrypt them with the public key
-        val asymmetricCipher = getAsymmetricEncryptCipher()
-        val cipherTextBytes = asymmetricCipher.doFinal(passCheck)
-        val plainText: ByteArray = try {
-            //try to then decrypt the private key with the password
-            val privateKeyBytes = decryptEncodedPrivateKey(password)
-            val privateKey = getPrivateKeyFromBytes(privateKeyBytes)
-            //use the decrypted private key to decrypt the encrypted random bytes
-            val decAsymmetricCipher = getAsymmetricDecryptCipher(privateKey)
-            decAsymmetricCipher.doFinal(cipherTextBytes)
-        } catch (t: Throwable) {
-            return false
-        }
-
-        //assert that the two sets of bytes are the same
-        return plainText.contentEquals(passCheck)
-    }
-
-    override fun decryptEncodedPrivateKey(password: CharArray): ByteArray {
+    override fun unlock(password: CharArray): UnlockResult {
         val keyFactorySaltEncoded = settings.getValue(Settings.Name.PW_KEY_FACTORY_SALT)
             ?: throw NoSuchSettingException(Settings.Name.PW_KEY_FACTORY_SALT)
         val privateKeyCipherIvEncoded = settings.getValue(Settings.Name.PW_PRIVATE_KEY_CIPHER_IV)
@@ -487,16 +465,35 @@ class DefaultJCECryptoProvider(
         val encryptedPrivateKeyEncoded = settings.getValue(Settings.Name.ENCRYPTED_PRIVATE_KEY)
             ?: throw NoSuchSettingException(Settings.Name.ENCRYPTED_PRIVATE_KEY)
 
-        val keyFactorySalt = encoder.decodeBase64(keyFactorySaltEncoded)
-        val privateKeyCipherIv = IvParameterSpec(encoder.decodeBase64(privateKeyCipherIvEncoded))
+        try {
+            //Generate some random set of bytes
+            val passCheck = ByteArray(20)
+            random.nextBytes(passCheck)
 
-        return getSymmetricCipherFromPassword(
-            password = password,
-            mode = Cipher.DECRYPT_MODE,
-            keyFactorySalt = keyFactorySalt,
-            privateKeyCipherIv = privateKeyCipherIv
-        ).doFinal(
-            encoder.decodeBase64(encryptedPrivateKeyEncoded)
-        )
+            //encrypt them with the public key
+            val asymmetricCipher = getAsymmetricEncryptCipher()
+            val cipherTextBytes = asymmetricCipher.doFinal(passCheck)
+
+            val keyFactorySalt = encoder.decodeBase64(keyFactorySaltEncoded)
+            val privateKeyCipherIv =
+                IvParameterSpec(encoder.decodeBase64(privateKeyCipherIvEncoded))
+
+            val privateKeyBytes = getSymmetricCipherFromPassword(
+                password = password,
+                mode = Cipher.DECRYPT_MODE,
+                keyFactorySalt = keyFactorySalt,
+                privateKeyCipherIv = privateKeyCipherIv
+            ).doFinal(encoder.decodeBase64(encryptedPrivateKeyEncoded))
+
+            val privateKey = getPrivateKeyFromBytes(privateKeyBytes)
+            val decAsymmetricCipher = getAsymmetricDecryptCipher(privateKey)
+            val plainText = decAsymmetricCipher.doFinal(cipherTextBytes)
+
+            return if (plainText.contentEquals(passCheck))
+                UnlockResult.Success(privateKey)
+            else UnlockResult.Failure
+        } catch (t: Throwable) {
+            return UnlockResult.Failure
+        }
     }
 }

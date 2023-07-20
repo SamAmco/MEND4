@@ -1,6 +1,7 @@
 package commands
 
 import co.samco.mend4.core.Settings
+import co.samco.mend4.core.crypto.UnlockResult
 import co.samco.mend4.desktop.commands.Unlock
 import org.junit.Before
 import org.junit.Test
@@ -17,6 +18,7 @@ import org.apache.commons.codec.binary.Base64
 import org.junit.Assert.assertEquals
 import java.io.ByteArrayOutputStream
 import java.io.File
+import java.security.PrivateKey
 
 class UnlockTest : TestBase() {
     private lateinit var unlock: Unlock
@@ -51,7 +53,7 @@ class UnlockTest : TestBase() {
     @Test
     fun wrongPassword() {
         whenever(osDao.readPassword(anyString())).thenReturn(CharArray(0))
-        whenever(cryptoProvider.checkPassword(any())).thenReturn(false)
+        whenever(cryptoProvider.unlock(any())).thenReturn(UnlockResult.Failure)
 
         unlock.execute(emptyList())
 
@@ -74,11 +76,21 @@ class UnlockTest : TestBase() {
         verify(shredHelper, times(2)).tryShredFile(any())
     }
 
+    private fun privateKeyForBytes(byteArray: ByteArray): PrivateKey {
+        return object : PrivateKey {
+            override fun getAlgorithm(): String = "algorithm"
+
+            override fun getFormat(): String = "format"
+
+            override fun getEncoded(): ByteArray = byteArray
+        }
+    }
+
     private fun correctPasswordTest() {
         val password = "password".toCharArray()
         whenever(osDao.readPassword(anyString())).thenReturn(password)
-        whenever(cryptoProvider.checkPassword(eq(password))).thenReturn(true)
-        whenever(cryptoProvider.decryptEncodedPrivateKey(eq(password))).thenReturn("privateKey".toByteArray())
+        whenever(cryptoProvider.unlock(eq(password)))
+            .thenReturn(UnlockResult.Success(privateKeyForBytes("privateKey".toByteArray())))
         whenever(settings.getValue(eq(Settings.Name.PUBLIC_KEY)))
             .thenReturn(Base64.encodeBase64URLSafeString("publicKey".toByteArray()))
 

@@ -2,6 +2,7 @@ package co.samco.mend4.desktop.commands
 
 import co.samco.mend4.core.Settings
 import co.samco.mend4.core.crypto.CryptoProvider
+import co.samco.mend4.core.crypto.UnlockResult
 import co.samco.mend4.desktop.core.I18N
 import co.samco.mend4.desktop.dao.OSDao
 import co.samco.mend4.desktop.dao.SettingsDao
@@ -25,6 +26,7 @@ class Unlock @Inject constructor(
 ) : CommandBase() {
 
     private lateinit var password: CharArray
+    private lateinit var unlockResult: UnlockResult.Success
 
     private val behaviourChain = listOf(
         Function { a: List<String> -> assertSettingsPresent(a) },
@@ -70,9 +72,14 @@ class Unlock @Inject constructor(
         try {
             log.err().println()
             log.err().println(strings["Unlock.unlocking"])
-            if (!cryptoProvider.checkPassword(password)) {
+
+            val unlockResult = cryptoProvider.unlock(password)
+
+            if (unlockResult !is UnlockResult.Success) {
                 log.err().println(strings["Unlock.incorrectPassword"])
                 return null
+            } else {
+                this.unlockResult = unlockResult
             }
         } catch (t: Throwable) {
             failWithMessage(log, t.message)
@@ -96,9 +103,9 @@ class Unlock @Inject constructor(
 
     private fun decryptAndWriteKeys(args: List<String>): List<String>? {
         try {
-            val privateKey = cryptoProvider.decryptEncodedPrivateKey(password)
+            val privateKey = unlockResult.privateKey
             val publicKey = Base64.decodeBase64(settings.getValue(Settings.Name.PUBLIC_KEY))
-            osDao.fileOutputSteam(fileResolveHelper.privateKeyFile).use { it.write(privateKey) }
+            osDao.fileOutputSteam(fileResolveHelper.privateKeyFile).use { it.write(privateKey.encoded) }
             osDao.fileOutputSteam(fileResolveHelper.publicKeyFile).use { it.write(publicKey) }
             log.out().println(strings["Unlock.unlocked"])
         } catch (t: Throwable) {

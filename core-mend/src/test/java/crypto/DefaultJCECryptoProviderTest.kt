@@ -2,6 +2,7 @@ package crypto
 
 import co.samco.mend4.core.IBase64EncodingProvider
 import co.samco.mend4.core.Settings
+import co.samco.mend4.core.crypto.UnlockResult
 import co.samco.mend4.core.crypto.impl.DefaultJCECryptoProvider
 import junit.framework.Assert.assertFalse
 import junit.framework.Assert.assertTrue
@@ -165,7 +166,6 @@ class DefaultJCECryptoProviderTest {
     private fun testSetup() {
         val keyPair = uut.generateKeyPair()
         uut.storeEncryptedKeys(password.toCharArray(), keyPair)
-        assertTrue(uut.checkPassword(password.toCharArray()))
     }
 
     private fun testEncFile() {
@@ -187,8 +187,9 @@ class DefaultJCECryptoProviderTest {
     }
 
     private fun getPrivateKey(): PrivateKey {
-        val privateKeyBytes = uut.decryptEncodedPrivateKey(password.toCharArray())
-        return uut.getPrivateKeyFromBytes(privateKeyBytes)
+        val unlockResult = uut.unlock(password.toCharArray())
+        assertTrue("Unlock should be successful", unlockResult is UnlockResult.Success)
+        return (unlockResult as UnlockResult.Success).privateKey
     }
 
     private fun testDecryptEncFile(
@@ -220,8 +221,7 @@ class DefaultJCECryptoProviderTest {
         val inputStream = ByteArrayInputStream(cipherBytes)
         val outputStream = ByteArrayOutputStream()
         val printStream = PrintStream(outputStream, true, StandardCharsets.UTF_8.name())
-        val privateKeyBytes = uut.decryptEncodedPrivateKey(password.toCharArray())
-        val privateKey = uut.getPrivateKeyFromBytes(privateKeyBytes)
+        val privateKey = getPrivateKey()
         uut.decryptLogStream(privateKey, inputStream, printStream)
         val decPlainText = outputStream.toString(StandardCharsets.UTF_8.name())
         Assert.assertEquals(
