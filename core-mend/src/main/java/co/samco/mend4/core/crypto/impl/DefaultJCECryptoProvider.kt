@@ -237,29 +237,40 @@ class DefaultJCECryptoProvider(
         val encryptedSymmetricKey = getAsymmetricEncryptCipher().doFinal(symmetricKey.encoded)
         val lengthCode1 = getIntAsLengthCode(encryptedSymmetricKey.size)
 
-        //Generate a random iv
-        val iv = generateRandomIv()
-        val lengthCode2 = getIntAsLengthCode(iv.iv.size)
+        //Generate a random iv for the file extension
+        val ivExtension = generateRandomIv()
+        val lengthCode2 = getIntAsLengthCode(ivExtension.iv.size)
 
         //Create the symmetric cipher
-        val symmetricCipher = getSymmetricEncryptCipher(symmetricKey, iv)
+        val extensionCipher = getSymmetricEncryptCipher(symmetricKey, ivExtension)
 
         //Encrypt the file extension
-        val encFileExtensionBytes = symmetricCipher.doFinal(fileExtension.toByteArray())
+        val encFileExtensionBytes = extensionCipher.doFinal(fileExtension.toByteArray())
         val lengthCode3 = getIntAsLengthCode(encFileExtensionBytes.size)
 
-        //Write the encrypted key and iv in plaintext
+        //Generate a random iv for the file contents
+        val ivContents = generateRandomIv()
+        val lengthCode4 = getIntAsLengthCode(ivContents.iv.size)
+
+        //Write the encrypted key
         outputStream.write(lengthCode1)
         outputStream.write(encryptedSymmetricKey)
+
+        //Write the iv for the file extension
         outputStream.write(lengthCode2)
-        outputStream.write(iv.iv)
+        outputStream.write(ivExtension.iv)
 
         //Write the file extension encrypted
         outputStream.write(lengthCode3)
         outputStream.write(encFileExtensionBytes)
 
+        //Write the iv for the file contents
+        outputStream.write(lengthCode4)
+        outputStream.write(ivContents.iv)
+
         //Write the encrypted file
-        val cipherOutputStream = CipherOutputStream(outputStream, symmetricCipher)
+        val contentsCipher = getSymmetricEncryptCipher(symmetricKey, ivContents)
+        val cipherOutputStream = CipherOutputStream(outputStream, contentsCipher)
         writeToCipherStream(inputStream, cipherOutputStream)
     }
 
@@ -279,19 +290,25 @@ class DefaultJCECryptoProvider(
 
         //Read the iv
         val lengthCode2 = readMendFileBytes(inputStream, LENGTH_CODE_SIZE)
-        val ivBytes = readMendFileBytes(inputStream, getLengthCodeAsInt(lengthCode2))
-        val iv = IvParameterSpec(ivBytes)
+        val extensionIvBytes = readMendFileBytes(inputStream, getLengthCodeAsInt(lengthCode2))
+        val extensionIv = IvParameterSpec(extensionIvBytes)
 
         //Get the decrypt cipher
-        val decryptCipher = getSymmetricDecryptCipher(symmetricCipherKey, iv)
-        val cipherOutputStream = CipherOutputStream(outputStream, decryptCipher)
+        val extensionDecryptCipher = getSymmetricDecryptCipher(symmetricCipherKey, extensionIv)
 
         //Read and decrypt the file extension
         val lengthCode3 = readMendFileBytes(inputStream, LENGTH_CODE_SIZE)
         val encFileExtension = readMendFileBytes(inputStream, getLengthCodeAsInt(lengthCode3))
-        val fileExtension = String(decryptCipher.doFinal(encFileExtension))
+        val fileExtension = String(extensionDecryptCipher.doFinal(encFileExtension))
+
+        //Read the iv for the file contents
+        val lengthCode4 = readMendFileBytes(inputStream, LENGTH_CODE_SIZE)
+        val contentsIvBytes = readMendFileBytes(inputStream, getLengthCodeAsInt(lengthCode4))
+        val contentsIv = IvParameterSpec(contentsIvBytes)
 
         //Decrypt the file contents
+        val contentsDecryptCipher = getSymmetricDecryptCipher(symmetricCipherKey, contentsIv)
+        val cipherOutputStream = CipherOutputStream(outputStream, contentsDecryptCipher)
         writeToCipherStream(inputStream, cipherOutputStream)
 
         //Return the file extension
