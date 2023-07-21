@@ -5,10 +5,12 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import co.samco.mendroid.R
 import co.samco.mendroid.model.ErrorToastManager
+import co.samco.mendroid.model.FileEventManager
 import co.samco.mendroid.model.PrivateKeyManager
 import co.samco.mendroid.model.PropertyManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 
@@ -17,9 +19,11 @@ class DecryptViewModel @Inject constructor(
     private val propertyManager: PropertyManager,
     private val privateKeyManager: PrivateKeyManager,
     private val errorToastManager: ErrorToastManager,
+    private val fileEventManager: FileEventManager,
     application: Application
 ) : AndroidViewModel(application) {
-    private val fileHelper = FileHelper(application, propertyManager)
+
+    private val fileHelper = FileHelper(application, propertyManager, fileEventManager)
 
     val availableLogs = fileHelper.logFileNames
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())

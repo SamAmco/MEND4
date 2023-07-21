@@ -6,10 +6,10 @@ import android.content.Context
 import android.net.Uri
 import androidx.documentfile.provider.DocumentFile
 import co.samco.mend4.core.AppProperties
+import co.samco.mendroid.model.FileEventManager
 import co.samco.mendroid.model.PropertyManager
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
@@ -22,15 +22,14 @@ data class LogFileData(
 
 class FileHelper(
     private val context: Context,
-    private val propertyManager: PropertyManager
+    private val propertyManager: PropertyManager,
+    private val fileEventManager: FileEventManager
 ) {
-    val onNewLogCreated = MutableSharedFlow<Unit>()
-
     val logDir = propertyManager.logDirUri
         .filterNotNull()
         .map { getLogDir() }
 
-    private val logFiles = onNewLogCreated
+    private val logFiles = fileEventManager.onNewLogCreated
         .onStart { emit(Unit) }
         .flatMapLatest { logDir }
         .filterNotNull()

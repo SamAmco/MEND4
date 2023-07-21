@@ -18,6 +18,7 @@ import co.samco.mendroid.BuildConfig
 import co.samco.mendroid.model.ErrorToastManager
 import co.samco.mendroid.model.PropertyManager
 import co.samco.mendroid.R
+import co.samco.mendroid.model.FileEventManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
@@ -36,12 +37,13 @@ class EncryptViewModel @Inject constructor(
     application: Application,
     private val cryptoProvider: CryptoProvider,
     private val propertyManager: PropertyManager,
-    private val errorToastManager: ErrorToastManager
+    private val errorToastManager: ErrorToastManager,
+    private val fileEventManager: FileEventManager
 ) : AndroidViewModel(application) {
 
     private val context get() = this.getApplication<Application>().applicationContext
 
-    private val fileHelper = FileHelper(application, propertyManager)
+    private val fileHelper = FileHelper(application, propertyManager, fileEventManager)
 
     var currentLogName by mutableStateOf(
         TextFieldValue(
@@ -135,7 +137,7 @@ class EncryptViewModel @Inject constructor(
 
     private fun createNewLogFile(logDir: DocumentFile, name: String): DocumentFile? {
         val newFile = logDir.createFile("application/octet-stream", name)
-        viewModelScope.launch { fileHelper.onNewLogCreated.emit(Unit) }
+        viewModelScope.launch { fileEventManager.onNewLogCreated() }
         return newFile
     }
 

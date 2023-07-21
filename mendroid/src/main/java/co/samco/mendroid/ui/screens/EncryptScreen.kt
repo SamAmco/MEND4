@@ -39,12 +39,16 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.PopupProperties
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavHostController
 import co.samco.mendroid.R
 import co.samco.mendroid.ui.theme.mendTextFieldColors
 import co.samco.mendroid.viewmodel.EncryptViewModel
 
 @Composable
-fun EncryptScreen(modifier: Modifier = Modifier) = Column(modifier) {
+fun EncryptScreen(
+    modifier: Modifier = Modifier,
+    navHostController: NavHostController
+) = Column(modifier) {
 
     val viewModel = viewModel<EncryptViewModel>()
 
@@ -52,6 +56,7 @@ fun EncryptScreen(modifier: Modifier = Modifier) = Column(modifier) {
 
     LaunchedEffect(Unit) {
         focusRequester.requestFocus()
+        navHostController.popBackStack(NAV_LOG_LIST, false)
     }
 
     Spacer(modifier = Modifier.size(8.dp))

@@ -24,22 +24,22 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import co.samco.mendroid.viewmodel.DecryptViewModel
 
-private const val LOG_LIST = "logList"
-private const val DECRYPT_LOG_TEXT = "decryptLogText"
+const val NAV_LOG_LIST = "logList"
+const val NAV_DECRYPT_LOG_TEXT = "decryptLogText"
 
 @Composable
 fun DecryptLogScreen(
     modifier: Modifier = Modifier,
     navController: NavHostController
 ) {
-    NavHost(modifier = modifier, navController = navController, startDestination = LOG_LIST) {
-        composable(LOG_LIST) {
+    NavHost(modifier = modifier, navController = navController, startDestination = NAV_LOG_LIST) {
+        composable(NAV_LOG_LIST) {
             LogList(
                 modifier = modifier,
                 navController = navController
             )
         }
-        composable(DECRYPT_LOG_TEXT) {
+        composable(NAV_DECRYPT_LOG_TEXT) {
             DecryptLogText(modifier = modifier)
         }
     }
@@ -88,7 +88,7 @@ private fun LogList(
             Box(
                 modifier = Modifier.clickable {
                     viewModel.onLogSelected(availableLogs[index])
-                    navController.navigate(DECRYPT_LOG_TEXT)
+                    navController.navigate(NAV_DECRYPT_LOG_TEXT)
                 }
             ) {
                 Text(

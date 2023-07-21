@@ -20,7 +20,6 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.take
@@ -96,7 +95,11 @@ class PrivateKeyManagerImpl @Inject constructor(
 
     override val decryptingLog = MutableStateFlow(false)
 
-    override val decryptedLogLines = MutableStateFlow<List<String>>(emptyList())
+    private val onLogLinesDecrypted = MutableSharedFlow<List<String>>()
+    override val decryptedLogLines = merge(
+        onLogLinesDecrypted,
+        lockEvents.map { emptyList() }
+    ).stateIn(this, SharingStarted.Eagerly, emptyList())
 
     override fun decryptLog(inputStream: InputStream) {
         if (decryptingLog.value) return
@@ -122,8 +125,10 @@ class PrivateKeyManagerImpl @Inject constructor(
             val utf8Text = String(byteArrayOutputStream.toByteArray(), Charsets.UTF_8)
             val logEntries = utf8Text
                 .split(logSplitter)
+                .filter { it.isNotBlank() }
                 .map { it.trim() }
-            decryptedLogLines.value = logEntries
+
+            launch { onLogLinesDecrypted.emit(logEntries) }
         } catch (t: Throwable) {
             t.printStackTrace()
             errorToastManager.showErrorToast(

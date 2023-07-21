@@ -44,7 +44,7 @@ fun HomeScreen(
 
     Box(modifier = Modifier.weight(1f)) {
         if (selectedTabIndex == 0) {
-            EncryptScreen()
+            EncryptScreen(navHostController = navHostController)
         } else {
             DecryptScreen(navHostController = navHostController)
         }
