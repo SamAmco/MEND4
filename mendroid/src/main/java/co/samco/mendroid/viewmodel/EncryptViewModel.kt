@@ -1,5 +1,3 @@
-@file:OptIn(ExperimentalCoroutinesApi::class)
-
 package co.samco.mendroid.viewmodel
 
 import android.app.Application
@@ -21,13 +19,9 @@ import co.samco.mendroid.model.ErrorToastManager
 import co.samco.mendroid.model.PropertyManager
 import co.samco.mendroid.R
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.shareIn
@@ -46,6 +40,8 @@ class EncryptViewModel @Inject constructor(
 ) : AndroidViewModel(application) {
 
     private val context get() = this.getApplication<Application>().applicationContext
+
+    private val fileHelper = FileHelper(application, propertyManager)
 
     var currentLogName by mutableStateOf(
         TextFieldValue(
@@ -68,30 +64,9 @@ class EncryptViewModel @Inject constructor(
         }
     }
 
-    private val logDir = propertyManager.logDirUri
-        .filterNotNull()
-        .map { getLogDir() }
-
-    private val onNewLogCreated = MutableSharedFlow<Unit>()
-
-    private val logFiles = onNewLogCreated
-        .onStart { emit(Unit) }
-        .flatMapLatest { logDir }
-        .filterNotNull()
-        .map { logDir ->
-            val extension = ".${AppProperties.LOG_FILE_EXTENSION}"
-            logDir.listFiles()
-                .filter {
-                    it.isFile
-                            && it.canWrite()
-                            && it.name?.endsWith(extension) == true
-                }
-                .map { it.name!!.removeSuffix(extension) }
-        }
-
     val nameSuggestions: Flow<List<String>> = combine(
         snapshotFlow { currentLogName }.map { it.text },
-        logFiles
+        fileHelper.logFileNames
     ) { currentText, logDirFiles ->
         if (currentText.isEmpty()) logDirFiles
         else {
@@ -105,43 +80,21 @@ class EncryptViewModel @Inject constructor(
         currentLogName = TextFieldValue(name, TextRange(name.length))
     }
 
-    private fun getLogDir(): DocumentFile? {
-        val uri = propertyManager.getLogDirUri() ?: return null
-        val documentFile = DocumentFile.fromTreeUri(context, Uri.parse(uri))
-        return if (documentFile == null || !documentFile.isDirectory
-            || !documentFile.canRead() || !documentFile.canWrite()
-        ) null else documentFile
-    }
-
     val logNameValid = combine(
         logNameFlow,
-        logDir.onStart { emit(null) }
+        fileHelper.logDir.onStart { emit(null) }
     ) { currentLogName, logDirUri ->
         validLogName(currentLogName) && logDirUri != null
     }
 
     private fun validLogName(logName: String): Boolean {
         return listOf(
-            '/',
-            '\n',
-            '\r',
-            '\t',
-            '`',
-            '?',
-            '*',
-            '\\',
-            '<',
-            '>',
-            '|',
-            '\"',
-            ':',
-            '.',
-            ','
+            '/', '\n', '\r', '\t', '`', '?', '*', '\\', '<', '>', '|', '\"', ':', '.', ','
         ).none { logName.contains(it) }
     }
 
     fun encryptText() {
-        val logDir = getLogDir()
+        val logDir = fileHelper.getLogDir()
         if (logDir == null) {
             errorToastManager.showErrorToast(R.string.no_log_dir)
             return
@@ -182,7 +135,7 @@ class EncryptViewModel @Inject constructor(
 
     private fun createNewLogFile(logDir: DocumentFile, name: String): DocumentFile? {
         val newFile = logDir.createFile("application/octet-stream", name)
-        viewModelScope.launch { onNewLogCreated.emit(Unit) }
+        viewModelScope.launch { fileHelper.onNewLogCreated.emit(Unit) }
         return newFile
     }
 

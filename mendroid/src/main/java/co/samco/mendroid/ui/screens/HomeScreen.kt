@@ -13,13 +13,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavHostController
 import co.samco.mendroid.R
 import co.samco.mendroid.viewmodel.HomeViewModel
 
 @Composable
-fun HomeScreen(modifier: Modifier) = Column(
-    modifier.padding(8.dp)
-) {
+fun HomeScreen(
+    modifier: Modifier,
+    navHostController: NavHostController
+) = Column(modifier.padding(8.dp)) {
     val homeViewModel = viewModel<HomeViewModel>()
     val selectedTabIndex = homeViewModel.state.collectAsState().value.index
 
@@ -44,7 +46,7 @@ fun HomeScreen(modifier: Modifier) = Column(
         if (selectedTabIndex == 0) {
             EncryptScreen()
         } else {
-            DecryptScreen()
+            DecryptScreen(navHostController = navHostController)
         }
     }
 }

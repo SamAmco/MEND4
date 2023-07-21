@@ -26,4 +26,5 @@
     <string name="unlock">Unlock</string>
     <string name="unlock_crashed">Unlock crashed, may need more memory.</string>
     <string name="unlock_failed">Incorrect password.</string>
+    <string name="back">Back</string>
 </resources>

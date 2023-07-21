@@ -6,8 +6,8 @@ import co.samco.mend4.core.crypto.CryptoProvider
 import co.samco.mend4.core.crypto.impl.DefaultJCECryptoProvider
 import co.samco.mendroid.model.ErrorToastManager
 import co.samco.mendroid.model.ErrorToastManagerImpl
-import co.samco.mendroid.model.LockEventManager
-import co.samco.mendroid.model.LockEventManagerImpl
+import co.samco.mendroid.model.PrivateKeyManager
+import co.samco.mendroid.model.PrivateKeyManagerImpl
 import co.samco.mendroid.model.PropertyManager
 import co.samco.mendroid.model.PropertyManagerImpl
 import dagger.Module
@@ -46,5 +46,5 @@ class AppModule {
 
     @Provides
     @Singleton
-    fun provideLockEventManager(impl: LockEventManagerImpl): LockEventManager = impl
+    fun provideLockEventManager(impl: PrivateKeyManagerImpl): PrivateKeyManager = impl
 }
