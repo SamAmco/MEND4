@@ -66,7 +66,7 @@ class EncryptViewModel @Inject constructor(
 
     val nameSuggestions: Flow<List<String>> = combine(
         snapshotFlow { currentLogName }.map { it.text },
-        fileHelper.logFileNames
+        fileHelper.logFileNames.map { lfd -> lfd.map { it.name } }
     ) { currentText, logDirFiles ->
         if (currentText.isEmpty()) logDirFiles
         else {

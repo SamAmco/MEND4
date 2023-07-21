@@ -3,10 +3,14 @@ package co.samco.mendroid.ui.screens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
@@ -36,27 +40,39 @@ fun DecryptLogScreen(
             )
         }
         composable(DECRYPT_LOG_TEXT) {
-            DecryptLogText(
-                modifier = modifier,
-                navController = navController
-            )
+            DecryptLogText(modifier = modifier)
         }
     }
 }
 
 @Composable
-private fun DecryptLogText(
-    modifier: Modifier,
-    navController: NavHostController
-) {
+private fun DecryptLogText(modifier: Modifier) {
     val viewModel = hiltViewModel<DecryptViewModel>()
-    //val logText = viewModel.logText.collectAsState().value
+    val logLines = viewModel.logLines.collectAsState().value
+    val decryptingLog = viewModel.decryptingLog.collectAsState().value
 
-    Text(
-        modifier = modifier,
-        text = "Log text",
-        style = MaterialTheme.typography.body1
-    )
+    if (decryptingLog) {
+        Box(
+            modifier = modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) { CircularProgressIndicator() }
+    } else {
+        SelectionContainer {
+            LazyColumn(modifier = modifier.padding(horizontal = 16.dp)) {
+                items(logLines.size) { index ->
+                    Box {
+                        Text(
+                            modifier = Modifier.padding(vertical = 16.dp),
+                            text = logLines[index],
+                            style = MaterialTheme.typography.body1
+                        )
+
+                        if (index < logLines.size - 1) Divider()
+                    }
+                }
+            }
+        }
+    }
 }
 
 @Composable
@@ -70,21 +86,28 @@ private fun LogList(
     LazyColumn(modifier = modifier) {
         items(availableLogs.size) { index ->
             Box(
-                modifier = Modifier.clickable { navController.navigate(DECRYPT_LOG_TEXT) }
+                modifier = Modifier.clickable {
+                    viewModel.onLogSelected(availableLogs[index])
+                    navController.navigate(DECRYPT_LOG_TEXT)
+                }
             ) {
                 Text(
                     modifier = Modifier.padding(16.dp),
-                    text = availableLogs[index],
+                    text = availableLogs[index].name,
                     style = MaterialTheme.typography.subtitle1
                 )
-                Box(
-                    modifier = Modifier
-                        .background(MaterialTheme.colors.onBackground.copy(alpha = 0.1f))
-                        .height(1.dp)
-                        .fillMaxWidth()
-                        .align(alignment = Alignment.BottomCenter)
-                )
+
+                Divider()
             }
         }
     }
 }
+
+@Composable
+private fun BoxScope.Divider() = Box(
+    modifier = Modifier
+        .background(MaterialTheme.colors.onBackground.copy(alpha = 0.1f))
+        .height(1.dp)
+        .fillMaxWidth()
+        .align(alignment = Alignment.BottomCenter)
+)

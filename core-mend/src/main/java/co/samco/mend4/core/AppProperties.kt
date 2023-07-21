@@ -8,8 +8,8 @@ object AppProperties {
     const val LOG_FILE_EXTENSION = "mend"
     const val ENC_FILE_EXTENSION = "enc"
     const val LOG_DATE_FORMAT = "dd/MM/yyyy HH:mm:ss"
-    const val LOG_HEADER =
-        "//MEND%s//%s////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////"
+    const val DIVIDER_SLASHES = ""////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////"
+    const val LOG_HEADER = "//MEND%s//%s$DIVIDER_SLASHES"
     const val DEFAULT_LOG_FILE_NAME = "Log"
     const val ENC_FILE_NAME_FORMAT = "yyyyMMddHHmmssSSS"
 }

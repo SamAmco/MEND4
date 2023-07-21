@@ -1,6 +1,5 @@
 package co.samco.mendroid.model
 
-import co.samco.mendroid.model.ErrorToast
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow

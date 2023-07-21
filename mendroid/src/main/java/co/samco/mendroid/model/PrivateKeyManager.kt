@@ -2,6 +2,7 @@
 
 package co.samco.mendroid.model
 
+import co.samco.mend4.core.AppProperties
 import co.samco.mend4.core.crypto.CryptoProvider
 import co.samco.mend4.core.crypto.UnlockResult
 import co.samco.mendroid.R
@@ -10,6 +11,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -23,6 +25,9 @@ import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.launch
+import java.io.ByteArrayOutputStream
+import java.io.InputStream
+import java.io.PrintStream
 import javax.inject.Inject
 import kotlin.coroutines.CoroutineContext
 
@@ -32,6 +37,11 @@ import kotlin.coroutines.CoroutineContext
  */
 interface PrivateKeyManager {
     val unlocked: StateFlow<Boolean>
+
+    val decryptingLog: StateFlow<Boolean>
+    val decryptedLogLines: StateFlow<List<String>>
+
+    fun decryptLog(inputStream: InputStream)
 
     suspend fun unlock(pass: CharArray): Boolean
 
@@ -83,6 +93,47 @@ class PrivateKeyManagerImpl @Inject constructor(
     override val unlocked: StateFlow<Boolean> = privateKey
         .map { it != null }
         .stateIn(this, SharingStarted.Lazily, false)
+
+    override val decryptingLog = MutableStateFlow(false)
+
+    override val decryptedLogLines = MutableStateFlow<List<String>>(emptyList())
+
+    override fun decryptLog(inputStream: InputStream) {
+        if (decryptingLog.value) return
+
+        decryptingLog.value = true
+
+        val privKey = privateKey.value
+        if (privKey == null) {
+            errorToastManager.showErrorToast(R.string.no_private_key)
+            return
+        }
+
+        val logSplitter = Regex("""(?=\d{2}/\d{2}/\d{4} \d{2}:\d{2}:\d{2}//MEND.+//.+${AppProperties.DIVIDER_SLASHES})""")
+
+        try {
+            val byteArrayOutputStream = ByteArrayOutputStream()
+            val outputStream = PrintStream(byteArrayOutputStream)
+            cryptoProvider.decryptLogStream(
+                privateKey = privKey,
+                inputStream = inputStream,
+                outputStream = outputStream
+            )
+            val utf8Text = String(byteArrayOutputStream.toByteArray(), Charsets.UTF_8)
+            val logEntries = utf8Text
+                .split(logSplitter)
+                .map { it.trim() }
+            decryptedLogLines.value = logEntries
+        } catch (t: Throwable) {
+            t.printStackTrace()
+            errorToastManager.showErrorToast(
+                R.string.decrypt_crashed,
+                t.message?.let { listOf(it) } ?: listOf(""))
+            return
+        } finally {
+            decryptingLog.value = false
+        }
+    }
 
     override suspend fun unlock(pass: CharArray): Boolean {
         val unlockResult = try {

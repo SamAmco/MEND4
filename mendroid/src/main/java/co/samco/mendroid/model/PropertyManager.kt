@@ -2,6 +2,7 @@ package co.samco.mendroid.model
 
 import android.content.Context
 import android.content.SharedPreferences
+import co.samco.mend4.core.AppProperties
 import co.samco.mend4.core.Settings
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.channels.awaitClose
@@ -96,7 +97,8 @@ class PropertyManagerImpl @Inject constructor(
             .map { it.getString(CONFIG_URI, null) }
 
     override fun getCurrentLogName(): String {
-        return prefs.getString(CURRENT_LOG_NAME, "Log") ?: "Log"
+        return prefs.getString(CURRENT_LOG_NAME, AppProperties.DEFAULT_LOG_FILE_NAME)
+            ?: AppProperties.DEFAULT_LOG_FILE_NAME
     }
 
     override fun setLogDirUri(uri: String) {

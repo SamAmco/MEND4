@@ -8,11 +8,17 @@ import androidx.documentfile.provider.DocumentFile
 import co.samco.mend4.core.AppProperties
 import co.samco.mendroid.model.PropertyManager
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
+
+data class LogFileData(
+    val name: String,
+    val uri: Uri
+)
 
 class FileHelper(
     private val context: Context,
@@ -24,20 +30,23 @@ class FileHelper(
         .filterNotNull()
         .map { getLogDir() }
 
-    val logFileNames = onNewLogCreated
+    private val logFiles = onNewLogCreated
         .onStart { emit(Unit) }
         .flatMapLatest { logDir }
         .filterNotNull()
-        .map { logDir ->
+        .map { logDir -> logDir.listFiles() }
+
+    val logFileNames: Flow<List<LogFileData>> = logFiles
+        .map { files ->
             val extension = ".${AppProperties.LOG_FILE_EXTENSION}"
-            logDir.listFiles()
+            files
                 .filter {
                     it.isFile
                             && it.canWrite()
                             && it.name?.endsWith(extension) == true
                 }
                 .sortedBy { it.name }
-                .map { it.name!!.removeSuffix(extension) }
+                .map { LogFileData(it.name!!.removeSuffix(extension), it.uri) }
         }
 
     fun getLogDir(): DocumentFile? {
