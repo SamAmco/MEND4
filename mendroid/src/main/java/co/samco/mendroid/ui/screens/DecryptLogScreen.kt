@@ -12,15 +12,22 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.material.Checkbox
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -28,8 +35,9 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import co.samco.mendroid.R
-import co.samco.mendroid.ui.theme.mendTextFieldColors
-import co.samco.mendroid.viewmodel.DecryptViewModel
+import co.samco.mendroid.viewmodel.DecryptedLogViewModel
+import co.samco.mendroid.viewmodel.LogViewData
+import co.samco.mendroid.viewmodel.SelectLogViewModel
 
 const val NAV_LOG_LIST = "logList"
 const val NAV_DECRYPT_LOG_TEXT = "decryptLogText"
@@ -54,7 +62,7 @@ fun DecryptLogScreen(
 
 @Composable
 private fun DecryptLogText(modifier: Modifier) {
-    val viewModel = hiltViewModel<DecryptViewModel>()
+    val viewModel = hiltViewModel<DecryptedLogViewModel>()
     val decryptingLog = viewModel.decryptingLog.collectAsState().value
 
     if (decryptingLog) {
@@ -63,41 +71,87 @@ private fun DecryptLogText(modifier: Modifier) {
             contentAlignment = Alignment.Center
         ) { CircularProgressIndicator() }
     } else {
+
+        val searchFocusRequester = remember { FocusRequester() }
+
         Column {
-            LogLines()
-            SearchTextField()
+            val logLines = viewModel.logLines.collectAsState().value
+            LogLines(logLines = logLines)
+            SearchField(logLines = logLines, focusRequester = searchFocusRequester)
+        }
+
+        LaunchedEffect(Unit) {
+            searchFocusRequester.requestFocus()
         }
     }
 }
 
 @Composable
-private fun SearchTextField() = Row(
+private fun SearchField(logLines: List<LogViewData>, focusRequester: FocusRequester) = Row(
     modifier = Modifier
         .background(MaterialTheme.colors.background)
         .fillMaxWidth()
 ) {
-    val viewModel = hiltViewModel<DecryptViewModel>()
+    val viewModel = hiltViewModel<DecryptedLogViewModel>()
+
+    val focusManager = LocalFocusManager.current
+
     OutlinedTextField(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .focusRequester(focusRequester)
+            .let {
+                if (viewModel.filterEnabled && logLines.isEmpty()) {
+                    it.background(MaterialTheme.colors.error)
+                } else it
+            },
         value = viewModel.searchText,
         onValueChange = { viewModel.searchText = it },
-        label = { Text(text = stringResource(id = R.string.search)) },
+        placeholder = { Text(text = stringResource(id = R.string.filter)) },
+        trailingIcon = {
+            Checkbox(
+                checked = viewModel.filterEnabled,
+                onCheckedChange = {
+                    if (!it) focusManager.clearFocus()
+                    else focusRequester.requestFocus()
+
+                    viewModel.filterEnabled = it
+                }
+            )
+        },
         maxLines = 1,
     )
 }
 
 @Composable
-private fun ColumnScope.LogLines() = SelectionContainer(
+private fun ColumnScope.LogLines(logLines: List<LogViewData>) = SelectionContainer(
     modifier = Modifier.weight(1f)
 ) {
-    val viewModel = hiltViewModel<DecryptViewModel>()
-    val logLines = viewModel.logLines.collectAsState().value
-    LazyColumn(modifier = Modifier.padding(horizontal = 16.dp)) {
+    val viewModel = hiltViewModel<DecryptedLogViewModel>()
+
+    val listState = rememberLazyListState()
+
+    LaunchedEffect(key1 = logLines) {
+        viewModel.scrollToIndex.collect {
+            listState.animateScrollToItem(it)
+        }
+    }
+
+    LazyColumn(
+        modifier = Modifier.padding(),
+        state = listState
+    ) {
         items(logLines.size) { index ->
-            Box {
+            Box(modifier = Modifier
+                .let {
+                    if (viewModel.filterEnabled) it.clickable {
+                        viewModel.onLogLineClicked(logLines[index])
+                    } else it
+                }
+            ) {
                 Text(
-                    modifier = Modifier.padding(vertical = 16.dp),
-                    text = logLines[index],
+                    modifier = Modifier.padding(vertical = 16.dp, horizontal = 16.dp),
+                    text = logLines[index].text,
                     style = MaterialTheme.typography.body1
                 )
 
@@ -112,7 +166,7 @@ private fun LogList(
     modifier: Modifier,
     navController: NavHostController
 ) {
-    val viewModel = hiltViewModel<DecryptViewModel>()
+    val viewModel = hiltViewModel<SelectLogViewModel>()
     val availableLogs = viewModel.availableLogs.collectAsState().value
 
     LazyColumn(modifier = modifier) {

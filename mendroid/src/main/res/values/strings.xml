@@ -30,5 +30,5 @@
     <string name="no_private_key">No private key</string>
     <string name="decrypt_crashed">Decrypt threw an exception: %s</string>
     <string name="error_opening_log">Could not get input stream for log file.</string>
-    <string name="search">Search</string>
+    <string name="filter">Filter:</string>
 </resources>

@@ -1,5 +1,6 @@
 package co.samco.mend4.desktop.helper.impl
 
+import co.samco.mend4.core.AppProperties
 import co.samco.mend4.core.crypto.CryptoProvider
 import co.samco.mend4.desktop.core.I18N
 import co.samco.mend4.desktop.dao.OSDao
@@ -133,7 +134,7 @@ class MergeHelperImpl @Inject constructor(
         val pattern = Pattern.compile("(\\d+)/(\\d+)/(\\d+) (\\d+):(\\d+):(\\d+)")
         val matcher = pattern.matcher(logText)
         if (matcher.lookingAt()) {
-            firstDate = SimpleDateFormat("dd/MM/yyyy HH:mm:ss").parse(matcher.group())
+            firstDate = SimpleDateFormat(AppProperties.LOG_DATE_FORMAT).parse(matcher.group())
         }
         return LogEntry(logDataBlocks.asOneBlock, firstDate)
     }

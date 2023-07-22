@@ -27,8 +27,14 @@ import kotlinx.coroutines.launch
 import java.io.ByteArrayOutputStream
 import java.io.InputStream
 import java.io.PrintStream
+import java.time.LocalDateTime
 import javax.inject.Inject
 import kotlin.coroutines.CoroutineContext
+
+data class LogLine(
+    val text: String,
+    val dateTime: LocalDateTime?
+)
 
 /**
  * Manages the private key and its unlock state. This is the only place that should access
@@ -38,7 +44,7 @@ interface PrivateKeyManager {
     val unlocked: StateFlow<Boolean>
 
     val decryptingLog: StateFlow<Boolean>
-    val decryptedLogLines: StateFlow<List<String>>
+    val decryptedLogLines: StateFlow<List<LogLine>>
 
     fun decryptLog(inputStream: InputStream)
 
@@ -95,11 +101,16 @@ class PrivateKeyManagerImpl @Inject constructor(
 
     override val decryptingLog = MutableStateFlow(false)
 
-    private val onLogLinesDecrypted = MutableSharedFlow<List<String>>()
+    private val onLogLinesDecrypted = MutableSharedFlow<List<LogLine>>()
     override val decryptedLogLines = merge(
         onLogLinesDecrypted,
         lockEvents.map { emptyList() }
     ).stateIn(this, SharingStarted.Eagerly, emptyList())
+
+
+    private val dateTimeRegex = Regex("""(\d{2})/(\d{2})/(\d{4}) (\d{2}):(\d{2}):(\d{2})""")
+    private val logSplitter =
+        Regex("""(?=${dateTimeRegex.pattern}//MEND.+//.+${AppProperties.DIVIDER_SLASHES})""")
 
     override fun decryptLog(inputStream: InputStream) {
         if (decryptingLog.value) return
@@ -111,8 +122,6 @@ class PrivateKeyManagerImpl @Inject constructor(
             errorToastManager.showErrorToast(R.string.no_private_key)
             return
         }
-
-        val logSplitter = Regex("""(?=\d{2}/\d{2}/\d{4} \d{2}:\d{2}:\d{2}//MEND.+//.+${AppProperties.DIVIDER_SLASHES})""")
 
         try {
             val byteArrayOutputStream = ByteArrayOutputStream()
@@ -126,7 +135,7 @@ class PrivateKeyManagerImpl @Inject constructor(
             val logEntries = utf8Text
                 .split(logSplitter)
                 .filter { it.isNotBlank() }
-                .map { it.trim() }
+                .map { getLogLine(it) }
 
             launch { onLogLinesDecrypted.emit(logEntries) }
         } catch (t: Throwable) {
@@ -138,6 +147,31 @@ class PrivateKeyManagerImpl @Inject constructor(
         } finally {
             decryptingLog.value = false
         }
+    }
+
+    private fun getLogLine(string: String): LogLine {
+        val dateTimeMatch = dateTimeRegex.find(string)
+
+        val dateTime = if (dateTimeMatch != null) {
+            val (day, month, year, hour, minute, second) = dateTimeMatch.destructured
+            LocalDateTime.of(
+                /* year = */ year.toInt(),
+                /* month = */ month.toInt(),
+                /* dayOfMonth = */ day.toInt(),
+                /* hour = */ hour.toInt(),
+                /* minute = */ minute.toInt(),
+                /* second = */ second.toInt()
+            )
+        } else null
+
+        val text = string
+            .substringAfter(AppProperties.DIVIDER_SLASHES)
+            .trim()
+
+        return LogLine(
+            text = text,
+            dateTime = dateTime
+        )
     }
 
     override suspend fun unlock(pass: CharArray): Boolean {
