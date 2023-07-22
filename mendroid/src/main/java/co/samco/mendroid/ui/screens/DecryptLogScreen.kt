@@ -149,11 +149,24 @@ private fun ColumnScope.LogLines(logLines: List<LogViewData>) = SelectionContain
                     } else it
                 }
             ) {
-                Text(
-                    modifier = Modifier.padding(vertical = 16.dp, horizontal = 16.dp),
-                    text = logLines[index].text,
-                    style = MaterialTheme.typography.body1
-                )
+                Column {
+                    val dateTime = logLines[index].dateTime
+                    if (dateTime != null) {
+                        Text(
+                            modifier = Modifier.padding(top = 16.dp, start = 16.dp, end = 16.dp),
+                            text = dateTime,
+                            style = MaterialTheme.typography.subtitle2.copy(
+                                color = MaterialTheme.colors.onBackground.copy(alpha = 0.5f)
+                            )
+                        )
+                    }
+
+                    Text(
+                        modifier = Modifier.padding(vertical = 16.dp, horizontal = 16.dp),
+                        text = logLines[index].text,
+                        style = MaterialTheme.typography.body1
+                    )
+                }
 
                 if (index < logLines.size - 1) Divider()
             }

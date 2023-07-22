@@ -26,6 +26,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 
 data class LogViewData(
@@ -65,7 +66,7 @@ class DecryptedLogViewModel @Inject constructor(
 
     private fun LogLine.asViewData(index: Int) = LogViewData(
         text = text,
-        dateTime = dateTime?.toString(),
+        dateTime = dateTime?.format(DateTimeFormatter.ofPattern("EEE, yyyy-MM-dd HH:mm:ss")),
         index = index
     )
 
