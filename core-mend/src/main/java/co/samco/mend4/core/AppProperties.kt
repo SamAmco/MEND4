@@ -10,6 +10,8 @@ object AppProperties {
     const val LOG_DATE_FORMAT = "dd/MM/yyyy HH:mm:ss"
     const val DIVIDER_SLASHES = "////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////"
     const val LOG_HEADER = "//MEND%s//%s$DIVIDER_SLASHES"
+    //Contains legacy patterns for encrypted files
+    const val ENC_FILE_NAME_PATTERN = "\\d{17}|\\d{16}|\\d{14}"
     const val DEFAULT_LOG_FILE_NAME = "Log"
     const val ENC_FILE_NAME_FORMAT = "yyyyMMddHHmmssSSS"
 }

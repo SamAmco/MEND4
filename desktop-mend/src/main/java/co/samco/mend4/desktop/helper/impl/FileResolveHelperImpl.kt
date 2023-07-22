@@ -103,9 +103,7 @@ class FileResolveHelperImpl @Inject constructor(
         }
 
     private fun filePathIsEncId(filePath: String): Boolean {
-        return filePath.matches(Regex("\\d{14}"))
-                || filePath.matches(Regex("\\d{16}"))
-                || filePath.matches(Regex("\\d{17}"))
+        return filePath.matches(AppProperties.ENC_FILE_NAME_PATTERN.toRegex())
     }
 
     override fun resolveAsLogFilePath(filePath: String): File {

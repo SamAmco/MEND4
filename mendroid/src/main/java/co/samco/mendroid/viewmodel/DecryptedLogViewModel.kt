@@ -10,6 +10,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import co.samco.mend4.core.AppProperties
 import co.samco.mendroid.model.LogLine
 import co.samco.mendroid.model.PrivateKeyManager
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -29,8 +30,17 @@ import kotlinx.coroutines.launch
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 
-data class LogViewData(
+enum class TextType {
+    PLAIN, FILE_ID
+}
+
+data class TextPart(
     val text: String,
+    val type: TextType
+)
+
+data class LogViewData(
+    val text: List<TextPart>,
     val dateTime: String?,
     val index: Int
 )
@@ -40,6 +50,53 @@ class DecryptedLogViewModel @Inject constructor(
     private val privateKeyManager: PrivateKeyManager,
     application: Application
 ) : AndroidViewModel(application) {
+
+    companion object {
+        fun LogLine.asViewData(index: Int): LogViewData {
+            val matches = AppProperties.ENC_FILE_NAME_PATTERN.toRegex().findAll(text)
+
+            val textParts = mutableListOf<TextPart>()
+
+            var currentIndex = 0
+
+            for (match in matches) {
+                val startIndex = match.range.first
+                val endIndex = match.range.last + 1
+
+                if (startIndex > currentIndex) {
+                    textParts.add(
+                        TextPart(
+                            text = text.substring(currentIndex until startIndex),
+                            type = TextType.PLAIN
+                        )
+                    )
+                }
+
+                textParts.add(
+                    TextPart(
+                        text = text.substring(startIndex until endIndex),
+                        type = TextType.FILE_ID
+                    )
+                )
+                currentIndex = endIndex
+            }
+
+            if (currentIndex < text.length) {
+                textParts.add(
+                    TextPart(
+                        text = text.substring(currentIndex),
+                        type = TextType.PLAIN
+                    )
+                )
+            }
+
+            return LogViewData(
+                text = textParts,
+                dateTime = dateTime?.format(DateTimeFormatter.ofPattern("EEE, yyyy-MM-dd HH:mm:ss")),
+                index = index
+            )
+        }
+    }
 
     var searchText by mutableStateOf(TextFieldValue(""))
 
@@ -58,17 +115,12 @@ class DecryptedLogViewModel @Inject constructor(
         else {
             lines
                 .asSequence()
-                .mapIndexed { index, line -> line.asViewData(index) }
-                .filter { it.text.contains(search.text, ignoreCase = ignoreCase) }
+                .mapIndexed { index, line -> Pair(index, line) }
+                .filter { it.second.text.contains(search.text, ignoreCase = ignoreCase) }
+                .map { it.second.asViewData(it.first) }
                 .toList()
         }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
-
-    private fun LogLine.asViewData(index: Int) = LogViewData(
-        text = text,
-        dateTime = dateTime?.format(DateTimeFormatter.ofPattern("EEE, yyyy-MM-dd HH:mm:ss")),
-        index = index
-    )
 
     val decryptingLog = privateKeyManager.decryptingLog
         .stateIn(viewModelScope, SharingStarted.Eagerly, false)

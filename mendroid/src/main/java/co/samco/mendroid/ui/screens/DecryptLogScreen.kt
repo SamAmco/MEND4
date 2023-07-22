@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.text.ClickableText
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.Checkbox
 import androidx.compose.material.CircularProgressIndicator
@@ -29,6 +30,9 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
@@ -38,6 +42,7 @@ import co.samco.mendroid.R
 import co.samco.mendroid.viewmodel.DecryptedLogViewModel
 import co.samco.mendroid.viewmodel.LogViewData
 import co.samco.mendroid.viewmodel.SelectLogViewModel
+import co.samco.mendroid.viewmodel.TextType
 
 const val NAV_LOG_LIST = "logList"
 const val NAV_DECRYPT_LOG_TEXT = "decryptLogText"
@@ -161,17 +166,51 @@ private fun ColumnScope.LogLines(logLines: List<LogViewData>) = SelectionContain
                         )
                     }
 
-                    Text(
-                        modifier = Modifier.padding(vertical = 16.dp, horizontal = 16.dp),
-                        text = logLines[index].text,
-                        style = MaterialTheme.typography.body1
-                    )
+                    LogText(logLine = logLines[index])
                 }
 
                 if (index < logLines.size - 1) Divider()
             }
         }
     }
+}
+
+@Composable
+private fun LogText(logLine: LogViewData) {
+    val annotatedString = buildAnnotatedString {
+        for (textPart in logLine.text) {
+            val startIndex = length
+            append(textPart.text)
+            val endIndex = length
+
+            when (textPart.type) {
+                TextType.PLAIN -> addStringAnnotation(
+                    tag = "type",
+                    annotation = textPart.type.name,
+                    start = startIndex,
+                    end = endIndex
+                )
+
+                TextType.FILE_ID -> withStyle(style = SpanStyle(background = MaterialTheme.colors.primary)) {
+                    addStringAnnotation(
+                        tag = "type",
+                        annotation = textPart.type.name,
+                        start = startIndex,
+                        end = endIndex
+                    )
+                }
+            }
+
+        }
+    }
+    ClickableText(
+        modifier = Modifier.padding(vertical = 16.dp, horizontal = 16.dp),
+        text = annotatedString,
+        onClick = { offset ->
+            annotatedString.getStringAnnotations(offset, offset)
+                .firstOrNull()?.let { println("samsam clicked on: $it") }
+        }
+    )
 }
 
 @Composable
