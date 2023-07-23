@@ -3,16 +3,21 @@
 package co.samco.mendroid.viewmodel
 
 import android.app.Application
+import android.net.Uri
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import co.samco.mend4.core.AppProperties
+import co.samco.mendroid.R
+import co.samco.mendroid.model.ErrorToastManager
 import co.samco.mendroid.model.LogLine
 import co.samco.mendroid.model.PrivateKeyManager
+import co.samco.mendroid.model.PropertyManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
@@ -45,9 +50,16 @@ data class LogViewData(
     val index: Int
 )
 
+data class DecryptFileDialogData(
+    val fileUri: Uri,
+    val fileName: String
+)
+
 @HiltViewModel
 class DecryptedLogViewModel @Inject constructor(
     private val privateKeyManager: PrivateKeyManager,
+    private val propertyManager: PropertyManager,
+    private val errorToastManager: ErrorToastManager,
     application: Application
 ) : AndroidViewModel(application) {
 
@@ -102,6 +114,10 @@ class DecryptedLogViewModel @Inject constructor(
 
     var filterEnabled by mutableStateOf(true)
 
+    private val _decryptFileDialogData = MutableSharedFlow<DecryptFileDialogData?>()
+    val decryptFileDialogData = _decryptFileDialogData
+        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
     val logLines: StateFlow<List<LogViewData>> = combine(
         privateKeyManager.decryptedLogLines,
         snapshotFlow { filterEnabled },
@@ -125,6 +141,9 @@ class DecryptedLogViewModel @Inject constructor(
     val decryptingLog = privateKeyManager.decryptingLog
         .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
+    val decryptingFile = privateKeyManager.decryptingFile
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
     private val _onScrollToIndex = MutableSharedFlow<Int>()
     val scrollToIndex: Flow<Int> = _onScrollToIndex
         .flatMapLatest { index ->
@@ -138,5 +157,43 @@ class DecryptedLogViewModel @Inject constructor(
     fun onLogLineClicked(logViewData: LogViewData) {
         filterEnabled = false
         viewModelScope.launch { _onScrollToIndex.emit(logViewData.index) }
+    }
+
+    fun onDecryptFileClicked(dialogData: DecryptFileDialogData) {
+        viewModelScope.launch {
+            privateKeyManager.decryptEncFile(dialogData.fileUri)
+            _decryptFileDialogData.emit(null)
+        }
+    }
+
+    fun onCancelDecryptFileClicked() {
+        viewModelScope.launch {
+            privateKeyManager.cancelDecryptingFile()
+            _decryptFileDialogData.emit(null)
+        }
+    }
+
+    fun onFileIdClicked(fileId: String) {
+        val fileName = "$fileId.${AppProperties.ENC_FILE_EXTENSION}"
+
+        val encDir = propertyManager.getEncDirUri()
+            ?.let { Uri.parse(it) }
+            ?.let { DocumentFile.fromTreeUri(getApplication(), it) }
+
+        if (encDir == null) {
+            errorToastManager.showErrorToast(R.string.could_not_find_enc_dir)
+            return
+        }
+
+        val file = encDir.findFile(fileName)
+
+        if (file == null) {
+            errorToastManager.showErrorToast(R.string.could_not_find_enc_file, listOf(fileName))
+            return
+        }
+
+        viewModelScope.launch {
+            _decryptFileDialogData.emit(DecryptFileDialogData(file.uri, fileName))
+        }
     }
 }

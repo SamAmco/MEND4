@@ -31,4 +31,10 @@
     <string name="decrypt_crashed">Decrypt threw an exception: %s</string>
     <string name="error_opening_log">Could not get input stream for log file.</string>
     <string name="filter">Filter:</string>
+    <string name="could_not_find_enc_dir">Could not find enc-dir</string>
+    <string name="could_not_find_enc_file">Could not find enc file: %s</string>
+    <string name="decrypting_file">Decrypting...</string>
+    <string name="would_you_like_to_decrypt_file">Would you like to decrypt and open: %s</string>
+    <string name="cancel">Cancel</string>
+    <string name="decrypt">Decrypt</string>
 </resources>

@@ -2,6 +2,7 @@
 
 package co.samco.mendroid.model
 
+import android.net.Uri
 import co.samco.mend4.core.AppProperties
 import co.samco.mend4.core.crypto.CryptoProvider
 import co.samco.mend4.core.crypto.UnlockResult
@@ -41,6 +42,7 @@ data class LogLine(
  * the private key so any operations that requires it should be done here as well.
  */
 interface PrivateKeyManager {
+    val decryptingFile: StateFlow<Boolean>
     val unlocked: StateFlow<Boolean>
 
     val decryptingLog: StateFlow<Boolean>
@@ -53,6 +55,8 @@ interface PrivateKeyManager {
     fun onActivityStop()
     fun onActivityStart()
     fun onGoToEncrypt()
+    fun decryptEncFile(fileUri: Uri)
+    fun cancelDecryptingFile()
 }
 
 class PrivateKeyManagerImpl @Inject constructor(
@@ -94,6 +98,9 @@ class PrivateKeyManagerImpl @Inject constructor(
         onSuccessfulUnlock.map { it.privateKey },
         lockEvents.map { null }
     ).stateIn(this, SharingStarted.Eagerly, null)
+
+    //TODO implement this properly
+    override val decryptingFile = MutableStateFlow<Boolean>(false)
 
     override val unlocked: StateFlow<Boolean> = privateKey
         .map { it != null }
@@ -200,5 +207,22 @@ class PrivateKeyManagerImpl @Inject constructor(
 
     override fun onGoToEncrypt() {
         launch { lockOnEncrypt.emit(Unit) }
+    }
+
+    private var decryptFileJob: Job? = null
+
+    override fun decryptEncFile(fileUri: Uri) {
+        decryptFileJob?.cancel()
+        decryptFileJob = launch {
+            //TODO implement this properly
+            decryptingFile.emit(true)
+            delay(1000)
+            decryptingFile.emit(false)
+        }
+    }
+
+    override fun cancelDecryptingFile() {
+        decryptFileJob?.cancel()
+        decryptingFile.value = false
     }
 }
