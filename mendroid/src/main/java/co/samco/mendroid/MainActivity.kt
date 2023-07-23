@@ -1,10 +1,13 @@
 package co.samco.mendroid
 
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.Icon
@@ -22,6 +25,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -50,8 +54,14 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var privateKeyManager: PrivateKeyManager
 
+    private val requestPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        checkNotificationsPermission()
+
         setContent {
             val selectedTheme = propertyManager.selectedTheme.collectAsState(null).value
             if (selectedTheme != null) {
@@ -61,6 +71,17 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    private fun checkNotificationsPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val permission = android.Manifest.permission.POST_NOTIFICATIONS
+            if (!hasPermission(permission)) requestPermissionLauncher.launch(permission)
+        }
+    }
+
+    @Suppress("SameParameterValue")
+    private fun hasPermission(permission: String): Boolean =
+        ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED
 
     override fun onStart() {
         super.onStart()
