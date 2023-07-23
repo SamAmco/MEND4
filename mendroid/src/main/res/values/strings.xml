@@ -37,4 +37,5 @@
     <string name="would_you_like_to_decrypt_file">Would you like to decrypt and open: %s</string>
     <string name="cancel">Cancel</string>
     <string name="decrypt">Decrypt</string>
+    <string name="foreground_service_channel_name">MEND Lock Foreground Service Channel</string>
 </resources>

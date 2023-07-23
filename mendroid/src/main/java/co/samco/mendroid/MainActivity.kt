@@ -64,18 +64,12 @@ class MainActivity : ComponentActivity() {
 
     override fun onStart() {
         super.onStart()
-        privateKeyManager.onActivityStart()
         lifecycleScope.launch {
             errorToastManager.errorToast.collect {
                 val text = getString(it.messageId, *it.formatArgs.toTypedArray())
                 Toast.makeText(this@MainActivity, text, Toast.LENGTH_SHORT).show()
             }
         }
-    }
-
-    override fun onStop() {
-        super.onStop()
-        privateKeyManager.onActivityStop()
     }
 }
 

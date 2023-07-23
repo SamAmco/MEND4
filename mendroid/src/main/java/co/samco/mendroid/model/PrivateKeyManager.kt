@@ -1,14 +1,15 @@
-@file:OptIn(ExperimentalCoroutinesApi::class)
-
 package co.samco.mendroid.model
 
+import android.content.Context
+import android.content.Intent
 import android.net.Uri
+import androidx.core.content.ContextCompat
 import co.samco.mend4.core.AppProperties
 import co.samco.mend4.core.crypto.CryptoProvider
 import co.samco.mend4.core.crypto.UnlockResult
 import co.samco.mendroid.R
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -16,14 +17,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.launch
 import java.io.ByteArrayOutputStream
 import java.io.InputStream
@@ -52,46 +49,29 @@ interface PrivateKeyManager {
 
     suspend fun unlock(pass: CharArray): Boolean
 
-    fun onActivityStop()
-    fun onActivityStart()
-    fun onGoToEncrypt()
+    fun onUserLockMend()
+    fun onScreenOff()
     fun decryptEncFile(fileUri: Uri)
     fun cancelDecryptingFile()
 }
 
 class PrivateKeyManagerImpl @Inject constructor(
     private val cryptoProvider: CryptoProvider,
-    private val errorToastManager: ErrorToastManager
+    private val errorToastManager: ErrorToastManager,
+    @ApplicationContext private val context: Context
 ) : PrivateKeyManager, CoroutineScope {
-
-    companion object {
-        //How long after navigating away do we lock mend if it's unlocked
-        const val LOCK_TIMEOUT = 1 * 1000L
-    }
 
     override val coroutineContext: CoroutineContext = Job()
 
-    private val lockOnEncrypt = MutableSharedFlow<Unit>()
-    private val onSuccessfulUnlock = MutableSharedFlow<UnlockResult.Success>()
-    private val activityStartEvents = MutableSharedFlow<Unit>()
-    private val activityStopEvents = MutableSharedFlow<Unit>()
+    private val screenOffEvents = MutableSharedFlow<Unit>()
+    private val userLockEvents = MutableSharedFlow<Unit>()
 
-    private val lockOnActivityStop = activityStopEvents
-        .flatMapLatest {
-            merge(
-                flow {
-                    delay(LOCK_TIMEOUT)
-                    emit(true)
-                },
-                activityStartEvents.map { false }
-            ).take(1)
-        }
-        .filter { it }
-        .map { }
+    private val onSuccessfulUnlock = MutableSharedFlow<UnlockResult.Success>()
+
 
     private val lockEvents: SharedFlow<Unit> = merge(
-        lockOnEncrypt,
-        lockOnActivityStop
+        screenOffEvents,
+        userLockEvents
     ).shareIn(this, SharingStarted.Eagerly, replay = 0)
 
     private val privateKey = merge(
@@ -100,11 +80,25 @@ class PrivateKeyManagerImpl @Inject constructor(
     ).stateIn(this, SharingStarted.Eagerly, null)
 
     //TODO implement this properly
-    override val decryptingFile = MutableStateFlow<Boolean>(false)
+    override val decryptingFile = MutableStateFlow(false)
 
     override val unlocked: StateFlow<Boolean> = privateKey
         .map { it != null }
         .stateIn(this, SharingStarted.Lazily, false)
+
+    init {
+        launch {
+            unlocked.collect {
+                if (it) ContextCompat.startForegroundService(
+                    context,
+                    Intent(context, LockForegroundService::class.java)
+                )
+                else context.stopService(
+                    Intent(context, LockForegroundService::class.java)
+                )
+            }
+        }
+    }
 
     override val decryptingLog = MutableStateFlow(false)
 
@@ -197,16 +191,12 @@ class PrivateKeyManagerImpl @Inject constructor(
         } else false
     }
 
-    override fun onActivityStop() {
-        launch { activityStopEvents.emit(Unit) }
+    override fun onUserLockMend() {
+        launch { userLockEvents.emit(Unit) }
     }
 
-    override fun onActivityStart() {
-        launch { activityStartEvents.emit(Unit) }
-    }
-
-    override fun onGoToEncrypt() {
-        launch { lockOnEncrypt.emit(Unit) }
+    override fun onScreenOff() {
+        launch { screenOffEvents.emit(Unit) }
     }
 
     private var decryptFileJob: Job? = null
