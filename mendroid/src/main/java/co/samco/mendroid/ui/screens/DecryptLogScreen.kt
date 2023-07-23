@@ -227,12 +227,14 @@ private fun ColumnScope.LogLines(logLines: List<LogViewData>) = SelectionContain
             val interactionSource = remember { MutableInteractionSource() }
 
             Box(modifier = if (viewModel.filterEnabled) {
-                Modifier.clickable(
-                    interactionSource = interactionSource,
-                    LocalIndication.current,
-                    onClick = { viewModel.onLogLineClicked(logLines[index]) }
-                )
-            } else Modifier) {
+                Modifier
+                    .fillMaxWidth()
+                    .clickable(
+                        interactionSource = interactionSource,
+                        LocalIndication.current,
+                        onClick = { viewModel.onLogLineClicked(logLines[index]) }
+                    )
+            } else Modifier.fillMaxWidth()) {
                 Column {
                     val dateTime = logLines[index].dateTime
                     if (dateTime != null) {

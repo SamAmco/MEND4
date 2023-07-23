@@ -1,17 +1,21 @@
 package co.samco.mendroid.model
 
+import android.content.ClipData
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.webkit.MimeTypeMap
 import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
+import androidx.core.net.toUri
 import co.samco.mend4.core.AppProperties
 import co.samco.mend4.core.crypto.CryptoProvider
 import co.samco.mend4.core.crypto.UnlockResult
 import co.samco.mendroid.R
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -23,9 +27,14 @@ import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.io.ByteArrayOutputStream
+import java.io.File
+import java.io.FileOutputStream
 import java.io.InputStream
+import java.io.OutputStream
 import java.io.PrintStream
+import java.security.PrivateKey
 import java.time.LocalDateTime
+import java.util.UUID
 import javax.inject.Inject
 import kotlin.coroutines.CoroutineContext
 
@@ -98,6 +107,16 @@ class PrivateKeyManagerImpl @Inject constructor(
                 )
             }
         }
+        launch {
+            unlocked.collect {
+                if (!it) clearFiles()
+            }
+        }
+    }
+
+    private fun clearFiles() {
+        val filesDir = context.filesDir
+        filesDir.listFiles()?.forEach { it.delete() }
     }
 
     override val decryptingLog = MutableStateFlow(false)
@@ -202,13 +221,108 @@ class PrivateKeyManagerImpl @Inject constructor(
     private var decryptFileJob: Job? = null
 
     override fun decryptEncFile(fileUri: Uri) {
+
+        val privKey = privateKey.value
+        if (privKey == null) {
+            errorToastManager.showErrorToast(R.string.no_private_key)
+            return
+        }
+
         decryptFileJob?.cancel()
-        decryptFileJob = launch {
-            //TODO implement this properly
+
+        decryptFileJob = launch(Dispatchers.IO) {
             decryptingFile.emit(true)
-            delay(1000)
+
+            val tempFile = createTempDecryptFile()
+
+            if (tempFile == null) {
+                errorToastManager.showErrorToast(R.string.failed_to_decrypt_file)
+                return@launch
+            }
+
+            decryptToTempFile(tempFile, fileUri, privKey)?.let {
+                offerFileView(tempFile, it)
+            }
+        }
+
+        launch {
+            try {
+                decryptFileJob?.join()
+            } catch (t: Throwable) {
+                t.printStackTrace()
+                errorToastManager.showErrorToast(R.string.failed_to_decrypt_file)
+            }
             decryptingFile.emit(false)
         }
+    }
+
+    private fun decryptToTempFile(
+        tempFile: File,
+        fileUri: Uri,
+        privKey: PrivateKey
+    ): String? {
+        try {
+            context.contentResolver.openOutputStream(tempFile.toUri()).use { outputStream ->
+                if (outputStream == null) {
+                    errorToastManager.showErrorToast(R.string.failed_to_decrypt_file)
+                    return null
+                }
+                context.contentResolver.openInputStream(fileUri).use { inputStream ->
+                    if (inputStream == null) {
+                        errorToastManager.showErrorToast(R.string.failed_to_decrypt_file)
+                        return null
+                    }
+
+                    return cryptoProvider.decryptEncStream(
+                        privKey,
+                        inputStream,
+                        outputStream
+                    )
+                }
+            }
+        } catch (t: Throwable) {
+            t.printStackTrace()
+            errorToastManager.showErrorToast(
+                R.string.decrypt_crashed,
+                listOf(t.message ?: "")
+            )
+            return null
+        }
+    }
+
+    private fun createTempDecryptFile(): File? {
+        return try {
+            val uuid = UUID.randomUUID().toString()
+            val decryptDir = File(context.filesDir, "decrypted")
+            decryptDir.mkdirs()
+            val tempFile = File(decryptDir, uuid)
+            if (tempFile.exists()) tempFile.delete()
+            if (!tempFile.createNewFile()) return null
+            tempFile
+        } catch (t: Throwable) {
+            t.printStackTrace()
+            null
+        }
+    }
+
+    private fun offerFileView(file: File, extension: String) {
+        val uri = FileProvider.getUriForFile(
+            context,
+            "co.samco.mendroid.fileprovider",
+            file
+        )
+
+        val mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension)
+
+        val shareContentIntent = Intent(Intent.ACTION_VIEW, uri).apply {
+            setDataAndType(uri, mimeType)
+            flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK
+        }
+
+        if (shareContentIntent.resolveActivity(context.packageManager) != null) {
+            context.startActivity(shareContentIntent)
+            return
+        } else errorToastManager.showErrorToast(R.string.no_app_to_open_file, listOf(extension))
     }
 
     override fun cancelDecryptingFile() {
