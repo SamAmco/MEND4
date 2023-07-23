@@ -11,6 +11,7 @@ import co.samco.mendroid.model.PropertyManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
@@ -28,9 +29,11 @@ class SelectLogViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     fun onLogSelected(log: LogFileData) {
-        val inputStream = getApplication<Application>().contentResolver.openInputStream(log.uri)
-        if (inputStream != null) inputStream.use { privateKeyManager.decryptLog(it) }
-        else errorToastManager.showErrorToast(R.string.error_opening_log)
+        viewModelScope.launch {
+            val inputStream = getApplication<Application>().contentResolver.openInputStream(log.uri)
+            if (inputStream != null) inputStream.use { privateKeyManager.decryptLog(it) }
+            else errorToastManager.showErrorToast(R.string.error_opening_log)
+        }
     }
 }
 

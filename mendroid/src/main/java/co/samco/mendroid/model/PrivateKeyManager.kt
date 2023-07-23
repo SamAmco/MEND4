@@ -1,6 +1,5 @@
 package co.samco.mendroid.model
 
-import android.content.ClipData
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -13,6 +12,7 @@ import co.samco.mend4.core.crypto.CryptoProvider
 import co.samco.mend4.core.crypto.UnlockResult
 import co.samco.mendroid.R
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -26,11 +26,10 @@ import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.yield
 import java.io.ByteArrayOutputStream
 import java.io.File
-import java.io.FileOutputStream
 import java.io.InputStream
-import java.io.OutputStream
 import java.io.PrintStream
 import java.security.PrivateKey
 import java.time.LocalDateTime
@@ -54,7 +53,7 @@ interface PrivateKeyManager {
     val decryptingLog: StateFlow<Boolean>
     val decryptedLogLines: StateFlow<List<LogLine>>
 
-    fun decryptLog(inputStream: InputStream)
+    suspend fun decryptLog(inputStream: InputStream)
 
     suspend fun unlock(pass: CharArray): Boolean
 
@@ -62,6 +61,7 @@ interface PrivateKeyManager {
     fun onScreenOff()
     fun decryptEncFile(fileUri: Uri)
     fun cancelDecryptingFile()
+    fun forceCleanFiles()
 }
 
 class PrivateKeyManagerImpl @Inject constructor(
@@ -69,6 +69,10 @@ class PrivateKeyManagerImpl @Inject constructor(
     private val errorToastManager: ErrorToastManager,
     @ApplicationContext private val context: Context
 ) : PrivateKeyManager, CoroutineScope {
+
+    companion object {
+        const val DECRYPT_DIR = "decrypted"
+    }
 
     override val coroutineContext: CoroutineContext = Job()
 
@@ -109,14 +113,13 @@ class PrivateKeyManagerImpl @Inject constructor(
         }
         launch {
             unlocked.collect {
-                if (!it) clearFiles()
+                if (!it) forceCleanFiles()
             }
         }
     }
 
-    private fun clearFiles() {
-        val filesDir = context.filesDir
-        filesDir.listFiles()?.forEach { it.delete() }
+    override fun forceCleanFiles() {
+        File(context.filesDir, DECRYPT_DIR).deleteRecursively()
     }
 
     override val decryptingLog = MutableStateFlow(false)
@@ -132,7 +135,7 @@ class PrivateKeyManagerImpl @Inject constructor(
     private val logSplitter =
         Regex("""(?=${dateTimeRegex.pattern}//MEND.+//.+${AppProperties.DIVIDER_SLASHES})""")
 
-    override fun decryptLog(inputStream: InputStream) {
+    override suspend fun decryptLog(inputStream: InputStream) {
         if (decryptingLog.value) return
 
         decryptingLog.value = true
@@ -157,7 +160,7 @@ class PrivateKeyManagerImpl @Inject constructor(
                 .filter { it.isNotBlank() }
                 .map { getLogLine(it) }
 
-            launch { onLogLinesDecrypted.emit(logEntries) }
+            onLogLinesDecrypted.emit(logEntries)
         } catch (t: Throwable) {
             t.printStackTrace()
             errorToastManager.showErrorToast(
@@ -241,6 +244,8 @@ class PrivateKeyManagerImpl @Inject constructor(
             }
 
             decryptToTempFile(tempFile, fileUri, privKey)?.let {
+                //yield in case the coroutine is cancelled before the file is opened
+                //yield()
                 offerFileView(tempFile, it)
             }
         }
@@ -256,7 +261,7 @@ class PrivateKeyManagerImpl @Inject constructor(
         }
     }
 
-    private fun decryptToTempFile(
+    private suspend fun decryptToTempFile(
         tempFile: File,
         fileUri: Uri,
         privKey: PrivateKey
@@ -280,6 +285,9 @@ class PrivateKeyManagerImpl @Inject constructor(
                     )
                 }
             }
+        } catch (c: CancellationException) {
+            errorToastManager.showErrorToast(R.string.decrypt_cancelled)
+            return null
         } catch (t: Throwable) {
             t.printStackTrace()
             errorToastManager.showErrorToast(
@@ -293,7 +301,7 @@ class PrivateKeyManagerImpl @Inject constructor(
     private fun createTempDecryptFile(): File? {
         return try {
             val uuid = UUID.randomUUID().toString()
-            val decryptDir = File(context.filesDir, "decrypted")
+            val decryptDir = File(context.filesDir, DECRYPT_DIR)
             decryptDir.mkdirs()
             val tempFile = File(decryptDir, uuid)
             if (tempFile.exists()) tempFile.delete()

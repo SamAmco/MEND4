@@ -8,6 +8,9 @@ import co.samco.mend4.core.crypto.CryptoProvider
 import co.samco.mend4.core.crypto.UnlockResult
 import co.samco.mend4.core.exception.MalformedLogFileException
 import co.samco.mend4.core.exception.NoSuchSettingException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.yield
 import org.bouncycastle.crypto.generators.Argon2BytesGenerator
 import org.bouncycastle.crypto.params.Argon2Parameters
 import org.bouncycastle.jce.spec.IESParameterSpec
@@ -190,14 +193,15 @@ class DefaultJCECryptoProvider(
         return ByteBuffer.wrap(bytes).int
     }
 
-    private fun writeToCipherStream(
+    private suspend fun writeToCipherStream(
         inputStream: InputStream,
         cipherOutputStream: CipherOutputStream
-    ) {
+    ) = withContext(Dispatchers.IO) {
         val buffer = ByteArray(8192)
         var count: Int
         while (inputStream.read(buffer).also { count = it } > 0) {
             cipherOutputStream.write(buffer, 0, count)
+            yield()
         }
     }
 
@@ -227,11 +231,11 @@ class DefaultJCECryptoProvider(
             .generatePublic(X509EncodedKeySpec(keyBytes)) as PublicKey
     }
 
-    override fun encryptEncStream(
+    override suspend fun encryptEncStream(
         inputStream: InputStream,
         outputStream: OutputStream,
         fileExtension: String
-    ) {
+    ) = withContext(Dispatchers.IO) {
         //Generate a new symmetric key and encrypt it with the public key
         val symmetricKey = generateSymmetricKey()
         val encryptedSymmetricKey = getAsymmetricEncryptCipher().doFinal(symmetricKey.encoded)
@@ -274,11 +278,11 @@ class DefaultJCECryptoProvider(
         writeToCipherStream(inputStream, cipherOutputStream)
     }
 
-    override fun decryptEncStream(
+    override suspend fun decryptEncStream(
         privateKey: PrivateKey,
         inputStream: InputStream,
         outputStream: OutputStream
-    ): String {
+    ): String = withContext(Dispatchers.IO) {
         //Read the length of the encrypted symmetric key
         val asymmetricCipher = getAsymmetricDecryptCipher(privateKey)
         val lengthCode1 = readMendFileBytes(inputStream, LENGTH_CODE_SIZE)
@@ -312,7 +316,7 @@ class DefaultJCECryptoProvider(
         writeToCipherStream(inputStream, cipherOutputStream)
 
         //Return the file extension
-        return fileExtension
+        return@withContext fileExtension
     }
 
     override fun getNextLogTextWithDataBlocks(
@@ -335,11 +339,11 @@ class DefaultJCECryptoProvider(
             .generatePrivate(PKCS8EncodedKeySpec(privateKey))
     }
 
-    override fun decryptLogStream(
+    override suspend fun decryptLogStream(
         privateKey: PrivateKey,
         inputStream: InputStream,
         outputStream: PrintStream
-    ) {
+    ) = withContext(Dispatchers.IO) {
         val lc1Bytes = ByteArray(LENGTH_CODE_SIZE)
         while (logHasNext(inputStream, lc1Bytes)) {
             outputStream.println(
@@ -350,10 +354,14 @@ class DefaultJCECryptoProvider(
                 ).entryText
             )
             outputStream.println()
+            yield()
         }
     }
 
-    override fun encryptLogStream(logText: String, outputStream: OutputStream) {
+    override suspend fun encryptLogStream(
+        logText: String,
+        outputStream: OutputStream
+    ) = withContext(Dispatchers.IO) {
         //Generate a new symmetric key
         val symmetricKey = generateSymmetricKey()
 

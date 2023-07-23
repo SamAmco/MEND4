@@ -19,8 +19,8 @@ import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
+import kotlinx.coroutines.runBlocking
 import testutils.TestUtils
-import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.security.PrivateKey
@@ -46,7 +46,7 @@ class CryptoHelperTest : TestBase() {
     }
 
     @Test
-    fun testEncInputOutputFilesCorrect() {
+    fun testEncInputOutputFilesCorrect() = runBlocking {
         val inputFileName = "/input.txt"
         val inputFile = File(inputFileName)
         whenever(settings.getValue(SettingsDao.ENC_DIR)).thenReturn(encDir)
@@ -69,7 +69,7 @@ class CryptoHelperTest : TestBase() {
     }
 
     @Test
-    fun testEncInputFileNoExtension() {
+    fun testEncInputFileNoExtension() = runBlocking {
         val inputFileName = "/input"
         val inputFile = File(inputFileName)
         whenever(settings.getValue(SettingsDao.ENC_DIR)).thenReturn(encDir)
@@ -90,14 +90,14 @@ class CryptoHelperTest : TestBase() {
     }
 
     @Test
-    fun testEncEmptyLog() {
+    fun testEncEmptyLog() = runBlocking {
         cryptoHelper.encryptTextToLog(CharArray(0), true)
         verify(fileResolveHelper, never()).currentLogFile
         verify(cryptoProvider, never()).encryptLogStream(any(), any())
     }
 
     @Test
-    fun testLogEncrypted() {
+    fun testLogEncrypted() = runBlocking {
         val message = "hi"
         val logFile = File("/currentLogFile." + AppProperties.LOG_FILE_EXTENSION)
         whenever(fileResolveHelper.currentLogFile).thenReturn(logFile)
@@ -111,7 +111,7 @@ class CryptoHelperTest : TestBase() {
     }
 
     @Test
-    fun testHeaderAddedToLog() {
+    fun testHeaderAddedToLog() = runBlocking {
         val version = "ver"
         val message = "hi"
         val messageWithHeader: String =
@@ -127,7 +127,7 @@ class CryptoHelperTest : TestBase() {
     }
 
     @Test
-    fun testDecryptLog() {
+    fun testDecryptLog() = runBlocking {
         val logFile = File("/logfile.log")
         whenever(keyHelper.privateKey).thenReturn(privateKey)
         whenever(osDao.fileInputStream(eq(logFile))).thenReturn(TestUtils.emptyInputStream)
@@ -144,7 +144,7 @@ class CryptoHelperTest : TestBase() {
     }
 
     @Test
-    fun testDecryptFile() {
+    fun testDecryptFile() = runBlocking {
         val encFileName = "encFile"
         val fileExtension = "txt"
         val encFile =

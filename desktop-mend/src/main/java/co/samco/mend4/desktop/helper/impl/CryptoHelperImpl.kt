@@ -12,6 +12,7 @@ import co.samco.mend4.desktop.helper.FileResolveHelper
 import co.samco.mend4.desktop.helper.KeyHelper
 import co.samco.mend4.desktop.helper.VersionHelper
 import co.samco.mend4.desktop.output.PrintStreamProvider
+import kotlinx.coroutines.runBlocking
 import org.apache.commons.io.FilenameUtils
 import java.io.File
 import java.text.DateFormat
@@ -45,7 +46,9 @@ class CryptoHelperImpl @Inject constructor(
                     )
                 )
 
-                cryptoProvider.encryptEncStream(fis, fos, fileExtension)
+                runBlocking {
+                    cryptoProvider.encryptEncStream(fis, fos, fileExtension)
+                }
 
                 log.err().println(
                     strings.getf(
@@ -73,7 +76,7 @@ class CryptoHelperImpl @Inject constructor(
             )
         }
         osDao.fileOutputSteam(currentLogFile, true).use { fos ->
-            cryptoProvider.encryptLogStream(logText, fos)
+            runBlocking { cryptoProvider.encryptLogStream(logText, fos) }
             val dateFormat: DateFormat = SimpleDateFormat("yyyy/MM/dd HH:mm:ss")
             val date = Date()
             log.out().println(
@@ -88,7 +91,9 @@ class CryptoHelperImpl @Inject constructor(
     override fun decryptLog(file: File) {
         val privateKey = keyHelper.privateKey ?: throw MendLockedException()
         osDao.fileInputStream(file).use { fis ->
-            cryptoProvider.decryptLogStream(privateKey, fis, log.out())
+            runBlocking {
+                cryptoProvider.decryptLogStream(privateKey, fis, log.out())
+            }
         }
     }
 
@@ -102,7 +107,9 @@ class CryptoHelperImpl @Inject constructor(
         log.err().println(strings.getf("CryptoHelper.decryptingFile", outputFile.absolutePath))
         osDao.fileInputStream(file).use { fis ->
             osDao.fileOutputSteam(outputFile).use { fos ->
-                fileExtension = cryptoProvider.decryptEncStream(privateKey, fis, fos)
+                fileExtension = runBlocking {
+                    cryptoProvider.decryptEncStream(privateKey, fis, fos)
+                }
             }
         }
         if (fileExtension != "") {

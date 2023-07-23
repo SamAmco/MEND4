@@ -40,4 +40,5 @@
     <string name="foreground_service_channel_name">MEND Lock Foreground Service Channel</string>
     <string name="failed_to_decrypt_file">Failed to decrypt file</string>
     <string name="no_app_to_open_file">No app found to open file with extension: %s</string>
+    <string name="decrypt_cancelled">Decrypt cancelled</string>
 </resources>

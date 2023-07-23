@@ -17,7 +17,7 @@ interface CryptoProvider {
     /**
      * Encrypts the input stream and file extension and writes the encrypted data to the output stream.
      */
-    fun encryptEncStream(
+    suspend fun encryptEncStream(
         inputStream: InputStream,
         outputStream: OutputStream,
         fileExtension: String
@@ -27,7 +27,7 @@ interface CryptoProvider {
      * Decrypts the input stream and writes the decrypted data to the output stream.
      * @return the file extension of the decrypted file.
      */
-    fun decryptEncStream(
+    suspend fun decryptEncStream(
         privateKey: PrivateKey,
         inputStream: InputStream,
         outputStream: OutputStream
@@ -36,7 +36,7 @@ interface CryptoProvider {
     /**
      * Encrypts the text and writes the encrypted data to the output stream as a log entry.
      */
-    fun encryptLogStream(
+    suspend fun encryptLogStream(
         logText: String,
         outputStream: OutputStream
     )
@@ -44,7 +44,7 @@ interface CryptoProvider {
     /**
      * Decrypts the input stream as a log and writes the decrypted data to the output stream.
      */
-    fun decryptLogStream(
+    suspend fun decryptLogStream(
         privateKey: PrivateKey,
         inputStream: InputStream,
         outputStream: PrintStream

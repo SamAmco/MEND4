@@ -6,6 +6,7 @@ import co.samco.mend4.core.crypto.UnlockResult
 import co.samco.mend4.core.crypto.impl.DefaultJCECryptoProvider
 import junit.framework.Assert.assertFalse
 import junit.framework.Assert.assertTrue
+import kotlinx.coroutines.runBlocking
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.Assert
 import org.junit.Before
@@ -168,7 +169,7 @@ class DefaultJCECryptoProviderTest {
         uut.storeEncryptedKeys(password.toCharArray(), keyPair)
     }
 
-    private fun testEncFile() {
+    private fun testEncFile() = runBlocking{
         val plainText = "The quick brown fox jumped over the lazy dog"
         val fileExtension = "extension"
         val inputStream = ByteArrayInputStream(plainText.toByteArray(StandardCharsets.UTF_8))
@@ -196,7 +197,7 @@ class DefaultJCECryptoProviderTest {
         cipherBytes: ByteArray,
         plainText: String,
         fileExtension: String
-    ) {
+    ) = runBlocking {
         val inputStream = ByteArrayInputStream(cipherBytes)
         val outputStream = ByteArrayOutputStream()
 
@@ -214,7 +215,7 @@ class DefaultJCECryptoProviderTest {
         )
     }
 
-    private fun testLog() {
+    private fun testLog() = runBlocking {
         val plainText = "The quick brown fox jumped over the lazy dog"
         val expectedPlainText = plainText + newLine + newLine
         val cipherBytes = encryptNextLog(plainText)
@@ -261,7 +262,7 @@ class DefaultJCECryptoProviderTest {
         )
     }
 
-    private fun encryptNextLog(plainText: String): ByteArray {
+    private fun encryptNextLog(plainText: String): ByteArray = runBlocking {
         val outputStream = ByteArrayOutputStream()
         uut.encryptLogStream(plainText, outputStream)
         val cipherBytes = outputStream.toByteArray()
@@ -270,6 +271,6 @@ class DefaultJCECryptoProviderTest {
             "Cipher text should not contain any of the plain text",
             plainText.split(" ").any { cipherText.contains(it) }
         )
-        return cipherBytes
+        return@runBlocking cipherBytes
     }
 }
