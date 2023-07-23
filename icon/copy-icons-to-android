@@ -1,8 +1,0 @@
-#!/bin/sh
-set -e
-
-convert mendicon.png -resize 48x48\! ../android-mend/app/src/main/res/mipmap-mdpi/ic_launcher.png
-convert mendicon.png -resize 72x72\! ../android-mend/app/src/main/res/mipmap-hdpi/ic_launcher.png
-convert mendicon.png -resize 96x96\! ../android-mend/app/src/main/res/mipmap-xhdpi/ic_launcher.png
-convert mendicon.png -resize 144x144\! ../android-mend/app/src/main/res/mipmap-xxhdpi/ic_launcher.png
-convert mendicon.png -resize 192x192\! ../android-mend/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
