@@ -62,6 +62,8 @@ class MainActivity : ComponentActivity() {
 
         checkNotificationsPermission()
 
+        collectToasts()
+
         setContent {
             val selectedTheme = propertyManager.selectedTheme.collectAsState(null).value
             if (selectedTheme != null) {
@@ -83,8 +85,7 @@ class MainActivity : ComponentActivity() {
     private fun hasPermission(permission: String): Boolean =
         ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED
 
-    override fun onStart() {
-        super.onStart()
+    private fun collectToasts() {
         lifecycleScope.launch {
             errorToastManager.errorToast.collect {
                 val text = getString(it.messageId, *it.formatArgs.toTypedArray())
