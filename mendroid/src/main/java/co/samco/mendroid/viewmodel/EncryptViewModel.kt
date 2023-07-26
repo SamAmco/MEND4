@@ -2,6 +2,7 @@ package co.samco.mendroid.viewmodel
 
 import android.app.Application
 import android.net.Uri
+import android.provider.DocumentsContract
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -39,6 +40,11 @@ class EncryptViewModel @Inject constructor(
     private val errorToastManager: ErrorToastManager,
     private val logFileManager: LogFileManager
 ) : AndroidViewModel(application) {
+
+    private val _offerDeleteFile = MutableStateFlow<Uri?>(null)
+    val showDeleteFileDialog: StateFlow<Boolean> = _offerDeleteFile
+        .map { it != null }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
     private val context get() = this.getApplication<Application>().applicationContext
 
@@ -142,15 +148,34 @@ class EncryptViewModel @Inject constructor(
 
             cryptoProvider.encryptEncStream(inputStream, outputStream, fileExtension)
 
-            val newText = currentEntryText.text + fileName
+            val newText = "${currentEntryText.text}$fileName "
             currentEntryText = currentEntryText.copy(
                 text = newText,
                 selection = TextRange(newText.length)
             )
+
+            //Get the column flags and check for SUPPORTS_DELETE
+            val flags = context.contentResolver.query(
+                uri,
+                arrayOf(DocumentsContract.Document.COLUMN_FLAGS),
+                null,
+                null,
+                null
+            )?.use {
+                if (it.moveToFirst()) it.getInt(0) else 0
+            } ?: 0
+
+            //if the file supports delete, offer to delete it
+            if (flags and DocumentsContract.Document.FLAG_SUPPORTS_DELETE != 0) {
+                _offerDeleteFile.value = uri
+            } else {
+                errorToastManager.showErrorToast(R.string.can_not_offer_delete)
+            }
         }
     }
 
     fun onSelectLogButtonClicked() {
+        logFileManager.forcePruneKnownLogs()
         _showSelectLogDialog.value = true
     }
 
@@ -170,5 +195,23 @@ class EncryptViewModel @Inject constructor(
     fun onKnownLogFileSelected(selected: LogFileData) {
         logFileManager.setCurrentLog(selected)
         _showSelectLogDialog.value = false
+    }
+
+    fun dismissOfferDeleteFileDialog() {
+        _offerDeleteFile.value = null
+        errorToastManager.showErrorToast(R.string.file_not_deleted)
+    }
+
+    fun deleteFile() {
+        val success = _offerDeleteFile.value
+            ?.let { DocumentFile.fromSingleUri(context, it) }
+            ?.delete() == true
+
+        _offerDeleteFile.value = null
+
+        errorToastManager.showErrorToast(
+            if (success) R.string.file_deleted
+            else R.string.failed_to_delete_file
+        )
     }
 }

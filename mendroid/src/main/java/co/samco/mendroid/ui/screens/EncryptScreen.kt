@@ -5,6 +5,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -34,10 +35,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import co.samco.mend4.core.AppProperties
 import co.samco.mendroid.R
+import co.samco.mendroid.ui.common.ConfirmCancelDialogBody
 import co.samco.mendroid.ui.common.TextItemList
 import co.samco.mendroid.ui.theme.mendTextFieldColors
 import co.samco.mendroid.viewmodel.EncryptViewModel
@@ -50,6 +53,16 @@ fun EncryptScreen(
 
     val viewModel = viewModel<EncryptViewModel>()
 
+    EncryptScreenMain(navHostController)
+
+    if (viewModel.showDeleteFileDialog.collectAsState().value) {
+        OfferDeleteFileDialog()
+    }
+}
+
+@Composable
+private fun ColumnScope.EncryptScreenMain(navHostController: NavHostController) {
+    val viewModel = viewModel<EncryptViewModel>()
     val focusRequester = remember { FocusRequester() }
 
     LaunchedEffect(Unit) {
@@ -110,6 +123,26 @@ fun EncryptScreen(
         ) {
             viewModel.encryptText()
         }
+    }
+}
+
+@Composable
+private fun OfferDeleteFileDialog() {
+    val viewModel = viewModel<EncryptViewModel>()
+    Dialog(
+        onDismissRequest = { viewModel.dismissOfferDeleteFileDialog() },
+        properties = DialogProperties(
+            dismissOnBackPress = false,
+            dismissOnClickOutside = false
+        )
+    ) {
+        ConfirmCancelDialogBody(
+            text = stringResource(id = R.string.delete_file_question),
+            cancelText = stringResource(id = R.string.no),
+            confirmText = stringResource(id = R.string.yes),
+            onCancelClicked = viewModel::dismissOfferDeleteFileDialog,
+            onConfirmClicked = viewModel::deleteFile
+        )
     }
 }
 

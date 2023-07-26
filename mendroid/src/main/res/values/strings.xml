@@ -46,4 +46,11 @@
     <string name="import_log">Import log file</string>
     <string name="no_items">No items</string>
     <string name="no_entries">No entries</string>
+    <string name="delete_file_question">Would you like to delete the original file?</string>
+    <string name="yes">Yes</string>
+    <string name="no">No</string>
+    <string name="failed_to_delete_file">Failed to delete file</string>
+    <string name="file_deleted">Original file deleted</string>
+    <string name="file_not_deleted">Original file was not deleted</string>
+    <string name="can_not_offer_delete">Could not get permission to delete the original file</string>
 </resources>

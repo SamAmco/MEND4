@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -35,6 +36,8 @@ interface LogFileManager {
     fun addLogFromUri(uri: Uri): Boolean
 
     fun setCurrentLog(data: LogFileData)
+
+    fun forcePruneKnownLogs()
 }
 
 class LogFileManagerImpl @Inject constructor(
@@ -59,8 +62,15 @@ class LogFileManagerImpl @Inject constructor(
         }
         .distinctUntilChanged()
 
-    private val knownLogDataMap = logCrudEvents.map {
-        propertyManager.getKnownLogUris().associateWith { getLogFileData(it) }
+    private val onForcePruneKnownLogs = MutableSharedFlow<Unit>()
+
+    private val knownLogDataMap = merge(
+        logCrudEvents,
+        onForcePruneKnownLogs
+    ).map { propertyManager.getKnownLogUris().associateWith { getLogFileData(it) } }
+
+    override fun forcePruneKnownLogs() {
+        launch { onForcePruneKnownLogs.emit(Unit) }
     }
 
     init {

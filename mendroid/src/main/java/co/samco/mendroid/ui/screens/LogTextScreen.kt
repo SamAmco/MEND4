@@ -17,13 +17,11 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.ClickableText
 import androidx.compose.foundation.text.selection.SelectionContainer
-import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.Checkbox
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.Text
-import androidx.compose.material.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -43,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import co.samco.mendroid.R
+import co.samco.mendroid.ui.common.ConfirmCancelDialogBody
 import co.samco.mendroid.ui.common.Divider
 import co.samco.mendroid.viewmodel.DecryptFileDialogData
 import co.samco.mendroid.viewmodel.DecryptedLogViewModel
@@ -127,36 +126,16 @@ private fun DecryptFileDialog(
     decryptFileDialogData: DecryptFileDialogData,
     onCancelClicked: () -> Unit,
     onDecryptClicked: () -> Unit
-) = Column(
-    modifier = Modifier.background(MaterialTheme.colors.background),
-) {
-    Text(
-        modifier = Modifier.padding(16.dp),
-        text = stringResource(
+) = ConfirmCancelDialogBody(
+    text = stringResource(
             id = R.string.would_you_like_to_decrypt_file,
             decryptFileDialogData.fileName
         ),
-    )
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp),
-        horizontalArrangement = Arrangement.End
-    ) {
-        TextButton(
-            onClick = onCancelClicked,
-            colors = ButtonDefaults.textButtonColors(
-                contentColor = MaterialTheme.colors.onBackground.copy(alpha = 0.5f)
-            )
-        ) {
-            Text(text = stringResource(id = R.string.cancel).uppercase())
-        }
-        TextButton(onClick = onDecryptClicked) {
-            Text(text = stringResource(id = R.string.decrypt).uppercase())
-        }
-    }
-}
+    cancelText = stringResource(id = R.string.cancel),
+    confirmText = stringResource(id = R.string.decrypt),
+    onCancelClicked = onCancelClicked,
+    onConfirmClicked = onDecryptClicked
+)
 
 @Composable
 private fun SearchField(logLines: List<LogViewData>, focusRequester: FocusRequester) = Row(
