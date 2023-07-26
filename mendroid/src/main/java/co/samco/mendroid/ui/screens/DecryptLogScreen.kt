@@ -1,5 +1,7 @@
 package co.samco.mendroid.ui.screens
 
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
@@ -15,13 +17,29 @@ fun DecryptLogScreen(
     navController: NavHostController
 ) {
     NavHost(modifier = modifier, navController = navController, startDestination = NAV_LOG_LIST) {
-        composable(NAV_LOG_LIST) {
+        composable(
+            route = NAV_LOG_LIST,
+            exitTransition = {
+                slideOutHorizontally { -it }
+            },
+            popEnterTransition = {
+                slideInHorizontally { -it }
+            }
+        ) {
             LogList(
                 modifier = modifier,
                 navController = navController
             )
         }
-        composable(NAV_DECRYPT_LOG_TEXT) {
+        composable(
+            route = NAV_DECRYPT_LOG_TEXT,
+            enterTransition = {
+                slideInHorizontally { it }
+            },
+            popExitTransition = {
+                slideOutHorizontally { it }
+            }
+        ) {
             DecryptLogText(modifier = modifier)
         }
     }

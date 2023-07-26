@@ -7,11 +7,11 @@ plugins {
 
 android {
     namespace 'co.samco.mendroid'
-    compileSdk 33
+    compileSdk 34
     defaultConfig {
         applicationId "co.samco.mendroid"
         minSdk 26
-        targetSdk 33
+        targetSdk 34
         versionCode 50000
         versionName "5.0.0"
 
@@ -70,7 +70,7 @@ dependencies {
     implementation 'androidx.compose.material:material-icons-core:1.4.3'
     implementation 'androidx.compose.material:material-icons-extended:1.4.3'
     implementation 'androidx.documentfile:documentfile:1.0.1'
-    implementation "androidx.navigation:navigation-compose:2.6.0"
+    implementation "androidx.navigation:navigation-compose:2.7.0-rc01"
 
 
     // -- Hilt --
