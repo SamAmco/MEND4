@@ -43,4 +43,6 @@
     <string name="could_not_find_current_log">Could not find log file.</string>
     <string name="failed_to_write_to_log_file">Failed to write to log file</string>
     <string name="log_file_must_have_mend_extension">A log file must have the extension %s</string>
+    <string name="import_log">Import log file</string>
+    <string name="no_items">No items</string>
 </resources>

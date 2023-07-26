@@ -32,6 +32,8 @@ interface LogFileManager {
 
     fun setCurrentLogFromUri(uri: Uri): Boolean
 
+    fun addLogFromUri(uri: Uri): Boolean
+
     fun setCurrentLog(data: LogFileData)
 }
 
@@ -79,7 +81,10 @@ class LogFileManagerImpl @Inject constructor(
             .mapNotNull { getLogFileData(it) }
     }
 
-    override fun setCurrentLogFromUri(uri: Uri): Boolean {
+    private fun addLogFileFromUri(
+        uri: Uri,
+        extraAction: (uri: Uri) -> Unit = {}
+    ): Boolean {
         context.contentResolver.takePersistableUriPermission(
             uri,
             Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
@@ -99,7 +104,7 @@ class LogFileManagerImpl @Inject constructor(
             return false
         }
 
-        propertyManager.setCurrentLogUri(uri.toString())
+        extraAction(uri)
 
         val knownFiles = propertyManager.getKnownLogUris()
         if (!knownFiles.contains(uri.toString())) {
@@ -109,6 +114,12 @@ class LogFileManagerImpl @Inject constructor(
         launch { onLogCrudEvent.emit(Unit) }
         return true
     }
+
+    override fun setCurrentLogFromUri(uri: Uri) = addLogFileFromUri(uri) {
+        propertyManager.setCurrentLogUri(uri.toString())
+    }
+
+    override fun addLogFromUri(uri: Uri) = addLogFileFromUri(uri)
 
     override fun setCurrentLog(data: LogFileData) {
         propertyManager.setCurrentLogUri(data.uri.toString())

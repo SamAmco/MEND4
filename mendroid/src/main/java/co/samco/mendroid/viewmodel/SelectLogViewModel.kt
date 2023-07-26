@@ -1,6 +1,7 @@
 package co.samco.mendroid.viewmodel
 
 import android.app.Application
+import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import co.samco.mendroid.R
@@ -31,6 +32,15 @@ class SelectLogViewModel @Inject constructor(
             if (inputStream != null) inputStream.use { privateKeyManager.decryptLog(it) }
             else errorToastManager.showErrorToast(R.string.error_opening_log)
         }
+    }
+
+    fun onOpenLogFromUri(uri: Uri?) {
+        if (uri == null) {
+            errorToastManager.showErrorToast(R.string.no_file)
+            return
+        }
+
+        logFileManager.addLogFromUri(uri)
     }
 }
 
