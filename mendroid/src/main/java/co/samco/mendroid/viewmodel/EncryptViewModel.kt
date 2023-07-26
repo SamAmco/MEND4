@@ -5,7 +5,6 @@ import android.net.Uri
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.documentfile.provider.DocumentFile
@@ -18,14 +17,14 @@ import co.samco.mendroid.BuildConfig
 import co.samco.mendroid.model.ErrorToastManager
 import co.samco.mendroid.model.PropertyManager
 import co.samco.mendroid.R
-import co.samco.mendroid.model.FileEventManager
+import co.samco.mendroid.model.LogFileData
+import co.samco.mendroid.model.LogFileManager
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onStart
-import kotlinx.coroutines.flow.shareIn
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -38,90 +37,36 @@ class EncryptViewModel @Inject constructor(
     private val cryptoProvider: CryptoProvider,
     private val propertyManager: PropertyManager,
     private val errorToastManager: ErrorToastManager,
-    private val fileEventManager: FileEventManager
+    private val logFileManager: LogFileManager
 ) : AndroidViewModel(application) {
 
     private val context get() = this.getApplication<Application>().applicationContext
 
-    private val fileHelper = FileHelper(application, propertyManager, fileEventManager)
-
-    var currentLogName by mutableStateOf(
-        TextFieldValue(
-            propertyManager.getCurrentLogName(),
-            TextRange(propertyManager.getCurrentLogName().length)
-        )
-    )
-
     var currentEntryText by mutableStateOf(TextFieldValue(""))
 
-    private val logNameFlow = snapshotFlow { currentLogName }
-        .map { it.text }
-        .shareIn(viewModelScope, SharingStarted.Eagerly, replay = 1)
+    val knownLogs = logFileManager.knownLogs
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
-    init {
-        viewModelScope.launch {
-            logNameFlow.collect {
-                propertyManager.setCurrentLogName(it)
-            }
-        }
-    }
+    private val _showSelectLogDialog = MutableStateFlow(false)
+    val showSelectLogDialog: StateFlow<Boolean> = _showSelectLogDialog
 
-    val nameSuggestions: Flow<List<String>> = combine(
-        snapshotFlow { currentLogName }.map { it.text },
-        fileHelper.logFileNames.map { lfd -> lfd.map { it.name } }
-    ) { currentText, logDirFiles ->
-        if (currentText.isEmpty()) logDirFiles
-        else {
-            logDirFiles.filter {
-                it.contains(currentText, ignoreCase = true) && it != currentText
-            }
-        }
-    }.shareIn(viewModelScope, SharingStarted.Eagerly, replay = 1)
+    private val currentLog = logFileManager.currentLog
+        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
-    fun onNameSuggestionClicked(name: String) {
-        currentLogName = TextFieldValue(name, TextRange(name.length))
-    }
-
-    val logNameValid = combine(
-        logNameFlow,
-        fileHelper.logDir.onStart { emit(null) }
-    ) { currentLogName, logDirUri ->
-        validLogName(currentLogName) && logDirUri != null
-    }
-
-    private fun validLogName(logName: String): Boolean {
-        return listOf(
-            '/', '\n', '\r', '\t', '`', '?', '*', '\\', '<', '>', '|', '\"', ':', '.', ','
-        ).none { logName.contains(it) }
-    }
+    val currentLogName: StateFlow<String?> = currentLog.map { it?.name }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     fun encryptText() {
         viewModelScope.launch {
-
-            val logDir = fileHelper.getLogDir()
-            if (logDir == null) {
-                errorToastManager.showErrorToast(R.string.no_log_dir)
+            val currLog = currentLog.value
+            if (currLog == null) {
+                errorToastManager.showErrorToast(R.string.could_not_find_current_log)
                 return@launch
             }
 
-            val logName = currentLogName.text
-            if (!validLogName(logName)) {
-                errorToastManager.showErrorToast(R.string.invalid_log_name)
-                return@launch
-            }
-            val logNameWithExtension = "$logName.${AppProperties.LOG_FILE_EXTENSION}"
-
-            val logFile = logDir.findFile(logNameWithExtension)
-                ?: createNewLogFile(logDir, logNameWithExtension)
-
-            if (logFile == null || !logFile.isFile || !logFile.canWrite()) {
-                errorToastManager.showErrorToast(R.string.failed_to_create_file)
-                return@launch
-            }
-
-            val outputStream = context.contentResolver.openOutputStream(logFile.uri, "wa")
+            val outputStream = context.contentResolver.openOutputStream(currLog.uri, "wa")
             if (outputStream == null) {
-                errorToastManager.showErrorToast(R.string.failed_to_create_file)
+                errorToastManager.showErrorToast(R.string.failed_to_write_to_log_file)
                 return@launch
             }
 
@@ -136,12 +81,6 @@ class EncryptViewModel @Inject constructor(
 
             currentEntryText = TextFieldValue("")
         }
-    }
-
-    private fun createNewLogFile(logDir: DocumentFile, name: String): DocumentFile? {
-        val newFile = logDir.createFile("application/octet-stream", name)
-        viewModelScope.launch { fileEventManager.onNewLogCreated() }
-        return newFile
     }
 
     fun encryptFile(uri: Uri?) {
@@ -209,5 +148,27 @@ class EncryptViewModel @Inject constructor(
                 selection = TextRange(newText.length)
             )
         }
+    }
+
+    fun onSelectLogButtonClicked() {
+        _showSelectLogDialog.value = true
+    }
+
+    fun onNewLogFileSelected(uri: Uri?) {
+        if (uri == null) {
+            errorToastManager.showErrorToast(R.string.no_file)
+            return
+        }
+        logFileManager.setCurrentLogFromUri(uri)
+        _showSelectLogDialog.value = false
+    }
+
+    fun hideSelectLogDialog() {
+        _showSelectLogDialog.value = false
+    }
+
+    fun onKnownLogFileSelected(selected: LogFileData) {
+        logFileManager.setCurrentLog(selected)
+        _showSelectLogDialog.value = false
     }
 }

@@ -23,7 +23,6 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -53,9 +52,6 @@ class SettingsViewModel @Inject constructor(
 
     val configPath = propertyManager.configUri
         .stateIn(viewModelScope, SharingStarted.Lazily, null)
-    val logDirText = propertyManager.logDirUri
-        .map { getDirectoryString(it) }
-        .stateIn(viewModelScope, SharingStarted.Lazily, null)
     val encDirText = propertyManager.encDirUri
         .map { getDirectoryString(it) }
         .stateIn(viewModelScope, SharingStarted.Lazily, null)
@@ -68,9 +64,6 @@ class SettingsViewModel @Inject constructor(
         return uri.path ?: uri.toString()
     }
 
-    val logDirGood = propertyManager.logDirUri
-        .map { it != null && Uri.parse(it).assertValidDirectory() }
-        .stateIn(viewModelScope, SharingStarted.Lazily, false)
     val encDirGood = propertyManager.encDirUri
         .map { it != null && Uri.parse(it).assertValidDirectory() }
         .stateIn(viewModelScope, SharingStarted.Lazily, false)
@@ -81,11 +74,7 @@ class SettingsViewModel @Inject constructor(
     private val _userRequestCloseSettings = MutableSharedFlow<Unit>()
 
     private val forceShowSettings = combine(
-        listOf(
-            hasConfig,
-            logDirGood,
-            encDirGood,
-        )
+        listOf(hasConfig, encDirGood)
     ) { list -> list.any { !it } }
         .debounce(10)
         .stateIn(viewModelScope, SharingStarted.Lazily, false)
@@ -194,15 +183,6 @@ class SettingsViewModel @Inject constructor(
             uri,
             Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
         )
-    }
-
-    fun onSetLogDir(uri: Uri?) {
-        if (uri == null || !uri.assertValidDirectory()) {
-            showErrorToast(R.string.log_dir_error, emptyList())
-            return
-        }
-        claimPersistentUriPermission(uri)
-        propertyManager.setLogDirUri(uri.toString())
     }
 
     fun onSetEncDir(uri: Uri?) {

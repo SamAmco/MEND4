@@ -6,6 +6,8 @@ import co.samco.mend4.core.crypto.CryptoProvider
 import co.samco.mend4.core.crypto.impl.DefaultJCECryptoProvider
 import co.samco.mendroid.model.ErrorToastManager
 import co.samco.mendroid.model.ErrorToastManagerImpl
+import co.samco.mendroid.model.LogFileManager
+import co.samco.mendroid.model.LogFileManagerImpl
 import co.samco.mendroid.model.PrivateKeyManager
 import co.samco.mendroid.model.PrivateKeyManagerImpl
 import co.samco.mendroid.model.PropertyManager
@@ -47,4 +49,8 @@ class AppModule {
     @Provides
     @Singleton
     fun provideLockEventManager(impl: PrivateKeyManagerImpl): PrivateKeyManager = impl
+
+    @Provides
+    @Singleton
+    fun provideLogManager(impl: LogFileManagerImpl): LogFileManager = impl
 }

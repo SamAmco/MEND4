@@ -34,7 +34,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -51,7 +50,6 @@ fun SettingsScreen() {
     val settingsViewModel = viewModel<SettingsViewModel>()
 
     val configText = settingsViewModel.configPath.collectAsState().value
-    val logDirText = settingsViewModel.logDirText.collectAsState().value
     val encDirText = settingsViewModel.encDirText.collectAsState().value
     val showCloseButton = settingsViewModel.showCloseButton.collectAsState().value
 
@@ -85,14 +83,6 @@ fun SettingsScreen() {
                     value = configText,
                     launchArgs = arrayOf("application/xml", "text/xml"),
                     onUriSelected = settingsViewModel::onSetConfig
-                )
-                Spacer(modifier = Modifier.size(48.dp))
-                ButtonSettingRow(
-                    complete = settingsViewModel.logDirGood.collectAsState().value,
-                    buttonText = stringResource(id = R.string.log_dir_button_text),
-                    contract = ActivityResultContracts.OpenDocumentTree(),
-                    value = logDirText,
-                    onUriSelected = settingsViewModel::onSetLogDir
                 )
                 Spacer(modifier = Modifier.size(48.dp))
                 ButtonSettingRow(

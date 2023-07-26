@@ -7,13 +7,11 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -47,6 +45,8 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import co.samco.mendroid.R
+import co.samco.mendroid.ui.common.Divider
+import co.samco.mendroid.ui.common.TextItemList
 import co.samco.mendroid.viewmodel.DecryptFileDialogData
 import co.samco.mendroid.viewmodel.DecryptedLogViewModel
 import co.samco.mendroid.viewmodel.LogViewData
@@ -340,31 +340,13 @@ private fun LogList(
     val viewModel = hiltViewModel<SelectLogViewModel>()
     val availableLogs = viewModel.availableLogs.collectAsState().value
 
-    LazyColumn(modifier = modifier) {
-        items(availableLogs.size) { index ->
-            Box(
-                modifier = Modifier.clickable {
-                    viewModel.onLogSelected(availableLogs[index])
-                    navController.navigate(NAV_DECRYPT_LOG_TEXT)
-                }
-            ) {
-                Text(
-                    modifier = Modifier.padding(16.dp),
-                    text = availableLogs[index].name,
-                    style = MaterialTheme.typography.subtitle1
-                )
-
-                Divider()
-            }
-        }
-    }
+    TextItemList(
+        modifier = modifier,
+        items = availableLogs,
+        onItemClicked = {
+            viewModel.onLogSelected(it)
+            navController.navigate(NAV_DECRYPT_LOG_TEXT)
+        },
+        itemText = { it.name }
+    )
 }
-
-@Composable
-private fun BoxScope.Divider() = Box(
-    modifier = Modifier
-        .background(MaterialTheme.colors.onBackground.copy(alpha = 0.1f))
-        .height(1.dp)
-        .fillMaxWidth()
-        .align(alignment = Alignment.BottomCenter)
-)

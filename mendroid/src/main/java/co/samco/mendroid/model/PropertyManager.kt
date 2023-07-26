@@ -2,7 +2,6 @@ package co.samco.mendroid.model
 
 import android.content.Context
 import android.content.SharedPreferences
-import co.samco.mend4.core.AppProperties
 import co.samco.mend4.core.Settings
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.channels.awaitClose
@@ -19,23 +18,22 @@ enum class Theme {
 
 interface PropertyManager : Settings {
     val selectedTheme: Flow<Theme?>
-    val logDirUri: Flow<String?>
     val encDirUri: Flow<String?>
     val hasConfig: Flow<Boolean>
     val configUri: Flow<String?>
 
-    fun getCurrentLogName(): String
-
-    fun setLogDirUri(uri: String)
     fun setEncDirUri(uri: String)
     fun setTheme(theme: Theme?)
     fun getEncDirUri(): String?
-    fun getLogDirUri(): String?
     fun getSelectedTheme(): Theme?
 
     fun clearSettings()
     fun setConfigUriPath(path: String)
-    fun setCurrentLogName(name: String)
+
+    fun getCurrentLogUri(): String?
+    fun setCurrentLogUri(uriStr: String?)
+    fun getKnownLogUris(): List<String>
+    fun setKnownLogUris(uris: List<String>)
 }
 
 class PropertyManagerImpl @Inject constructor(
@@ -65,20 +63,16 @@ class PropertyManagerImpl @Inject constructor(
     }
 
     companion object {
-        private const val LOG_DIR_URI = "logDirUri"
         private const val ENC_DIR_URI = "encDirUri"
         private const val CONFIG_URI = "configUri"
-        private const val CURRENT_LOG_NAME = "currentLogName"
+        private const val CURRENT_LOG_URI = "currentLogUri"
+        private const val KNOWN_LOG_URIS = "knownLogUris"
         private const val THEME = "theme"
     }
 
     override val selectedTheme: Flow<Theme?>
         get() = onChange(THEME)
             .map { prefs -> prefs.getString(THEME, null)?.let { Theme.valueOf(it) } }
-
-    override val logDirUri: Flow<String?>
-        get() = onChange(LOG_DIR_URI)
-            .map { it.getString(LOG_DIR_URI, null) }
 
     override val encDirUri: Flow<String?>
         get() = onChange(ENC_DIR_URI)
@@ -96,16 +90,8 @@ class PropertyManagerImpl @Inject constructor(
         get() = onChange(CONFIG_URI)
             .map { it.getString(CONFIG_URI, null) }
 
-    override fun getCurrentLogName(): String {
-        return prefs.getString(CURRENT_LOG_NAME, AppProperties.DEFAULT_LOG_FILE_NAME)
-            ?: AppProperties.DEFAULT_LOG_FILE_NAME
-    }
-
-    override fun setLogDirUri(uri: String) {
-        //First remove it because if you select the same directory you still want the
-        // onchange listener to fire
-        prefs.edit().remove(LOG_DIR_URI).apply()
-        prefs.edit().putString(LOG_DIR_URI, uri).apply()
+    override fun getCurrentLogUri(): String? {
+        return prefs.getString(CURRENT_LOG_URI, null)
     }
 
     override fun setEncDirUri(uri: String) {
@@ -124,10 +110,6 @@ class PropertyManagerImpl @Inject constructor(
         return prefs.getString(ENC_DIR_URI, null)
     }
 
-    override fun getLogDirUri(): String? {
-        return prefs.getString(LOG_DIR_URI, null)
-    }
-
     override fun getSelectedTheme(): Theme? {
         return prefs.getString(THEME, null)?.let { Theme.valueOf(it) }
     }
@@ -143,8 +125,17 @@ class PropertyManagerImpl @Inject constructor(
         prefs.edit().putString(CONFIG_URI, path).apply()
     }
 
-    override fun setCurrentLogName(name: String) {
-        prefs.edit().putString(CURRENT_LOG_NAME, name).apply()
+    override fun setCurrentLogUri(uriStr: String?) {
+        if (uriStr == null) prefs.edit().remove(CURRENT_LOG_URI).apply()
+        else prefs.edit().putString(CURRENT_LOG_URI, uriStr).apply()
+    }
+
+    override fun getKnownLogUris(): List<String> {
+        return prefs.getStringSet(KNOWN_LOG_URIS, null)?.toList() ?: emptyList()
+    }
+
+    override fun setKnownLogUris(uris: List<String>) {
+        prefs.edit().putStringSet(KNOWN_LOG_URIS, uris.toSet()).apply()
     }
 
     override fun setValue(name: Settings.Name, value: String) {

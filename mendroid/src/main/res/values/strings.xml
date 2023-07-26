@@ -1,7 +1,6 @@
 <resources>
     <string name="app_name">MEND</string>
     <string name="config_button_text">config.xml</string>
-    <string name="log_dir_button_text">log-dir</string>
     <string name="enc_dir_button_text">enc-dir</string>
 
     <string name="not_set">NOT SET</string>
@@ -9,7 +8,6 @@
     <string name="config_import_error_missing_text">Expected text after key %s</string>
     <string name="config_import_duplicate">Duplicate key in xml file: %s</string>
     <string name="config_import_missing">Xml file missing keys: %s</string>
-    <string name="log_dir_error">Failed to load selected log-dir.</string>
     <string name="enc_dir_error">Failed to load selected enc-dir.</string>
     <string name="settings">Settings</string>
     <string name="close_settings">Close settings</string>
@@ -18,8 +16,6 @@
     <string name="no_file">No file was found</string>
     <string name="no_enc_dir">Failed to access enc-dir</string>
     <string name="failed_to_create_file">Failed to create a new file.</string>
-    <string name="no_log_dir">Could not find log-dir</string>
-    <string name="invalid_log_name">Log name invalid</string>
     <string name="file">File</string>
     <string name="submit">Submit</string>
     <string name="password">Password:</string>
@@ -41,4 +37,10 @@
     <string name="failed_to_decrypt_file">Failed to decrypt file</string>
     <string name="no_app_to_open_file">No app found to open file with extension: %s</string>
     <string name="decrypt_cancelled">Decrypt cancelled</string>
+    <string name="select_log">Select Log</string>
+    <string name="open">Open</string>
+    <string name="create">Create</string>
+    <string name="could_not_find_current_log">Could not find log file.</string>
+    <string name="failed_to_write_to_log_file">Failed to write to log file</string>
+    <string name="log_file_must_have_mend_extension">A log file must have the extension %s</string>
 </resources>
