@@ -8,6 +8,11 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideIn
+import androidx.compose.animation.slideOut
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.Icon
@@ -25,6 +30,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.IntOffset
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavController
@@ -99,11 +105,17 @@ class MainActivity : ComponentActivity() {
 fun Mend4App() {
     val settingsViewModel = viewModel<SettingsViewModel>()
 
-    if (settingsViewModel.showSettings.collectAsState().value) {
+    val showSettings = settingsViewModel.showSettings.collectAsState().value
+
+    HomeScreenScaffold()
+
+    AnimatedVisibility(
+        visible = showSettings,
+        enter = fadeIn() + slideIn(initialOffset = { IntOffset(it.width, -it.height) }),
+        exit = fadeOut() + slideOut(targetOffset = { IntOffset(it.width, -it.height) })
+    ) {
         LocalFocusManager.current.clearFocus()
         SettingsScreen()
-    } else {
-        HomeScreenScaffold()
     }
 }
 

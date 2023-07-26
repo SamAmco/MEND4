@@ -65,7 +65,7 @@ private fun ColumnScope.EncryptScreenMain(navHostController: NavHostController) 
     val viewModel = viewModel<EncryptViewModel>()
     val focusRequester = remember { FocusRequester() }
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(navHostController) {
         focusRequester.requestFocus()
         navHostController.popBackStack(NAV_LOG_LIST, false)
     }
