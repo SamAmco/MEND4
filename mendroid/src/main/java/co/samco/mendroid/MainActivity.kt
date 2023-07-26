@@ -99,11 +99,11 @@ class MainActivity : ComponentActivity() {
 fun Mend4App() {
     val settingsViewModel = viewModel<SettingsViewModel>()
 
-    HomeScreenScaffold()
-
     if (settingsViewModel.showSettings.collectAsState().value) {
         LocalFocusManager.current.clearFocus()
         SettingsScreen()
+    } else {
+        HomeScreenScaffold()
     }
 }
 
