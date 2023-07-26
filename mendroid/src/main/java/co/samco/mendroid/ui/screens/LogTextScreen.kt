@@ -30,6 +30,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Offset
@@ -81,7 +82,10 @@ fun DecryptLogText(modifier: Modifier) {
 
         Column {
             val logLines = viewModel.logLines.collectAsState().value
-            LogLines(logLines = logLines)
+
+            if (logLines.isEmpty()) EmptyLinesText()
+            else LogLines(logLines = logLines)
+
             SearchField(logLines = logLines, focusRequester = searchFocusRequester)
         }
 
@@ -90,6 +94,19 @@ fun DecryptLogText(modifier: Modifier) {
         }
     }
 }
+
+@Composable
+private fun ColumnScope.EmptyLinesText() = Box(
+    modifier = Modifier.fillMaxWidth().weight(1f),
+    contentAlignment = Alignment.Center
+) {
+    Text(
+        modifier = Modifier.alpha(0.5f),
+        text = stringResource(id = R.string.no_entries),
+        style = MaterialTheme.typography.subtitle1
+    )
+}
+
 
 @Composable
 private fun DecryptingFileDialog() = Column(

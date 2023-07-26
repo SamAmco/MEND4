@@ -45,4 +45,5 @@
     <string name="log_file_must_have_mend_extension">A log file must have the extension %s</string>
     <string name="import_log">Import log file</string>
     <string name="no_items">No items</string>
+    <string name="no_entries">No entries</string>
 </resources>

@@ -37,9 +37,7 @@ private fun NoItemsText(modifier: Modifier) {
         contentAlignment = Alignment.Center
     ) {
         Text(
-            modifier = Modifier
-                .padding(16.dp)
-                .alpha(0.5f),
+            modifier = Modifier.alpha(0.5f),
             text = stringResource(id = R.string.no_items),
             style = MaterialTheme.typography.subtitle1
         )
