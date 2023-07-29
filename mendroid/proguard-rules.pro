@@ -22,3 +22,5 @@
 
 -keep class org.bouncycastle.jcajce.provider.** { *; }
 -keep class org.bouncycastle.jce.provider.** { *; }
+-dontwarn org.bouncycastle.pqc.jcajce.provider.**
+-dontwarn javax.naming.**
