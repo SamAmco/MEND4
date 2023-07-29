@@ -1,6 +1,5 @@
 package crypto
 
-import co.samco.mend4.core.IBase64EncodingProvider
 import co.samco.mend4.core.Settings
 import co.samco.mend4.core.crypto.UnlockResult
 import co.samco.mend4.core.crypto.impl.DefaultJCECryptoProvider
@@ -19,7 +18,6 @@ import java.nio.charset.StandardCharsets
 import java.security.InvalidAlgorithmParameterException
 import java.security.PrivateKey
 import java.security.Security
-import java.util.Base64
 
 class DefaultJCECryptoProviderTest {
     private val newLine = System.getProperty("line.separator")
@@ -38,23 +36,13 @@ class DefaultJCECryptoProviderTest {
         }
 
     }
-    private val encodingProvider = object : IBase64EncodingProvider {
-        override fun decodeBase64(base64String: String): ByteArray {
-            return Base64.getUrlDecoder().decode(base64String)
-        }
 
-        override fun encodeBase64URLSafeString(data: ByteArray): String {
-            return Base64.getUrlEncoder().withoutPadding().encodeToString(data)
-        }
-
-    }
+    private val encodingProvider = TestHelpers.getEncoderImplementation()
 
     private val uut = DefaultJCECryptoProvider(settings, encodingProvider)
 
     @Before
     fun before() {
-        //Provides more algorithms we can test :)
-        // I'm actually only testing ECIES from this provider right now though.
         Security.addProvider(BouncyCastleProvider())
 
         settings.apply {
@@ -129,6 +117,16 @@ class DefaultJCECryptoProviderTest {
         settings.apply {
             setValue(Settings.Name.ASYMMETRIC_CIPHER_NAME, "X448")
             setValue(Settings.Name.ASYMMETRIC_CIPHER_TRANSFORM, "XIESWithAES-CBC")
+            setValue(Settings.Name.ASYMMETRIC_KEY_SIZE, "448")
+        }
+        runAllTests()
+    }
+
+    @Test
+    fun `X448-XIESWithSha256 448`() {
+        settings.apply {
+            setValue(Settings.Name.ASYMMETRIC_CIPHER_NAME, "X448")
+            setValue(Settings.Name.ASYMMETRIC_CIPHER_TRANSFORM, "XIESWithSha256")
             setValue(Settings.Name.ASYMMETRIC_KEY_SIZE, "448")
         }
         runAllTests()

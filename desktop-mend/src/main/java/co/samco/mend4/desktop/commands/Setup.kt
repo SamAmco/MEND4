@@ -25,9 +25,9 @@ class Setup @Inject constructor(
         const val COMMAND_NAME = "setup"
         const val FORCE_FLAG = "-f"
 
-        const val DEFAULT_ASYMMETRIC_CIPHER = "EC"
-        const val DEFAULT_ASYMMETRIC_CIPHER_TRANSFORM = "ECIES"
-        const val DEFAULT_KEY_SIZE = 521
+        const val DEFAULT_ASYMMETRIC_CIPHER = "X448"
+        const val DEFAULT_ASYMMETRIC_CIPHER_TRANSFORM = "XIESWithSha256"
+        const val DEFAULT_KEY_SIZE = 448
         const val DEFAULT_PW_FACTORY_ITERATIONS = 3
         const val DEFAULT_PW_FACTORY_PARALLELISM = 8
         const val DEFAULT_PW_FACTORY_MEMORY_KB = 256 * 1000

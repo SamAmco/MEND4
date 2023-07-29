@@ -133,9 +133,9 @@ class DefaultJCECryptoProvider(
             && !cipherTransform.startsWith("XIES")
         ) return null
 
-        if (cipherTransform != "ECIES" && cipherTransform != "XIES") {
+        if (cipherTransform.contains("AES")) {
             throw InvalidAlgorithmParameterException(
-                "IES with explicit parameters is not yet supported."
+                "IES with AES is not supported yet."
             )
         }
 
@@ -144,7 +144,7 @@ class DefaultJCECryptoProvider(
         return IESParameterSpec(
             /* derivation = */ null,
             /* encoding = */ null,
-            /* macKeySize = */ 256,
+            /* macKeySize = */ 128,
             /* cipherKeySize = */ 256,
             /* nonce = */ null,
             /* usePointCompression = */ false
