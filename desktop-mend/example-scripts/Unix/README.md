@@ -1,0 +1,1 @@
+lock.sh is a Ubuntu script that monitors the system for lock events and runs `mend lock` when they occur. You can copy it somewhere and run it from your `.bashrc` or `.profile`. Make sure to launch it like `/path/to/lock.sh &` as it is an infinite loop. Also make sure to update the path to the mend jar in the script.
