@@ -5,6 +5,8 @@ install
 .project
 .idea/
 
+mendroid/release
+
 desktop-mend/test/*
 !desktop-mend/test/tmend
 
