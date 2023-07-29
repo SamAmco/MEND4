@@ -22,6 +22,7 @@ import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.Text
+import androidx.compose.material.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -96,7 +97,9 @@ fun DecryptLogText(modifier: Modifier) {
 
 @Composable
 private fun ColumnScope.EmptyLinesText() = Box(
-    modifier = Modifier.fillMaxWidth().weight(1f),
+    modifier = Modifier
+        .fillMaxWidth()
+        .weight(1f),
     contentAlignment = Alignment.Center
 ) {
     Text(
@@ -150,12 +153,7 @@ private fun SearchField(logLines: List<LogViewData>, focusRequester: FocusReques
     OutlinedTextField(
         modifier = Modifier
             .fillMaxWidth()
-            .focusRequester(focusRequester)
-            .let {
-                if (viewModel.filterEnabled && logLines.isEmpty()) {
-                    it.background(MaterialTheme.colors.error)
-                } else it
-            },
+            .focusRequester(focusRequester),
         value = viewModel.searchText,
         onValueChange = { viewModel.searchText = it },
         placeholder = { Text(text = stringResource(id = R.string.filter)) },
@@ -171,6 +169,11 @@ private fun SearchField(logLines: List<LogViewData>, focusRequester: FocusReques
             )
         },
         maxLines = 1,
+        colors = if (viewModel.filterEnabled && logLines.isEmpty()) {
+            TextFieldDefaults.outlinedTextFieldColors(
+                backgroundColor = MaterialTheme.colors.error,
+            )
+        } else TextFieldDefaults.outlinedTextFieldColors()
     )
 }
 
