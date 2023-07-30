@@ -8,8 +8,9 @@ import androidx.compose.material.Tab
 import androidx.compose.material.TabRow
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -20,10 +21,11 @@ import co.samco.mendroid.viewmodel.HomeViewModel
 @Composable
 fun HomeScreen(
     modifier: Modifier,
-    navHostController: NavHostController
+    navHostController: NavHostController,
+    selectedTabIndex: Int,
+    focusRequester: FocusRequester
 ) = Column(modifier.padding(8.dp)) {
     val homeViewModel = viewModel<HomeViewModel>()
-    val selectedTabIndex = homeViewModel.state.collectAsState().value.index
 
     TabRow(
         backgroundColor = MaterialTheme.colors.background,
@@ -43,10 +45,20 @@ fun HomeScreen(
     }
 
     Box(modifier = Modifier.weight(1f)) {
+
+        LaunchedEffect(selectedTabIndex) {
+            if (selectedTabIndex == 0) {
+                navHostController.popBackStack(NAV_LOG_LIST, false)
+            }
+        }
+
         if (selectedTabIndex == 0) {
-            EncryptScreen(navHostController = navHostController)
+            EncryptScreen(focusRequester = focusRequester)
         } else {
-            DecryptScreen(navHostController = navHostController)
+            DecryptScreen(
+                navHostController = navHostController,
+                focusRequester = focusRequester
+            )
         }
     }
 }

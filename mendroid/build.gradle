@@ -22,6 +22,14 @@ android {
     }
 
     buildTypes {
+        debug {
+            // Set the .debug applicationIdSuffix
+            applicationIdSuffix ".debug"
+            // And give the app name the debug suffix
+            resValue "string", "app_name", "@string/app_name_debug"
+            minifyEnabled false
+            shrinkResources false
+        }
         debugMinify {
             minifyEnabled true
             shrinkResources true

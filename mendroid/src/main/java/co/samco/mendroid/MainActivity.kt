@@ -23,11 +23,13 @@ import androidx.compose.material.TopAppBar
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntOffset
@@ -43,8 +45,10 @@ import co.samco.mendroid.model.Theme
 import co.samco.mendroid.ui.screens.HomeScreen
 import co.samco.mendroid.ui.screens.SettingsScreen
 import co.samco.mendroid.ui.theme.MEND4Theme
+import co.samco.mendroid.viewmodel.HomeViewModel
 import co.samco.mendroid.viewmodel.SettingsViewModel
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -105,22 +109,41 @@ class MainActivity : ComponentActivity() {
 fun Mend4App() {
     val settingsViewModel = viewModel<SettingsViewModel>()
 
+    val homeViewModel = viewModel<HomeViewModel>()
+    val selectedTabIndex = homeViewModel.state.collectAsState().value.index
+
     val showSettings = settingsViewModel.showSettings.collectAsState().value
 
-    HomeScreenScaffold()
+    val focusRequester = remember { FocusRequester() }
+    val localFocusManager = LocalFocusManager.current
+
+    HomeScreenScaffold(
+        focusRequester = focusRequester,
+        selectedTabIndex = selectedTabIndex
+    )
 
     AnimatedVisibility(
         visible = showSettings,
         enter = fadeIn() + slideIn(initialOffset = { IntOffset(it.width, -it.height) }),
         exit = fadeOut() + slideOut(targetOffset = { IntOffset(it.width, -it.height) })
     ) {
-        LocalFocusManager.current.clearFocus()
         SettingsScreen()
+    }
+
+    LaunchedEffect(showSettings, selectedTabIndex) {
+        if (!showSettings) {
+            delay(10)
+            focusRequester.requestFocus()
+        }
+        else localFocusManager.clearFocus()
     }
 }
 
 @Composable
-fun HomeScreenScaffold() {
+fun HomeScreenScaffold(
+    focusRequester: FocusRequester,
+    selectedTabIndex: Int
+) {
     val navController = rememberNavController()
     Scaffold(
         topBar = {
@@ -129,7 +152,9 @@ fun HomeScreenScaffold() {
         content = {
             HomeScreen(
                 modifier = Modifier.padding(it),
-                navHostController = navController
+                navHostController = navController,
+                selectedTabIndex = selectedTabIndex,
+                focusRequester = focusRequester
             )
         }
     )

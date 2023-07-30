@@ -24,10 +24,9 @@ import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.material.TextField
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -37,7 +36,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavHostController
 import co.samco.mend4.core.AppProperties
 import co.samco.mendroid.R
 import co.samco.mendroid.ui.common.ConfirmCancelDialogBody
@@ -48,12 +46,12 @@ import co.samco.mendroid.viewmodel.EncryptViewModel
 @Composable
 fun EncryptScreen(
     modifier: Modifier = Modifier,
-    navHostController: NavHostController
+    focusRequester: FocusRequester
 ) = Column(modifier) {
 
     val viewModel = viewModel<EncryptViewModel>()
 
-    EncryptScreenMain(navHostController)
+    EncryptScreenMain(focusRequester = focusRequester)
 
     if (viewModel.showDeleteFileDialog.collectAsState().value) {
         OfferDeleteFileDialog()
@@ -61,14 +59,10 @@ fun EncryptScreen(
 }
 
 @Composable
-private fun ColumnScope.EncryptScreenMain(navHostController: NavHostController) {
+private fun ColumnScope.EncryptScreenMain(
+    focusRequester: FocusRequester
+) {
     val viewModel = viewModel<EncryptViewModel>()
-    val focusRequester = remember { FocusRequester() }
-
-    LaunchedEffect(navHostController) {
-        focusRequester.requestFocus()
-        navHostController.popBackStack(NAV_LOG_LIST, false)
-    }
 
     Spacer(modifier = Modifier.size(8.dp))
 
@@ -95,9 +89,7 @@ private fun ColumnScope.EncryptScreenMain(navHostController: NavHostController) 
     Spacer(modifier = Modifier.size(8.dp))
 
     Row(
-        modifier = Modifier
-            .padding(vertical = 4.dp)
-            .height(IntrinsicSize.Min)
+        modifier = Modifier.wrapContentHeight().padding(vertical = 4.dp),
     ) {
 
         SelectLogButton(modifier = Modifier.weight(1f))

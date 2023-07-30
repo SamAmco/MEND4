@@ -5,6 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import co.samco.mendroid.viewmodel.UnlockViewModel
@@ -12,7 +13,8 @@ import co.samco.mendroid.viewmodel.UnlockViewModel
 @Composable
 fun DecryptScreen(
     modifier: Modifier = Modifier,
-    navHostController: NavHostController
+    navHostController: NavHostController,
+    focusRequester: FocusRequester
 ) {
     val unlockViewModel = viewModel<UnlockViewModel>()
     val unlocked = unlockViewModel.unlocked.collectAsState(initial = false).value
@@ -26,7 +28,11 @@ fun DecryptScreen(
     Crossfade(targetState = unlocked) {
         if (it) DecryptLogScreen(
             modifier = modifier,
-            navController = navHostController
-        ) else UnlockScreen(modifier)
+            navController = navHostController,
+            focusRequester = focusRequester
+        ) else UnlockScreen(
+            modifier = modifier,
+            focusRequester = focusRequester
+        )
     }
 }
