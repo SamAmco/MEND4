@@ -197,7 +197,7 @@ class DefaultJCECryptoProvider(
         inputStream: InputStream,
         cipherOutputStream: CipherOutputStream
     ) = withContext(Dispatchers.IO) {
-        val buffer = ByteArray(8192)
+        val buffer = ByteArray(16 * 1024)
         var count: Int
         while (inputStream.read(buffer).also { count = it } > 0) {
             cipherOutputStream.write(buffer, 0, count)
