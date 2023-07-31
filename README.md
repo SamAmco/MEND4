@@ -1,141 +1,19 @@
 # MEND 
-(My ENcrypted Data) provides a simple interface for encryption of sensitive data.
+(My ENcrypted Data) provides a simple interface for encryption/decryption of sensitive data via a cross platform command line application and a compatible android app. 
 
-MEND makes a deliberate distinction between "logs" and "files". After a small amount of setup, you can use MEND to encrypt and decrypt logs and files with simple and short commands. You only need to remember one password to unlock MEND which will then allow you to decrypt your logs and files.
+## Motivation
+I built MEND for password storage, journaling, and securing sensitive documents. It is pretty general purpose but the key idea is that encryption should be quick and easy from your device and only decryption should require authentication. You require only one password to "unlock" MEND at which point you can decrypt any/all of your encrypted data. MEND aims to provide confidentiality but does not make any particular guarantees with regard to authenticity or integrity. Typically I will point MEND at a cloud storage service (e.g. Dropbox or Google drive) and store all my passwords there encrypted. Decryption happens only on your local device and ideally you never even write the decrypted file to storage. This is I believe a superior password storage system than trusting a password management service like LastPass or OnePass as your cloud storage provider can not decrypt your data. The tradeoff is that there is no "forgot password" flow. If you forget your single password (or you lose your `config.xml`) your data is lost. For more strong opinions about passwords check out my [pass-words command line app](https://github.com/SamAmco/pass-words).
 
-## SETUP:
+## Concepts
+MEND uses hybrid encryption. A user has a randomly generated asymmetric key pair which is stored long term in a file called `config.xml`. To use MEND you must first set it up providing a password. This password is hashed using the Argon2 password hashing algorithm to generate an AES 256 bit key which is then used to encrypt your private key. Your public key and encrypted private key (as well as your password hashing parameters) are then stored in your `config.xml` file. This file does not contain confidential information but if you ever lose it you will not be able to decrypt your data any more as it contains not only your keys but also randomly generated salt and IV parameters used for encrypting your private key. 
 
-First build the code using the gradle wrapper. There is currently no automatic installation process, but there are some useful scripts you can add to your system path under desktop-mend/scripts. You will need to change the path to MEND4.jar in the script though. 
+Each encryption operation will first generate a new random symmetric key and IV (specifically AES 256), encrypt that with the public key of the asymmetric key pair, and then encrypt the data with the symmetric key. The encrypted symmetric key, IV, and encrypted data are then written or appended to a file.
 
-Next open a terminal and run:
+In MEND there are two types of encrypted file. There are `.enc` files which are just files encrypted with the above process. Then there are `.mend` files (aka log files) which contain a log of entries with a date/time header and some encrypted text. You can append as many entries to a log file as you like, each entry will be encrypted with its own AES key and IV as per the above process.
 
-	mend setup
+In order to decrypt your data you must first `unlock` MEND. To do this you provide your password and MEND will decrypt and store your private key in plaintext. After unlocking MEND you can decrypt and view your data. When you are done you must remember to `lock` MEND again which securely deletes your decrypted private key file.
 
-MEND will ask you to input a password, and then create a "Settings.xml" file in the directory ~/.MEND4 (under your users home directory). This file is very important as it contains your generated RSA keys (which can NOT be re-generated from the same password, so consider keeping a backup.) When you encrypt a log/file, your public RSA key will be used to encrypt an AES key that is used to encrypt your log/file. The public key is stored as is, however your private key is stored encrypted and requires your password to decrypt. Your "Settings.xml" file also contains a bunch of other things that you will need to set before using MEND. When interacting with your Settings.xml file, it is best to use the commands:
+## Usage
+To get started you will need to use the command line application to generate a `config.xml` (as the android app does not currently do this for you). Head over to [desktop-mend](desktop-mend/README.md) for more details. 
 
-	mend get [-a | -l | -e] | <property>
-
-to get properties in your "Settings.xml" file and:
-
-	mend set <property name> <value>
-
-to set properties.
-
-To complete your setup you'll need to set the following properties:
-
-	mend set currentlog <log file name>
-	
-	mend set logdir <directory to store logs>
-	
-	mend set encdir <directory to store encrypted files>
-	
-	mend set decdir <directory to store decrypted files>
-	
-	mend set shredcommand <shred command>
-
-
-### WARNING! YOUR SHRED COMMAND WILL BE RUN ON EVERY FILE IN DECDIR WHEN YOU RUN:
-        
-	mend clean
-
-It is a bad idea to leave anything in decdir that you wish to keep. The shredcommand property tells mend how to destroy decrypted files by storing a command to be run per file to be destroyed. You can use what ever file shredding/deleting utility you like as long as you substitute the position of the filename for the term "<filename>". For example:
-
-	mend set shredcommand "shred -u <filename>"
-	
-or (a less secure version):
-
-	mend set shredcommand "rm <filename>"
-	
-
-## LOCKING AND UNLOCKING:
-
-In order to decrypt anything that has been encrypted by MEND, you will first need to unlock MEND using the command:
-
-	mend unlock
-
-MEND will ask you for your password, and then decrypt your private key and store it in a file called "prKey" next to your "Settings.xml" file. It will also store your public key in a file called pubKey. If you wish to change your password, but keep your keys, you can do so by calling:
-
-        mend setup <private key file> <public key file>
-
-It is important to run remember to run:
-
-	mend lock	
-
-when you're done decrypting and viewing information. This command will use the "shredcommand" as set up earlier to destroy your decrypted private and public key files.
-
-
-## ENCRYPTING
-
-To encrypt text to your currentlog use
-
-        mend enc
-	
-By default this will open up a text entry box where you can type/paste your text. Use Ctrl+Enter to commit the text and clear the text box, or Shift+Enter to commit the text and close the text box. Each log is appended to the current log file under a header marking the date/time and the version of MEND used to commit that log.
-
-To encrypt a file use:
-
-        mend enc <file> [<custom file name>]
-
-In the absence of a custom filename, MEND will print out the id of the encrypted file, which you can later use to decrypt that file. The encrypted file is stored in your "encdir" as set up earlier.
-
-You can also use:
-
-        mend enc -a
-
-To append to the current log without a header.
-
-        mend enc -d <text>
-
-To encrypt text straight from the command line into the log. Or
-
-        mend enci
-
-To encrypt text from standard input (until an EOF is met).
-
-
-## DECRYPTING
-
-To decrypt a log, first unlock MEND, and then run:
-
-        mend dec <name of log>
-	
-You don't need to specify the full path to the log file, MEND will look first to see if the name represents an absolute path, but it will default to looking for that log file in your "logdir". You also don't need to use the suffix ".mend".
-
-To decrypt a file, use:
-
-        mend dec <file id> | <path to encrypted file>
-	
-MEND will decrypt the file to your "decdir". By default, mend will use your systems default program for that file type to open the file once it is decrypted. You can supress this behaviour using:
-
-        mend dec -s <file id> | <path to encrypted file>
-	
-
-## CLEANING
-
-When you are done viewing your encrypted logs/files, you can run:
-
-       mend clean
-       
-This will run your "shredcommand" on every file in your "decdir". Once again, don't put anything in this folder you wish to keep. 
-
-
-## MERGING
-
-You can merge two logs together into one log file using the merge subcommand. MEND needs to be unlocked to do this because it will read the date/time at the top of each log and order the output log by date. e.g.
-
-        mend merge in1.mend in2.mend out.mend
-
-Another way to use this command is with the -1 or -2 flag (instead of providing an output log file name.) This way the output log will replace the the first or second logs respectively. e.g.
-
-        mend merge -1 in1.mend in2.mend
-
-
-## HELP
-
-If you need reminding of any of the basics written above, you can get help using:
-
-        mend -h
-
-or
-
-        mend <subcommand> -h
+After this if you want to use the android app check out the [mendroid](mendroid/README.md) module.
