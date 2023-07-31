@@ -53,5 +53,5 @@ jar {
         configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
     }
 
-    archiveFileName = 'MEND4.jar'
+    archiveFileName = 'mend.jar'
 }
