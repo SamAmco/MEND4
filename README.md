@@ -14,6 +14,6 @@ In MEND there are two types of encrypted file. There are `.enc` files which are 
 In order to decrypt your data you must first `unlock` MEND. To do this you provide your password and MEND will decrypt and store your private key in plaintext. After unlocking MEND you can decrypt and view your data. When you are done you must remember to `lock` MEND again which securely deletes your decrypted private key file.
 
 ## Usage
-To get started you will need to use the command line application to generate a `config.xml` (as the android app does not currently do this for you). Head over to [desktop-mend](desktop-mend/README.md) for more details. 
+To get started you will need to use the command line application to generate a `config.xml` (as the android app does not currently do this for you). Head over to [desktop-mend](desktop-mend/) for more details. 
 
-After this if you want to use the android app check out the [mendroid](mendroid/README.md) module.
+After this if you want to use the android app check out the [mendroid](mendroid/) module.
