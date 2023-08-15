@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -123,11 +124,14 @@ private fun EncryptScreenMain(
             .padding(vertical = 4.dp),
     ) {
 
-        SelectLogButton(modifier = Modifier.weight(1f))
+        SelectLogButton(
+            modifier = Modifier.weight(1f).height(42.dp)
+        )
 
         Spacer(modifier = Modifier.size(8.dp))
 
         Button(
+            modifier = Modifier.height(42.dp),
             onClick = { viewModel.showAttachmentMenu() },
             enabled = !viewModel.loading
         ) {
@@ -142,6 +146,7 @@ private fun EncryptScreenMain(
         val currentLog = viewModel.currentLogName.collectAsState().value
 
         ActionButton(
+            modifier = Modifier.height(42.dp),
             text = stringResource(id = R.string.submit),
             enabled = currentLog != null && !viewModel.loading,
         ) {
