@@ -2,6 +2,8 @@ package co.samco.mendroid.ui.theme
 
 import android.app.Activity
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material.ButtonColors
+import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.TextFieldColors
 import androidx.compose.material.TextFieldDefaults
@@ -47,6 +49,13 @@ private val LightColorScheme = lightColors(
 fun mendTextFieldColors(): TextFieldColors {
   return TextFieldDefaults.textFieldColors(
       cursorColor = MaterialTheme.colors.onSurface,
+  )
+}
+
+@Composable
+fun mendTextButtonColors(): ButtonColors {
+  return ButtonDefaults.textButtonColors(
+      contentColor = MaterialTheme.colors.onSurface
   )
 }
 

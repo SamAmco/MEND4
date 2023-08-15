@@ -1,13 +1,17 @@
 package co.samco.mendroid.viewmodel
 
 import android.app.Application
+import android.content.ContentUris
 import android.net.Uri
 import android.provider.DocumentsContract
+import android.provider.MediaStore
+import androidx.activity.result.ActivityResult
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.core.content.FileProvider
 import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -27,6 +31,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.io.File
+import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -40,6 +46,10 @@ class EncryptViewModel @Inject constructor(
     private val errorToastManager: ErrorToastManager,
     private val logFileManager: LogFileManager
 ) : AndroidViewModel(application) {
+
+    companion object {
+        private const val TO_ENCRYPT_DIR = "to-encrypt"
+    }
 
     private val _offerDeleteFile = MutableStateFlow<Uri?>(null)
     val showDeleteFileDialog: StateFlow<Boolean> = _offerDeleteFile
@@ -61,6 +71,14 @@ class EncryptViewModel @Inject constructor(
 
     val currentLogName: StateFlow<String?> = currentLog.map { it?.name }
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    var loading by mutableStateOf(false)
+        private set
+
+    private var currentUri: Uri? = null
+
+    var showAttachmentMenu by mutableStateOf(false)
+        private set
 
     fun encryptText() {
         viewModelScope.launch {
@@ -89,70 +107,72 @@ class EncryptViewModel @Inject constructor(
         }
     }
 
+    private suspend fun encryptFileFromUri(uri: Uri) {
+        val inputStream = context.contentResolver.openInputStream(uri)
+        if (inputStream == null) {
+            errorToastManager.showErrorToast(R.string.no_file)
+            return
+        }
+
+        val encDirUri = propertyManager.getEncDirUri()
+        if (encDirUri == null) {
+            errorToastManager.showErrorToast(R.string.no_enc_dir)
+            return
+        }
+
+        val encDirFile = DocumentFile.fromTreeUri(context, Uri.parse(encDirUri))
+        if (encDirFile == null || !encDirFile.isDirectory
+            || !encDirFile.canRead() || !encDirFile.canWrite()
+        ) {
+            errorToastManager.showErrorToast(R.string.no_enc_dir)
+            return
+        }
+
+        val fileName = SimpleDateFormat(
+            AppProperties.ENC_FILE_NAME_FORMAT,
+            Locale.getDefault()
+        ).format(Date())
+
+        val newFile = encDirFile.createFile(
+            "application/octet-stream",
+            "$fileName.${AppProperties.ENC_FILE_EXTENSION}"
+        )
+        if (newFile == null || !newFile.isFile || !newFile.canWrite()) {
+            errorToastManager.showErrorToast(R.string.failed_to_create_file)
+            return
+        }
+
+        val outputStream = context.contentResolver.openOutputStream(newFile.uri)
+        if (outputStream == null) {
+            errorToastManager.showErrorToast(R.string.failed_to_create_file)
+            return
+        }
+
+        val fileExtension = uri.lastPathSegment
+            ?.substringAfterLast('.', "")
+            ?: ""
+
+        cryptoProvider.encryptEncStream(inputStream, outputStream, fileExtension)
+
+        val newText = "${currentEntryText.text}$fileName "
+        currentEntryText = currentEntryText.copy(
+            text = newText,
+            selection = TextRange(newText.length)
+        )
+
+    }
+
     fun encryptFile(uri: Uri?) {
+        showAttachmentMenu = false
         viewModelScope.launch {
             if (uri == null) {
                 errorToastManager.showErrorToast(R.string.no_file)
                 return@launch
             }
 
-            val documentFile = DocumentFile.fromSingleUri(context, uri)
-            if (documentFile == null || !documentFile.isFile || !documentFile.canRead()) {
-                errorToastManager.showErrorToast(R.string.no_file)
-                return@launch
-            }
-
-            val inputStream = context.contentResolver.openInputStream(uri)
-            if (inputStream == null) {
-                errorToastManager.showErrorToast(R.string.no_file)
-                return@launch
-            }
-
-            val encDirUri = propertyManager.getEncDirUri()
-            if (encDirUri == null) {
-                errorToastManager.showErrorToast(R.string.no_enc_dir)
-                return@launch
-            }
-
-            val encDirFile = DocumentFile.fromTreeUri(context, Uri.parse(encDirUri))
-            if (encDirFile == null || !encDirFile.isDirectory
-                || !encDirFile.canRead() || !encDirFile.canWrite()
-            ) {
-                errorToastManager.showErrorToast(R.string.no_enc_dir)
-                return@launch
-            }
-
-            val fileName = SimpleDateFormat(
-                AppProperties.ENC_FILE_NAME_FORMAT,
-                Locale.getDefault()
-            ).format(Date())
-
-            val newFile = encDirFile.createFile(
-                "application/octet-stream",
-                "$fileName.${AppProperties.ENC_FILE_EXTENSION}"
-            )
-            if (newFile == null || !newFile.isFile || !newFile.canWrite()) {
-                errorToastManager.showErrorToast(R.string.failed_to_create_file)
-                return@launch
-            }
-
-            val outputStream = context.contentResolver.openOutputStream(newFile.uri)
-            if (outputStream == null) {
-                errorToastManager.showErrorToast(R.string.failed_to_create_file)
-                return@launch
-            }
-
-            val fileExtension = documentFile.name
-                ?.substringAfterLast('.', "")
-                ?: ""
-
-            cryptoProvider.encryptEncStream(inputStream, outputStream, fileExtension)
-
-            val newText = "${currentEntryText.text}$fileName "
-            currentEntryText = currentEntryText.copy(
-                text = newText,
-                selection = TextRange(newText.length)
-            )
+            loading = true
+            encryptFileFromUri(uri)
+            loading = false
 
             //Get the column flags and check for SUPPORTS_DELETE
             val flags = context.contentResolver.query(
@@ -213,5 +233,103 @@ class EncryptViewModel @Inject constructor(
             if (success) R.string.file_deleted
             else R.string.failed_to_delete_file
         )
+    }
+
+    fun hideAttachmentMenu() {
+        showAttachmentMenu = false
+    }
+
+    fun showAttachmentMenu() {
+        showAttachmentMenu = true
+    }
+
+    private val toEncryptDir by lazy { File(context.externalCacheDir, TO_ENCRYPT_DIR) }
+
+    private fun prepareUri(extension: String?): Uri? {
+        return try {
+            toEncryptDir.mkdirs()
+            val tempFile = File.createTempFile("file", extension, toEncryptDir)
+            tempFile.deleteOnExit()
+            currentUri = FileProvider.getUriForFile(
+                context,
+                "${BuildConfig.APPLICATION_ID}.fileprovider",
+                tempFile
+            )
+            currentUri
+        } catch (e: IOException) {
+            errorToastManager.showErrorToast(R.string.failed_to_take_photo)
+            null
+        }
+    }
+
+    fun preparePhotoUri(): Uri? = prepareUri(".jpg")
+
+    fun onPhotoTaken(success: Boolean) {
+        showAttachmentMenu = false
+        val uri = currentUri
+        if (!success || uri == null) {
+            errorToastManager.showErrorToast(R.string.failed_to_take_photo)
+            return
+        }
+        viewModelScope.launch {
+            loading = true
+            encryptFileFromUri(uri)
+            clearCacheDir()
+            loading = false
+        }
+    }
+
+    private fun clearCacheDir() {
+        toEncryptDir.listFiles()?.forEach { it.delete() }
+    }
+
+    fun prepareVideoUri(): Uri? = prepareUri(".mp4")
+
+    fun onVideoTaken(success: Boolean) {
+        showAttachmentMenu = false
+        val uri = currentUri
+        if (!success || uri == null) {
+            errorToastManager.showErrorToast(R.string.failed_to_take_video)
+            return
+        }
+        viewModelScope.launch {
+            loading = true
+            encryptFileFromUri(uri)
+            clearCacheDir()
+            loading = false
+        }
+    }
+
+    fun onAudioTaken(activityResult: ActivityResult) {
+        showAttachmentMenu = false
+        val uri = activityResult.data?.data
+
+        if (uri == null) {
+            errorToastManager.showErrorToast(R.string.failed_to_take_audio)
+            return
+        }
+
+        println("samsam: $uri, ${MediaStore.Audio.Media.getContentUri(MediaStore.VOLUME_EXTERNAL)}, ${MediaStore.Audio.Media._ID}=?, ${ContentUris.parseId(uri)}")
+
+        viewModelScope.launch {
+            loading = true
+            encryptFileFromUri(uri)
+
+            val result = context.contentResolver.delete(
+                uri, null, null
+            )
+/*
+            val result = context.contentResolver.delete(
+                MediaStore.Audio.Media.getContentUri(MediaStore.VOLUME_EXTERNAL),
+                "${MediaStore.Audio.Media._ID}=?",
+                arrayOf(ContentUris.parseId(uri).toString())
+            )
+*/
+            if (result == 0) {
+                errorToastManager.showErrorToast(R.string.failed_to_delete_audio)
+            }
+
+            loading = false
+        }
     }
 }

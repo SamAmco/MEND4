@@ -10,6 +10,7 @@ import androidx.core.net.toUri
 import co.samco.mend4.core.AppProperties
 import co.samco.mend4.core.crypto.CryptoProvider
 import co.samco.mend4.core.crypto.UnlockResult
+import co.samco.mendroid.BuildConfig
 import co.samco.mendroid.R
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
@@ -245,7 +246,7 @@ class PrivateKeyManagerImpl @Inject constructor(
 
             decryptToTempFile(tempFile, fileUri, privKey)?.let {
                 //yield in case the coroutine is cancelled before the file is opened
-                //yield()
+                yield()
                 offerFileView(tempFile, it)
             }
         }
@@ -316,7 +317,7 @@ class PrivateKeyManagerImpl @Inject constructor(
     private fun offerFileView(file: File, extension: String) {
         val uri = FileProvider.getUriForFile(
             context,
-            "co.samco.mendroid.fileprovider",
+            "${BuildConfig.APPLICATION_ID}.fileprovider",
             file
         )
 

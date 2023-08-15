@@ -1,6 +1,5 @@
 <resources>
     <string name="app_name">MEND</string>
-    <string name="app_name_debug">Debug MEND</string>
     <string name="config_button_text">config.xml</string>
     <string name="enc_dir_button_text">enc-dir</string>
 
@@ -17,7 +16,7 @@
     <string name="no_file">No file was found</string>
     <string name="no_enc_dir">Failed to access enc-dir</string>
     <string name="failed_to_create_file">Failed to create a new file.</string>
-    <string name="file">File</string>
+    <string name="select_file">Select File</string>
     <string name="submit">Submit</string>
     <string name="password">Password:</string>
     <string name="unlock">Unlock</string>
@@ -54,4 +53,12 @@
     <string name="file_deleted">Original file deleted</string>
     <string name="file_not_deleted">Original file was not deleted</string>
     <string name="can_not_offer_delete">Could not get permission to delete the original file</string>
+    <string name="attachment">Attachment</string>
+    <string name="take_photo">Take photo</string>
+    <string name="record_video">Record video</string>
+    <string name="record_audio">Record audio</string>
+    <string name="failed_to_take_photo">Failed to take photo</string>
+    <string name="failed_to_take_video">Failed to take video</string>
+    <string name="failed_to_take_audio">Failed to record audio</string>
+    <string name="failed_to_delete_audio">Failed to delete recording</string>
 </resources>

@@ -1,16 +1,19 @@
 package co.samco.mendroid.ui.screens
 
+import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager.PERMISSION_GRANTED
+import android.provider.MediaStore
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -19,17 +22,25 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.Button
 import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.Card
+import androidx.compose.material.CircularProgressIndicator
+import androidx.compose.material.Divider
+import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
+import androidx.compose.material.TextButton
 import androidx.compose.material.TextField
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Attachment
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
@@ -40,6 +51,7 @@ import co.samco.mend4.core.AppProperties
 import co.samco.mendroid.R
 import co.samco.mendroid.ui.common.ConfirmCancelDialogBody
 import co.samco.mendroid.ui.common.TextItemList
+import co.samco.mendroid.ui.theme.mendTextButtonColors
 import co.samco.mendroid.ui.theme.mendTextFieldColors
 import co.samco.mendroid.viewmodel.EncryptViewModel
 
@@ -47,11 +59,13 @@ import co.samco.mendroid.viewmodel.EncryptViewModel
 fun EncryptScreen(
     modifier: Modifier = Modifier,
     focusRequester: FocusRequester
-) = Column(modifier) {
+) = Box(modifier) {
 
     val viewModel = viewModel<EncryptViewModel>()
 
     EncryptScreenMain(focusRequester = focusRequester)
+
+    if (viewModel.loading) LoadingOverlay()
 
     if (viewModel.showDeleteFileDialog.collectAsState().value) {
         OfferDeleteFileDialog()
@@ -59,10 +73,20 @@ fun EncryptScreen(
 }
 
 @Composable
-private fun ColumnScope.EncryptScreenMain(
-    focusRequester: FocusRequester
+private fun LoadingOverlay() = Box(
+    modifier = Modifier.fillMaxSize(),
+    contentAlignment = Alignment.Center
 ) {
+    CircularProgressIndicator()
+}
+
+@Composable
+private fun EncryptScreenMain(
+    focusRequester: FocusRequester
+) = Column(modifier = Modifier.fillMaxSize()) {
     val viewModel = viewModel<EncryptViewModel>()
+
+    if (viewModel.showAttachmentMenu) AttachmentMenu { viewModel.hideAttachmentMenu() }
 
     Spacer(modifier = Modifier.size(8.dp))
 
@@ -77,6 +101,7 @@ private fun ColumnScope.EncryptScreenMain(
     ) {
         TextField(
             modifier = Modifier.focusRequester(focusRequester),
+            enabled = !viewModel.loading,
             value = viewModel.currentEntryText,
             onValueChange = { viewModel.currentEntryText = it },
             keyboardOptions = KeyboardOptions.Default.copy(
@@ -89,20 +114,23 @@ private fun ColumnScope.EncryptScreenMain(
     Spacer(modifier = Modifier.size(8.dp))
 
     Row(
-        modifier = Modifier.wrapContentHeight().padding(vertical = 4.dp),
+        modifier = Modifier
+            .wrapContentHeight()
+            .padding(vertical = 4.dp),
     ) {
 
         SelectLogButton(modifier = Modifier.weight(1f))
 
         Spacer(modifier = Modifier.size(8.dp))
 
-        val launcher = rememberLauncherForActivityResult(
-            ActivityResultContracts.OpenDocument(),
-            viewModel::encryptFile
-        )
-
-        ActionButton(text = stringResource(id = R.string.file)) {
-            launcher.launch(arrayOf("*/*"))
+        Button(
+            onClick = { viewModel.showAttachmentMenu() },
+            enabled = !viewModel.loading
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Attachment,
+                contentDescription = stringResource(id = R.string.attachment)
+            )
         }
 
         Spacer(modifier = Modifier.size(8.dp))
@@ -111,11 +139,98 @@ private fun ColumnScope.EncryptScreenMain(
 
         ActionButton(
             text = stringResource(id = R.string.submit),
-            enabled = currentLog != null
+            enabled = currentLog != null && !viewModel.loading,
         ) {
             viewModel.encryptText()
         }
     }
+}
+/*
+
+private fun checkHasCameraPermission(context: Context): Boolean {
+    return context.checkSelfPermission(android.Manifest.permission.CAMERA) == PERMISSION_GRANTED
+}
+*/
+
+@Composable
+private fun AttachmentMenu(onDismiss: () -> Unit) = Dialog(onDismissRequest = onDismiss) {
+    val viewModel = viewModel<EncryptViewModel>()
+
+    val context = LocalContext.current
+    val canRecordAudio = remember(context) {
+        Intent(MediaStore.Audio.Media.RECORD_SOUND_ACTION)
+            .resolveActivity(context.packageManager) != null
+    }
+
+    Surface(
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+
+            val photoLauncher = rememberLauncherForActivityResult(
+                ActivityResultContracts.TakePicture(),
+                viewModel::onPhotoTaken
+            )
+
+            MenuButton(R.string.take_photo) {
+                viewModel.preparePhotoUri()?.let { photoLauncher.launch(it) }
+            }
+
+            Divider()
+
+            val videoLauncher = rememberLauncherForActivityResult(
+                ActivityResultContracts.CaptureVideo(),
+                viewModel::onVideoTaken
+            )
+
+            MenuButton(R.string.record_video) {
+                viewModel.prepareVideoUri()?.let { videoLauncher.launch(it) }
+            }
+
+            Divider()
+
+            val audioLauncher = rememberLauncherForActivityResult(
+                ActivityResultContracts.StartActivityForResult(),
+                viewModel::onAudioTaken
+            )
+
+/*
+            if (canRecordAudio) {
+                MenuButton(R.string.record_audio) {
+                    audioLauncher.launch(
+                        Intent(MediaStore.Audio.Media.RECORD_SOUND_ACTION)
+                    )
+                }
+            }
+*/
+
+            Divider()
+
+            val fileLauncher = rememberLauncherForActivityResult(
+                ActivityResultContracts.OpenDocument(),
+                viewModel::encryptFile
+            )
+
+            MenuButton(R.string.select_file) {
+                fileLauncher.launch(arrayOf("*/*"))
+            }
+        }
+    }
+}
+
+@Composable
+private fun MenuButton(
+    stringId: Int,
+    onClick: () -> Unit
+) = TextButton(
+    modifier = Modifier.fillMaxWidth(),
+    colors = mendTextButtonColors(),
+    onClick = onClick
+) {
+    Text(
+        text = stringResource(id = stringId),
+        style = MaterialTheme.typography.button
+    )
 }
 
 @Composable
@@ -147,6 +262,7 @@ private fun SelectLogButton(modifier: Modifier) {
     Button(
         modifier = modifier,
         onClick = viewModel::onSelectLogButtonClicked,
+        enabled = !viewModel.loading,
         colors = if (logName == null) ButtonDefaults.buttonColors(
             backgroundColor = MaterialTheme.colors.error
         ) else ButtonDefaults.buttonColors(),
