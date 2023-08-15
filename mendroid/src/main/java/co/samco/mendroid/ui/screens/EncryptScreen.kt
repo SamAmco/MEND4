@@ -1,9 +1,8 @@
 package co.samco.mendroid.ui.screens
 
+import android.Manifest
 import android.content.Context
-import android.content.Intent
 import android.content.pm.PackageManager.PERMISSION_GRANTED
-import android.provider.MediaStore
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
@@ -35,7 +34,6 @@ import androidx.compose.material.icons.filled.Attachment
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -53,6 +51,7 @@ import co.samco.mendroid.ui.common.ConfirmCancelDialogBody
 import co.samco.mendroid.ui.common.TextItemList
 import co.samco.mendroid.ui.theme.mendTextButtonColors
 import co.samco.mendroid.ui.theme.mendTextFieldColors
+import co.samco.mendroid.viewmodel.AudioRecordingViewModel
 import co.samco.mendroid.viewmodel.EncryptViewModel
 
 @Composable
@@ -62,6 +61,7 @@ fun EncryptScreen(
 ) = Box(modifier) {
 
     val viewModel = viewModel<EncryptViewModel>()
+    val audioRecordingViewModel = viewModel<AudioRecordingViewModel>()
 
     EncryptScreenMain(focusRequester = focusRequester)
 
@@ -69,6 +69,10 @@ fun EncryptScreen(
 
     if (viewModel.showDeleteFileDialog.collectAsState().value) {
         OfferDeleteFileDialog()
+    }
+
+    if (audioRecordingViewModel.showAudioRecordingDialog.collectAsState().value) {
+        RecordAudioDialog()
     }
 }
 
@@ -145,22 +149,16 @@ private fun EncryptScreenMain(
         }
     }
 }
-/*
 
-private fun checkHasCameraPermission(context: Context): Boolean {
-    return context.checkSelfPermission(android.Manifest.permission.CAMERA) == PERMISSION_GRANTED
+private fun checkHasMicrophonePermission(context: Context): Boolean {
+    return context.checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PERMISSION_GRANTED
 }
-*/
 
 @Composable
 private fun AttachmentMenu(onDismiss: () -> Unit) = Dialog(onDismissRequest = onDismiss) {
     val viewModel = viewModel<EncryptViewModel>()
 
     val context = LocalContext.current
-    val canRecordAudio = remember(context) {
-        Intent(MediaStore.Audio.Media.RECORD_SOUND_ACTION)
-            .resolveActivity(context.packageManager) != null
-    }
 
     Surface(
         modifier = Modifier.fillMaxWidth()
@@ -189,20 +187,25 @@ private fun AttachmentMenu(onDismiss: () -> Unit) = Dialog(onDismissRequest = on
 
             Divider()
 
-            val audioLauncher = rememberLauncherForActivityResult(
-                ActivityResultContracts.StartActivityForResult(),
-                viewModel::onAudioTaken
-            )
+            val audioRecorderViewModel = viewModel<AudioRecordingViewModel>()
 
-/*
-            if (canRecordAudio) {
-                MenuButton(R.string.record_audio) {
-                    audioLauncher.launch(
-                        Intent(MediaStore.Audio.Media.RECORD_SOUND_ACTION)
-                    )
+            val permissionLauncher = rememberLauncherForActivityResult(
+                ActivityResultContracts.RequestPermission()
+            ) {
+                if (it) {
+                    audioRecorderViewModel.showAudioRecordingDialog()
+                    viewModel.hideAttachmentMenu()
                 }
             }
-*/
+
+            MenuButton(R.string.record_audio) {
+                if (checkHasMicrophonePermission(context)) {
+                    audioRecorderViewModel.showAudioRecordingDialog()
+                    viewModel.hideAttachmentMenu()
+                } else {
+                    permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                }
+            }
 
             Divider()
 

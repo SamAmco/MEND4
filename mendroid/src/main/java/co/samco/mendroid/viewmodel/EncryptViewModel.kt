@@ -1,11 +1,8 @@
 package co.samco.mendroid.viewmodel
 
 import android.app.Application
-import android.content.ContentUris
 import android.net.Uri
 import android.provider.DocumentsContract
-import android.provider.MediaStore
-import androidx.activity.result.ActivityResult
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -15,13 +12,12 @@ import androidx.core.content.FileProvider
 import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import co.samco.mend4.core.AppProperties
 import co.samco.mend4.core.crypto.CryptoProvider
 import co.samco.mend4.core.util.LogUtils
 import co.samco.mendroid.BuildConfig
 import co.samco.mendroid.model.ErrorToastManager
-import co.samco.mendroid.model.PropertyManager
 import co.samco.mendroid.R
+import co.samco.mendroid.model.EncryptHelper
 import co.samco.mendroid.model.LogFileData
 import co.samco.mendroid.model.LogFileManager
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -33,16 +29,13 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.io.File
 import java.io.IOException
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 import javax.inject.Inject
 
 @HiltViewModel
 class EncryptViewModel @Inject constructor(
     application: Application,
     private val cryptoProvider: CryptoProvider,
-    private val propertyManager: PropertyManager,
+    private val encryptHelper: EncryptHelper,
     private val errorToastManager: ErrorToastManager,
     private val logFileManager: LogFileManager
 ) : AndroidViewModel(application) {
@@ -80,6 +73,18 @@ class EncryptViewModel @Inject constructor(
     var showAttachmentMenu by mutableStateOf(false)
         private set
 
+    init {
+        viewModelScope.launch {
+            encryptHelper.onFileEncrypted.collect { fileName ->
+                val newText = "${currentEntryText.text}$fileName "
+                currentEntryText = currentEntryText.copy(
+                    text = newText,
+                    selection = TextRange(newText.length)
+                )
+            }
+        }
+    }
+
     fun encryptText() {
         viewModelScope.launch {
             val currLog = currentLog.value
@@ -107,61 +112,6 @@ class EncryptViewModel @Inject constructor(
         }
     }
 
-    private suspend fun encryptFileFromUri(uri: Uri) {
-        val inputStream = context.contentResolver.openInputStream(uri)
-        if (inputStream == null) {
-            errorToastManager.showErrorToast(R.string.no_file)
-            return
-        }
-
-        val encDirUri = propertyManager.getEncDirUri()
-        if (encDirUri == null) {
-            errorToastManager.showErrorToast(R.string.no_enc_dir)
-            return
-        }
-
-        val encDirFile = DocumentFile.fromTreeUri(context, Uri.parse(encDirUri))
-        if (encDirFile == null || !encDirFile.isDirectory
-            || !encDirFile.canRead() || !encDirFile.canWrite()
-        ) {
-            errorToastManager.showErrorToast(R.string.no_enc_dir)
-            return
-        }
-
-        val fileName = SimpleDateFormat(
-            AppProperties.ENC_FILE_NAME_FORMAT,
-            Locale.getDefault()
-        ).format(Date())
-
-        val newFile = encDirFile.createFile(
-            "application/octet-stream",
-            "$fileName.${AppProperties.ENC_FILE_EXTENSION}"
-        )
-        if (newFile == null || !newFile.isFile || !newFile.canWrite()) {
-            errorToastManager.showErrorToast(R.string.failed_to_create_file)
-            return
-        }
-
-        val outputStream = context.contentResolver.openOutputStream(newFile.uri)
-        if (outputStream == null) {
-            errorToastManager.showErrorToast(R.string.failed_to_create_file)
-            return
-        }
-
-        val fileExtension = uri.lastPathSegment
-            ?.substringAfterLast('.', "")
-            ?: ""
-
-        cryptoProvider.encryptEncStream(inputStream, outputStream, fileExtension)
-
-        val newText = "${currentEntryText.text}$fileName "
-        currentEntryText = currentEntryText.copy(
-            text = newText,
-            selection = TextRange(newText.length)
-        )
-
-    }
-
     fun encryptFile(uri: Uri?) {
         showAttachmentMenu = false
         viewModelScope.launch {
@@ -171,7 +121,7 @@ class EncryptViewModel @Inject constructor(
             }
 
             loading = true
-            encryptFileFromUri(uri)
+            encryptHelper.encryptFileFromUri(uri)
             loading = false
 
             //Get the column flags and check for SUPPORTS_DELETE
@@ -273,7 +223,7 @@ class EncryptViewModel @Inject constructor(
         }
         viewModelScope.launch {
             loading = true
-            encryptFileFromUri(uri)
+            encryptHelper.encryptFileFromUri(uri)
             clearCacheDir()
             loading = false
         }
@@ -294,41 +244,8 @@ class EncryptViewModel @Inject constructor(
         }
         viewModelScope.launch {
             loading = true
-            encryptFileFromUri(uri)
+            encryptHelper.encryptFileFromUri(uri)
             clearCacheDir()
-            loading = false
-        }
-    }
-
-    fun onAudioTaken(activityResult: ActivityResult) {
-        showAttachmentMenu = false
-        val uri = activityResult.data?.data
-
-        if (uri == null) {
-            errorToastManager.showErrorToast(R.string.failed_to_take_audio)
-            return
-        }
-
-        println("samsam: $uri, ${MediaStore.Audio.Media.getContentUri(MediaStore.VOLUME_EXTERNAL)}, ${MediaStore.Audio.Media._ID}=?, ${ContentUris.parseId(uri)}")
-
-        viewModelScope.launch {
-            loading = true
-            encryptFileFromUri(uri)
-
-            val result = context.contentResolver.delete(
-                uri, null, null
-            )
-/*
-            val result = context.contentResolver.delete(
-                MediaStore.Audio.Media.getContentUri(MediaStore.VOLUME_EXTERNAL),
-                "${MediaStore.Audio.Media._ID}=?",
-                arrayOf(ContentUris.parseId(uri).toString())
-            )
-*/
-            if (result == 0) {
-                errorToastManager.showErrorToast(R.string.failed_to_delete_audio)
-            }
-
             loading = false
         }
     }

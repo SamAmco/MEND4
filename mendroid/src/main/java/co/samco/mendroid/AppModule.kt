@@ -4,6 +4,8 @@ import android.util.Base64
 import co.samco.mend4.core.IBase64EncodingProvider
 import co.samco.mend4.core.crypto.CryptoProvider
 import co.samco.mend4.core.crypto.impl.DefaultJCECryptoProvider
+import co.samco.mendroid.model.EncryptHelper
+import co.samco.mendroid.model.EncryptHelperImpl
 import co.samco.mendroid.model.ErrorToastManager
 import co.samco.mendroid.model.ErrorToastManagerImpl
 import co.samco.mendroid.model.LogFileManager
@@ -53,4 +55,8 @@ class AppModule {
     @Provides
     @Singleton
     fun provideLogManager(impl: LogFileManagerImpl): LogFileManager = impl
+
+    @Provides
+    @Singleton
+    fun provideEncryptionHelper(impl: EncryptHelperImpl): EncryptHelper = impl
 }
