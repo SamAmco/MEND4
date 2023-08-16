@@ -8,4 +8,5 @@ You will need to read [the project README](../README.md) and have created a `con
 	<img src="./screenshots/4.png" width="200px" />
 	<img src="./screenshots/5.png" width="200px" />
 	<img src="./screenshots/6.png" width="200px" />
+	<img src="./screenshots/7.png" width="200px" />
 </p>
