@@ -20,16 +20,25 @@ import co.samco.mendroid.R
 import co.samco.mendroid.model.EncryptHelper
 import co.samco.mendroid.model.LogFileData
 import co.samco.mendroid.model.LogFileManager
+import com.abedelazizshe.lightcompressorlibrary.CompressionListener
+import com.abedelazizshe.lightcompressorlibrary.VideoCompressor
+import com.abedelazizshe.lightcompressorlibrary.VideoQuality
+import com.abedelazizshe.lightcompressorlibrary.config.AppSpecificStorageConfiguration
+import com.abedelazizshe.lightcompressorlibrary.config.Configuration
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.io.File
 import java.io.IOException
 import javax.inject.Inject
+import kotlin.random.Random
 
 @HiltViewModel
 class EncryptViewModel @Inject constructor(
@@ -194,6 +203,8 @@ class EncryptViewModel @Inject constructor(
     }
 
     private val toEncryptDir by lazy { File(context.externalCacheDir, TO_ENCRYPT_DIR) }
+    private val videoCompressionDirName = "video-compression"
+    private val videoCompressionDir by lazy { File(context.filesDir, videoCompressionDirName) }
 
     private fun prepareUri(extension: String?): Uri? {
         return try {
@@ -230,7 +241,14 @@ class EncryptViewModel @Inject constructor(
     }
 
     private fun clearCacheDir() {
-        toEncryptDir.listFiles()?.forEach { it.delete() }
+        toEncryptDir.listFiles()?.forEach {
+            println("samsam deleting file: ${it.absolutePath}")
+            it.delete()
+        }
+        videoCompressionDir.listFiles()?.forEach {
+            println("samsam deleting compressed file: ${it.absolutePath}")
+            it.delete()
+        }
     }
 
     fun prepareVideoUri(): Uri? = prepareUri(".mp4")
@@ -244,9 +262,63 @@ class EncryptViewModel @Inject constructor(
         }
         viewModelScope.launch {
             loading = true
-            encryptHelper.encryptFileFromUri(uri)
+            compressVideo(uri)?.let { encryptHelper.encryptFileFromUri(it) }
             clearCacheDir()
             loading = false
+        }
+    }
+
+    private suspend fun compressVideo(uri: Uri): Uri? {
+
+        videoCompressionDir.mkdirs()
+
+        val result = MutableSharedFlow<Uri>(replay = 1, extraBufferCapacity = 1)
+        val error = MutableSharedFlow<Pair<Int, List<String>?>>(replay = 1, extraBufferCapacity = 1)
+
+        VideoCompressor.start(
+            context = context.applicationContext, // => This is required
+            uris = listOf(uri), // => Source can be provided as content uris
+            isStreamable = false,
+            appSpecificStorageConfiguration = AppSpecificStorageConfiguration(
+                subFolderName = videoCompressionDirName // => optional
+            ),
+            configureWith = Configuration(
+                videoNames = listOf("video${Random.nextInt()}"), /*list of video names, the size should be similar to the passed uris*/
+                quality = VideoQuality.VERY_LOW,
+                isMinBitrateCheckEnabled = true,
+                keepOriginalResolution = false, /*Boolean, or ignore*/
+            ),
+            listener = object : CompressionListener {
+                override fun onProgress(index: Int, percent: Float) {}
+                override fun onStart(index: Int) {}
+
+                override fun onSuccess(index: Int, size: Long, path: String?) {
+                    path?.let {
+                        result.tryEmit(Uri.fromFile(File(path)))
+                    } ?: error.tryEmit(Pair(R.string.failed_to_compress_video, null))
+                }
+
+                override fun onFailure(index: Int, failureMessage: String) {
+                    error.tryEmit(Pair(R.string.failed_to_compress_video, listOf(failureMessage)))
+                }
+
+                override fun onCancelled(index: Int) {
+                    error.tryEmit(Pair(R.string.video_compression_cancelled, null))
+                }
+            }
+        )
+
+        return try {
+            merge(
+                result.map { it },
+                error.map { (msg, errors) ->
+                    errorToastManager.showErrorToast(msg, errors ?: emptyList())
+                    null
+                }
+            ).first()
+        } catch (t: Throwable) {
+            errorToastManager.showErrorToast(R.string.failed_to_compress_video)
+            null
         }
     }
 }

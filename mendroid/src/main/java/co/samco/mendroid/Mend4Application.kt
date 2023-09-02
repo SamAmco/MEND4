@@ -30,6 +30,11 @@ class Mend4Application : Application() {
         registerReceiver(screenEventReceiver, intentFilter)
 
         privateKeyManager.forceCleanFiles()
+
+        //Delete all files in all private locations
+        filesDir.listFiles()?.forEach { it.deleteRecursively() }
+        cacheDir.listFiles()?.forEach { it.deleteRecursively() }
+        externalCacheDir?.listFiles()?.forEach { it.deleteRecursively() }
     }
 
     override fun onTerminate() {

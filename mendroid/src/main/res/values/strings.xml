@@ -61,4 +61,6 @@
     <string name="failed_to_take_video">Failed to take video</string>
     <string name="failed_to_take_audio">Failed to record audio</string>
     <string name="failed_to_delete_audio">Failed to delete recording</string>
+    <string name="failed_to_compress_video">Failed to compress video: %s</string>
+    <string name="video_compression_cancelled">Video compression cancelled</string>
 </resources>

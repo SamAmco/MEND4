@@ -3,6 +3,7 @@ package co.samco.mendroid.ui.screens
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager.PERMISSION_GRANTED
+import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
@@ -125,7 +126,9 @@ private fun EncryptScreenMain(
     ) {
 
         SelectLogButton(
-            modifier = Modifier.weight(1f).height(42.dp)
+            modifier = Modifier
+                .weight(1f)
+                .height(42.dp)
         )
 
         Spacer(modifier = Modifier.size(8.dp))
@@ -181,14 +184,7 @@ private fun AttachmentMenu(onDismiss: () -> Unit) = Dialog(onDismissRequest = on
 
             Divider()
 
-            val videoLauncher = rememberLauncherForActivityResult(
-                ActivityResultContracts.CaptureVideo(),
-                viewModel::onVideoTaken
-            )
-
-            MenuButton(R.string.record_video) {
-                viewModel.prepareVideoUri()?.let { videoLauncher.launch(it) }
-            }
+            VideoButton()
 
             Divider()
 
@@ -203,7 +199,8 @@ private fun AttachmentMenu(onDismiss: () -> Unit) = Dialog(onDismissRequest = on
                 }
             }
 
-            MenuButton(R.string.record_audio) {
+            MenuButton(R.string.record_audio)
+            {
                 if (checkHasMicrophonePermission(context)) {
                     audioRecorderViewModel.showAudioRecordingDialog()
                     viewModel.hideAttachmentMenu()
@@ -219,9 +216,45 @@ private fun AttachmentMenu(onDismiss: () -> Unit) = Dialog(onDismissRequest = on
                 viewModel::encryptFile
             )
 
-            MenuButton(R.string.select_file) {
+            MenuButton(R.string.select_file)
+            {
                 fileLauncher.launch(arrayOf("*/*"))
             }
+        }
+    }
+}
+
+@Composable
+private fun VideoButton() {
+    val viewModel = viewModel<EncryptViewModel>()
+
+    val videoLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CaptureVideo(),
+        viewModel::onVideoTaken
+    )
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { results ->
+        if (results.values.all { it }) {
+            viewModel.prepareVideoUri()?.let { videoLauncher.launch(it) }
+        }
+    }
+
+    //Permissions as required by LightCompressor. See: https://github.com/AbedElazizShe/LightCompressor
+    MenuButton(R.string.record_video) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            // request READ_MEDIA_VIDEO run-time permission
+            permissionLauncher.launch(
+                arrayOf(Manifest.permission.READ_MEDIA_VIDEO)
+            )
+        } else if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
+            // request WRITE_EXTERNAL_STORAGE run-time permission
+            permissionLauncher.launch(
+                arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+            )
+        } else {
+            viewModel.prepareVideoUri()?.let { videoLauncher.launch(it) }
         }
     }
 }
