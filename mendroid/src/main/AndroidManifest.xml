@@ -58,6 +58,10 @@
             android:enabled="true"
             android:exported="false" />
 
+        <service android:name=".model.AudioRecorderService"
+            android:enabled="true"
+            android:exported="false" />
+
         <receiver
             android:name=".model.ScreenEventReceiver"
             android:exported="false">

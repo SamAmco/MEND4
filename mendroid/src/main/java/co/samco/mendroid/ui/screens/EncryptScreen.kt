@@ -54,6 +54,7 @@ import co.samco.mendroid.ui.common.TextItemList
 import co.samco.mendroid.ui.theme.mendTextButtonColors
 import co.samco.mendroid.ui.theme.mendTextFieldColors
 import co.samco.mendroid.viewmodel.AudioRecordingViewModel
+import co.samco.mendroid.viewmodel.AudioRecordingViewModelImpl
 import co.samco.mendroid.viewmodel.EncryptViewModel
 
 @Composable
@@ -63,7 +64,7 @@ fun EncryptScreen(
 ) = Box(modifier) {
 
     val viewModel = viewModel<EncryptViewModel>()
-    val audioRecordingViewModel = viewModel<AudioRecordingViewModel>()
+    val audioRecordingViewModel: AudioRecordingViewModel = viewModel<AudioRecordingViewModelImpl>()
 
     EncryptScreenMain(focusRequester = focusRequester)
 
@@ -188,13 +189,13 @@ private fun AttachmentMenu(onDismiss: () -> Unit) = Dialog(onDismissRequest = on
 
             Divider()
 
-            val audioRecorderViewModel = viewModel<AudioRecordingViewModel>()
+            val audioRecordingViewModel: AudioRecordingViewModel = viewModel<AudioRecordingViewModelImpl>()
 
             val permissionLauncher = rememberLauncherForActivityResult(
                 ActivityResultContracts.RequestPermission()
             ) {
                 if (it) {
-                    audioRecorderViewModel.showAudioRecordingDialog()
+                    audioRecordingViewModel.showAudioRecordingDialog()
                     viewModel.hideAttachmentMenu()
                 }
             }
@@ -202,7 +203,7 @@ private fun AttachmentMenu(onDismiss: () -> Unit) = Dialog(onDismissRequest = on
             MenuButton(R.string.record_audio)
             {
                 if (checkHasMicrophonePermission(context)) {
-                    audioRecorderViewModel.showAudioRecordingDialog()
+                    audioRecordingViewModel.showAudioRecordingDialog()
                     viewModel.hideAttachmentMenu()
                 } else {
                     permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)

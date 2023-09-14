@@ -32,10 +32,11 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.viewmodel.compose.viewModel
 import co.samco.mendroid.viewmodel.AudioRecordingViewModel
+import co.samco.mendroid.viewmodel.AudioRecordingViewModelImpl
 
 @Composable
 fun RecordAudioDialog() {
-    val viewModel = viewModel<AudioRecordingViewModel>()
+    val viewModel: AudioRecordingViewModel = viewModel<AudioRecordingViewModelImpl>()
 
     Dialog(
         onDismissRequest = { viewModel.dismissRecordAudioDialog() },
@@ -74,15 +75,17 @@ fun RecordAudioDialog() {
 private fun RecordAudioDialogView() = Column(
     horizontalAlignment = Alignment.CenterHorizontally
 ) {
-    val viewModel = viewModel<AudioRecordingViewModel>()
+    val viewModel: AudioRecordingViewModel = viewModel<AudioRecordingViewModelImpl>()
 
     Spacer(modifier = Modifier.height(16.dp))
+
+    val isRecording = viewModel.isRecording.collectAsState().value
 
     Text(
         viewModel.timeText.collectAsState().value,
         style = MaterialTheme.typography.h3.copy(
             color = MaterialTheme.colors.onSurface.copy(
-                alpha = if (viewModel.recording) 1f else 0.5f
+                alpha = if (isRecording) 1f else 0.5f
             )
         ),
     )
@@ -102,9 +105,11 @@ private fun RecordAudioDialogView() = Column(
 
 @Composable
 private fun RecordStopButtons() {
-    val viewModel = viewModel<AudioRecordingViewModel>()
+    val viewModel: AudioRecordingViewModel = viewModel<AudioRecordingViewModelImpl>()
 
-    if (viewModel.recording) {
+    val isRecording = viewModel.isRecording.collectAsState().value
+
+    if (isRecording) {
         IconButton(
             onClick = { viewModel.stopRecording() },
             enabled = !viewModel.loading,
@@ -139,7 +144,7 @@ private fun RecordStopButtons() {
 
 @Composable
 private fun RetrySaveButtons() = Row {
-    val viewModel = viewModel<AudioRecordingViewModel>()
+    val viewModel: AudioRecordingViewModel = viewModel<AudioRecordingViewModelImpl>()
 
     IconButton(
         onClick = { viewModel.retryRecording() },
