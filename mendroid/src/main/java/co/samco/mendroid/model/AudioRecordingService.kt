@@ -6,9 +6,10 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
+import android.media.AudioDeviceInfo
+import android.media.AudioManager
 import android.media.MediaRecorder
 import android.os.Binder
-import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import co.samco.mendroid.MainActivity
@@ -100,12 +101,39 @@ class AudioRecorderService : Service(), CoroutineScope {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         createChannel()
         startForeground(FOREGROUND_SERVICE_ID, createNotification())
+        selectRecordingDevice()
         observeRecordingRequests()
         return START_NOT_STICKY
     }
 
+    private fun selectRecordingDevice() {
+        val audioManager = getSystemService(AudioManager::class.java)
+
+        val preferredDevice = audioManager.availableCommunicationDevices
+            .minByOrNull {
+                when (it.type) {
+                    AudioDeviceInfo.TYPE_USB_HEADSET -> 0
+                    AudioDeviceInfo.TYPE_USB_DEVICE -> 1
+                    AudioDeviceInfo.TYPE_USB_ACCESSORY -> 2
+                    AudioDeviceInfo.TYPE_WIRED_HEADSET -> 3
+
+                    AudioDeviceInfo.TYPE_BLUETOOTH_A2DP -> 4
+                    AudioDeviceInfo.TYPE_BLUETOOTH_SCO -> 5
+                    AudioDeviceInfo.TYPE_BLE_HEADSET -> 6
+
+                    AudioDeviceInfo.TYPE_BUILTIN_MIC -> 7
+                    AudioDeviceInfo.TYPE_TELEPHONY -> 8
+                    AudioDeviceInfo.TYPE_BUILTIN_EARPIECE -> 9
+                    else -> 10
+                }
+            }
+
+        preferredDevice?.let { audioManager.setCommunicationDevice(it) }
+    }
+
     override fun onDestroy() {
         super.onDestroy()
+        getSystemService(AudioManager::class.java).clearCommunicationDevice()
         _isRunning = false
     }
 
@@ -115,13 +143,10 @@ class AudioRecorderService : Service(), CoroutineScope {
                 .filter { isRecording.value.not() }
                 .collect { file ->
 
-                    val mediaRecorder =
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
-                            MediaRecorder(applicationContext)
-                        else MediaRecorder()
+                    val mediaRecorder = MediaRecorder(applicationContext)
 
                     mediaRecorder.apply {
-                        setAudioSource(MediaRecorder.AudioSource.MIC)
+                        setAudioSource(MediaRecorder.AudioSource.DEFAULT)
                         setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
                         setAudioEncoder(MediaRecorder.AudioEncoder.AMR_WB)
                         setOutputFile(file)
