@@ -79,7 +79,8 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val selectedTheme = propertyManager.selectedTheme
-                .collectAsState(null).value ?: isSystemInDarkTheme()
+                .collectAsState(null).value
+                ?: (if (isSystemInDarkTheme()) Theme.DARK else Theme.LIGHT)
             MEND4Theme(darkTheme = selectedTheme == Theme.DARK) { Mend4App() }
         }
     }
