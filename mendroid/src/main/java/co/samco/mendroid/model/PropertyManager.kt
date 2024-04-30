@@ -21,6 +21,7 @@ interface PropertyManager : Settings {
     val encDirUri: Flow<String?>
     val hasConfig: Flow<Boolean>
     val configUri: Flow<String?>
+    val lockOnScreenLock: Flow<Boolean>
 
     fun setEncDirUri(uri: String)
     fun setTheme(theme: Theme?)
@@ -31,9 +32,11 @@ interface PropertyManager : Settings {
     fun setConfigUriPath(path: String)
 
     fun getCurrentLogUri(): String?
+    fun getLockOnScreenLock(): Boolean
     fun setCurrentLogUri(uriStr: String?)
     fun getKnownLogUris(): List<String>
     fun setKnownLogUris(uris: List<String>)
+    fun setLockOnScreenLock(enabled: Boolean)
 }
 
 class PropertyManagerImpl @Inject constructor(
@@ -67,6 +70,7 @@ class PropertyManagerImpl @Inject constructor(
         private const val CONFIG_URI = "configUri"
         private const val CURRENT_LOG_URI = "currentLogUri"
         private const val KNOWN_LOG_URIS = "knownLogUris"
+        private const val LOCK_ON_SCREEN_LOCK = "lockOnScreenLock"
         private const val THEME = "theme"
     }
 
@@ -90,8 +94,16 @@ class PropertyManagerImpl @Inject constructor(
         get() = onChange(CONFIG_URI)
             .map { it.getString(CONFIG_URI, null) }
 
+    override val lockOnScreenLock: Flow<Boolean>
+        get() = onChange(LOCK_ON_SCREEN_LOCK)
+            .map { it.getBoolean(LOCK_ON_SCREEN_LOCK, true) }
+
     override fun getCurrentLogUri(): String? {
         return prefs.getString(CURRENT_LOG_URI, null)
+    }
+
+    override fun getLockOnScreenLock(): Boolean {
+        return prefs.getBoolean(LOCK_ON_SCREEN_LOCK, true)
     }
 
     override fun setEncDirUri(uri: String) {
@@ -136,6 +148,10 @@ class PropertyManagerImpl @Inject constructor(
 
     override fun setKnownLogUris(uris: List<String>) {
         prefs.edit().putStringSet(KNOWN_LOG_URIS, uris.toSet()).apply()
+    }
+
+    override fun setLockOnScreenLock(enabled: Boolean) {
+        prefs.edit().putBoolean(LOCK_ON_SCREEN_LOCK, enabled).apply()
     }
 
     override fun setValue(name: Settings.Name, value: String) {

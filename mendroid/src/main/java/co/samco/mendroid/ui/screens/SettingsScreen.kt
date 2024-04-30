@@ -25,6 +25,7 @@ import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
+import androidx.compose.material.Switch
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
@@ -93,6 +94,12 @@ fun SettingsScreen() {
                     onUriSelected = settingsViewModel::onSetEncDir
                 )
                 Spacer(modifier = Modifier.size(48.dp))
+                ToggleSettingRow(
+                    description = stringResource(id = R.string.lock_mend_on_screen_lock),
+                    toggleSet = settingsViewModel.lockOnScreenLock.collectAsState().value,
+                    onToggleSet = settingsViewModel::onLockOnScreenLock
+                )
+                Spacer(modifier = Modifier.size(48.dp))
                 ThemeButtons()
                 Spacer(modifier = Modifier.size(48.dp))
             }
@@ -155,6 +162,26 @@ fun ThemeButton(
             tint = if (theme == Theme.LIGHT) Charcoal1 else White1
         )
     }
+}
+
+@Composable
+fun ToggleSettingRow(
+    description: String,
+    toggleSet: Boolean,
+    onToggleSet: (Boolean) -> Unit
+) = Row(
+    modifier = Modifier.fillMaxWidth(),
+    verticalAlignment = Alignment.CenterVertically
+) {
+    Text(
+        text = description,
+        style = MaterialTheme.typography.body1,
+        modifier = Modifier.weight(1f)
+    )
+
+    Spacer(modifier = Modifier.size(16.dp))
+
+    Switch(checked = toggleSet, onCheckedChange = onToggleSet)
 }
 
 @Composable

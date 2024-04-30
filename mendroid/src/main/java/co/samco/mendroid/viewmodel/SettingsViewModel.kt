@@ -39,6 +39,10 @@ class SettingsViewModel @Inject constructor(
     private val errorToastManager: ErrorToastManager
 ) : AndroidViewModel(application) {
 
+    val lockOnScreenLock: StateFlow<Boolean> = propertyManager
+        .lockOnScreenLock
+        .stateIn(viewModelScope, SharingStarted.Lazily, true)
+
     val selectedTheme: StateFlow<Theme?> = propertyManager.selectedTheme
         .stateIn(viewModelScope, SharingStarted.Lazily, null)
 
@@ -204,5 +208,9 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             _userRequestCloseSettings.emit(Unit)
         }
+    }
+
+    fun onLockOnScreenLock(enabled: Boolean) {
+        propertyManager.setLockOnScreenLock(enabled)
     }
 }

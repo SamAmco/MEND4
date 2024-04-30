@@ -66,4 +66,5 @@
     <string name="foreground_service_audio_recorder_name">MEND audio recorder foreground service channel</string>
     <string name="audio_recorder">Audio Recorder</string>
     <string name="recording_in_progress">Recording in progress</string>
+    <string name="lock_mend_on_screen_lock">Lock MEND on screen lock</string>
 </resources>

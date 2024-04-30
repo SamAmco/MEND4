@@ -13,6 +13,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideIn
 import androidx.compose.animation.slideOut
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.Icon
@@ -28,9 +29,11 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntOffset
 import androidx.core.content.ContextCompat
@@ -39,7 +42,6 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import co.samco.mendroid.model.ErrorToastManager
-import co.samco.mendroid.model.PrivateKeyManager
 import co.samco.mendroid.model.PropertyManager
 import co.samco.mendroid.model.Theme
 import co.samco.mendroid.ui.screens.HomeScreen
@@ -61,26 +63,24 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var propertyManager: PropertyManager
 
-    @Inject
-    lateinit var privateKeyManager: PrivateKeyManager
-
     private val requestPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        window.setFlags(
+            android.view.WindowManager.LayoutParams.FLAG_SECURE,
+            android.view.WindowManager.LayoutParams.FLAG_SECURE
+        )
 
         checkNotificationsPermission()
 
         collectToasts()
 
         setContent {
-            val selectedTheme = propertyManager.selectedTheme.collectAsState(null).value
-            if (selectedTheme != null) {
-                MEND4Theme(darkTheme = selectedTheme == Theme.DARK) { Mend4App() }
-            } else {
-                MEND4Theme { Mend4App() }
-            }
+            val selectedTheme = propertyManager.selectedTheme
+                .collectAsState(null).value ?: isSystemInDarkTheme()
+            MEND4Theme(darkTheme = selectedTheme == Theme.DARK) { Mend4App() }
         }
     }
 
@@ -105,6 +105,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun Mend4App() {
     val settingsViewModel = viewModel<SettingsViewModel>()
@@ -116,6 +117,7 @@ fun Mend4App() {
 
     val focusRequester = remember { FocusRequester() }
     val localFocusManager = LocalFocusManager.current
+    val localKeyboardController = LocalSoftwareKeyboardController.current
 
     HomeScreenScaffold(
         focusRequester = focusRequester,
@@ -132,10 +134,11 @@ fun Mend4App() {
 
     LaunchedEffect(showSettings, selectedTabIndex) {
         if (!showSettings) {
-            delay(10)
             focusRequester.requestFocus()
+        } else {
+            localFocusManager.clearFocus()
+            localKeyboardController?.hide()
         }
-        else localFocusManager.clearFocus()
     }
 }
 

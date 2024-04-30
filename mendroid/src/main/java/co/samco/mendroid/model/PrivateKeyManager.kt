@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.shareIn
@@ -68,6 +69,7 @@ interface PrivateKeyManager {
 class PrivateKeyManagerImpl @Inject constructor(
     private val cryptoProvider: CryptoProvider,
     private val errorToastManager: ErrorToastManager,
+    private val propertyManager: PropertyManager,
     @ApplicationContext private val context: Context
 ) : PrivateKeyManager, CoroutineScope {
 
@@ -84,7 +86,7 @@ class PrivateKeyManagerImpl @Inject constructor(
 
 
     private val lockEvents: SharedFlow<Unit> = merge(
-        screenOffEvents,
+        screenOffEvents.filter { propertyManager.getLockOnScreenLock() },
         userLockEvents
     ).shareIn(this, SharingStarted.Eagerly, replay = 0)
 
