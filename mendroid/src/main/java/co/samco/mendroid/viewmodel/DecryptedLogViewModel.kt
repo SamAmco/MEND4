@@ -154,6 +154,16 @@ class DecryptedLogViewModel @Inject constructor(
         }
         .shareIn(viewModelScope, SharingStarted.Eagerly, replay = 0)
 
+    var firstVisibleItemIndex = 0
+        private set
+    var firstVisibleItemScrollOffset = 0
+        private set
+
+    fun storeListState(firstVisibleItemIndex: Int, firstVisibleItemScrollOffset: Int) {
+        this.firstVisibleItemIndex = firstVisibleItemIndex
+        this.firstVisibleItemScrollOffset = firstVisibleItemScrollOffset
+    }
+
     fun onLogLineClicked(logViewData: LogViewData) {
         filterEnabled = false
         viewModelScope.launch { _onScrollToIndex.emit(logViewData.index) }

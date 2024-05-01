@@ -26,6 +26,7 @@ import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.Text
 import androidx.compose.material.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
@@ -190,7 +191,19 @@ private fun ColumnScope.LogLines(logLines: List<LogViewData>) = SelectionContain
 ) {
     val viewModel = hiltViewModel<DecryptedLogViewModel>()
 
-    val listState = rememberLazyListState()
+    val listState = rememberLazyListState(
+        viewModel.firstVisibleItemIndex,
+        viewModel.firstVisibleItemScrollOffset
+    )
+
+    DisposableEffect(listState) {
+        onDispose {
+            viewModel.storeListState(
+                listState.firstVisibleItemIndex,
+                listState.firstVisibleItemScrollOffset
+            )
+        }
+    }
 
     LaunchedEffect(key1 = logLines) {
         viewModel.scrollToIndex.collect {
