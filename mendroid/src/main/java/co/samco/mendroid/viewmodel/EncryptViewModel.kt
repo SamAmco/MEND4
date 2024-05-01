@@ -6,6 +6,7 @@ import android.provider.DocumentsContract
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.core.content.FileProvider
@@ -30,6 +31,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
@@ -76,6 +78,14 @@ class EncryptViewModel @Inject constructor(
 
     var loading by mutableStateOf(false)
         private set
+
+    val submitButtonEnabled = combine(
+        currentLog,
+        snapshotFlow { loading },
+        snapshotFlow { currentEntryText }
+    ) { log, loading, entryText ->
+        log != null && !loading && entryText.text.isNotEmpty()
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
     private var currentUri: Uri? = null
 

@@ -148,12 +148,10 @@ private fun EncryptScreenMain() = Column(modifier = Modifier.fillMaxSize()) {
 
         Spacer(modifier = Modifier.size(8.dp))
 
-        val currentLog = viewModel.currentLogName.collectAsState().value
-
         ActionButton(
             modifier = Modifier.height(42.dp),
             text = stringResource(id = R.string.submit),
-            enabled = currentLog != null && !viewModel.loading,
+            enabled = viewModel.submitButtonEnabled.collectAsState().value
         ) {
             viewModel.encryptText()
         }
