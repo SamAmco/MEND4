@@ -16,11 +16,9 @@ const val NAV_DECRYPT_LOG_TEXT = "decryptLogText"
 @Composable
 fun DecryptLogScreen(
     modifier: Modifier = Modifier,
-    navController: NavHostController,
-    focusRequester: FocusRequester
+    navController: NavHostController
 ) {
     NavHost(
-        modifier = modifier.focusRequester(focusRequester),
         navController = navController,
         startDestination = NAV_LOG_LIST
     ) {

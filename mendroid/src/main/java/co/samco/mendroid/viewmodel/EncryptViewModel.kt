@@ -241,14 +241,8 @@ class EncryptViewModel @Inject constructor(
     }
 
     private fun clearCacheDir() {
-        toEncryptDir.listFiles()?.forEach {
-            println("samsam deleting file: ${it.absolutePath}")
-            it.delete()
-        }
-        videoCompressionDir.listFiles()?.forEach {
-            println("samsam deleting compressed file: ${it.absolutePath}")
-            it.delete()
-        }
+        toEncryptDir.listFiles()?.forEach { it.delete() }
+        videoCompressionDir.listFiles()?.forEach { it.delete() }
     }
 
     fun prepareVideoUri(): Uri? = prepareUri(".mp4")

@@ -34,8 +34,10 @@ import androidx.compose.material.TextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Attachment
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -58,15 +60,12 @@ import co.samco.mendroid.viewmodel.AudioRecordingViewModelImpl
 import co.samco.mendroid.viewmodel.EncryptViewModel
 
 @Composable
-fun EncryptScreen(
-    modifier: Modifier = Modifier,
-    focusRequester: FocusRequester
-) = Box(modifier) {
+fun EncryptScreen(modifier: Modifier = Modifier) = Box(modifier) {
 
     val viewModel = viewModel<EncryptViewModel>()
     val audioRecordingViewModel: AudioRecordingViewModel = viewModel<AudioRecordingViewModelImpl>()
 
-    EncryptScreenMain(focusRequester = focusRequester)
+    EncryptScreenMain()
 
     if (viewModel.loading) LoadingOverlay()
 
@@ -88,14 +87,14 @@ private fun LoadingOverlay() = Box(
 }
 
 @Composable
-private fun EncryptScreenMain(
-    focusRequester: FocusRequester
-) = Column(modifier = Modifier.fillMaxSize()) {
+private fun EncryptScreenMain() = Column(modifier = Modifier.fillMaxSize()) {
     val viewModel = viewModel<EncryptViewModel>()
 
     if (viewModel.showAttachmentMenu) AttachmentMenu { viewModel.hideAttachmentMenu() }
 
     Spacer(modifier = Modifier.size(8.dp))
+
+    val focusRequester = remember { FocusRequester() }
 
     Card(
         modifier = Modifier
@@ -117,6 +116,8 @@ private fun EncryptScreenMain(
             colors = mendTextFieldColors()
         )
     }
+
+    LaunchedEffect(Unit) { focusRequester.requestFocus() }
 
     Spacer(modifier = Modifier.size(8.dp))
 
@@ -189,7 +190,8 @@ private fun AttachmentMenu(onDismiss: () -> Unit) = Dialog(onDismissRequest = on
 
             Divider()
 
-            val audioRecordingViewModel: AudioRecordingViewModel = viewModel<AudioRecordingViewModelImpl>()
+            val audioRecordingViewModel: AudioRecordingViewModel =
+                viewModel<AudioRecordingViewModelImpl>()
 
             val permissionLauncher = rememberLauncherForActivityResult(
                 ActivityResultContracts.RequestPermission()

@@ -13,11 +13,10 @@ import co.samco.mendroid.viewmodel.UnlockViewModel
 @Composable
 fun DecryptScreen(
     modifier: Modifier = Modifier,
-    navHostController: NavHostController,
-    focusRequester: FocusRequester
+    navHostController: NavHostController
 ) {
     val unlockViewModel = viewModel<UnlockViewModel>()
-    val unlocked = unlockViewModel.unlocked.collectAsState(initial = false).value
+    val unlocked = unlockViewModel.unlocked.collectAsState().value
 
     LaunchedEffect(unlocked) {
         if (!unlocked) {
@@ -28,11 +27,9 @@ fun DecryptScreen(
     Crossfade(targetState = unlocked) {
         if (it) DecryptLogScreen(
             modifier = modifier,
-            navController = navHostController,
-            focusRequester = focusRequester
+            navController = navHostController
         ) else UnlockScreen(
             modifier = modifier,
-            focusRequester = focusRequester
         )
     }
 }

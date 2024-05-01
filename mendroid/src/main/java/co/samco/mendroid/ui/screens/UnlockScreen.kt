@@ -15,6 +15,8 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -32,13 +34,13 @@ import co.samco.mendroid.viewmodel.UnlockViewModel
 @Composable
 fun UnlockScreen(
     modifier: Modifier = Modifier,
-    focusRequester: FocusRequester
 ) = Column(
     modifier = modifier.fillMaxSize(),
     verticalArrangement = Arrangement.Center,
     horizontalAlignment = Alignment.CenterHorizontally
 ) {
     val unlockViewModel = viewModel<UnlockViewModel>()
+    val focusRequester = remember { FocusRequester() }
 
     OutlinedTextField(
         modifier = Modifier
@@ -73,6 +75,8 @@ fun UnlockScreen(
             onDone = { unlockViewModel.onUnlockPressed() }
         )
     )
+
+    LaunchedEffect(Unit) { focusRequester.requestFocus() }
 
     Spacer(modifier = Modifier.width(16.dp))
 

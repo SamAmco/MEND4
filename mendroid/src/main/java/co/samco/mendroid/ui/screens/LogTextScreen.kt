@@ -16,6 +16,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.ClickableText
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.Checkbox
 import androidx.compose.material.CircularProgressIndicator
@@ -37,6 +39,7 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -131,9 +134,9 @@ private fun DecryptFileDialog(
     onDecryptClicked: () -> Unit
 ) = ConfirmCancelDialogBody(
     text = stringResource(
-            id = R.string.would_you_like_to_decrypt_file,
-            decryptFileDialogData.fileName
-        ),
+        id = R.string.would_you_like_to_decrypt_file,
+        decryptFileDialogData.fileName
+    ),
     cancelText = stringResource(id = R.string.cancel),
     confirmText = stringResource(id = R.string.decrypt),
     onCancelClicked = onCancelClicked,
@@ -169,6 +172,10 @@ private fun SearchField(logLines: List<LogViewData>, focusRequester: FocusReques
             )
         },
         maxLines = 1,
+        keyboardActions = KeyboardActions(
+            onDone = { focusManager.clearFocus() }
+        ),
+        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         colors = if (viewModel.filterEnabled && logLines.isEmpty()) {
             TextFieldDefaults.outlinedTextFieldColors(
                 backgroundColor = MaterialTheme.colors.error,

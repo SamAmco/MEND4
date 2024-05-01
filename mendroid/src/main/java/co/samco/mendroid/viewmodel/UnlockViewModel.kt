@@ -12,8 +12,7 @@ import co.samco.mendroid.model.PrivateKeyManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.flow.shareIn
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -24,7 +23,7 @@ class UnlockViewModel @Inject constructor(
 ) : ViewModel() {
 
     var unlocked = privateKeyManager.unlocked
-        .shareIn(viewModelScope, SharingStarted.Lazily, replay = 1)
+        .stateIn(viewModelScope, SharingStarted.Lazily, false)
 
     var password by mutableStateOf(TextFieldValue(""))
 
