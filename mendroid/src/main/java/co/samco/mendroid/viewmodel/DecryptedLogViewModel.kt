@@ -158,6 +158,12 @@ class DecryptedLogViewModel @Inject constructor(
         private set
     var firstVisibleItemScrollOffset = 0
         private set
+    var searchComplete = false
+        private set
+
+    fun onSearchComplete() {
+        searchComplete = true
+    }
 
     fun storeListState(firstVisibleItemIndex: Int, firstVisibleItemScrollOffset: Int) {
         this.firstVisibleItemIndex = firstVisibleItemIndex

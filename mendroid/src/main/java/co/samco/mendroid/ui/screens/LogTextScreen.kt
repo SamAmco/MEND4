@@ -81,21 +81,15 @@ fun DecryptLogText(modifier: Modifier) {
             contentAlignment = Alignment.Center
         ) { CircularProgressIndicator() }
     } else {
-
-        val searchFocusRequester = remember { FocusRequester() }
-
         Column {
             val logLines = viewModel.logLines.collectAsState().value
 
             if (logLines.isEmpty()) EmptyLinesText()
             else LogLines(logLines = logLines)
 
-            SearchField(logLines = logLines, focusRequester = searchFocusRequester)
+            SearchField(logLines = logLines)
         }
 
-        LaunchedEffect(Unit) {
-            searchFocusRequester.requestFocus()
-        }
     }
 }
 
@@ -145,12 +139,14 @@ private fun DecryptFileDialog(
 )
 
 @Composable
-private fun SearchField(logLines: List<LogViewData>, focusRequester: FocusRequester) = Row(
+private fun SearchField(logLines: List<LogViewData>) = Row(
     modifier = Modifier
         .background(MaterialTheme.colors.background)
         .fillMaxWidth()
 ) {
     val viewModel = hiltViewModel<DecryptedLogViewModel>()
+
+    val focusRequester = remember { FocusRequester() }
 
     val focusManager = LocalFocusManager.current
 
@@ -165,8 +161,10 @@ private fun SearchField(logLines: List<LogViewData>, focusRequester: FocusReques
             Checkbox(
                 checked = viewModel.filterEnabled,
                 onCheckedChange = {
-                    if (!it) focusManager.clearFocus()
-                    else focusRequester.requestFocus()
+                    if (!it) {
+                        focusManager.clearFocus()
+                        viewModel.onSearchComplete()
+                    } else focusRequester.requestFocus()
 
                     viewModel.filterEnabled = it
                 }
@@ -174,7 +172,10 @@ private fun SearchField(logLines: List<LogViewData>, focusRequester: FocusReques
         },
         maxLines = 1,
         keyboardActions = KeyboardActions(
-            onDone = { focusManager.clearFocus() }
+            onDone = {
+                focusManager.clearFocus()
+                viewModel.onSearchComplete()
+            }
         ),
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         colors = if (viewModel.filterEnabled && logLines.isEmpty()) {
@@ -183,6 +184,10 @@ private fun SearchField(logLines: List<LogViewData>, focusRequester: FocusReques
             )
         } else TextFieldDefaults.outlinedTextFieldColors()
     )
+
+    LaunchedEffect(Unit) {
+        if (!viewModel.searchComplete) focusRequester.requestFocus()
+    }
 }
 
 @Composable
