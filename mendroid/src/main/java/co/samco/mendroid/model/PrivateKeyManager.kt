@@ -35,6 +35,7 @@ import java.io.InputStream
 import java.io.PrintStream
 import java.security.PrivateKey
 import java.time.LocalDateTime
+import java.util.Collections
 import java.util.UUID
 import javax.inject.Inject
 import kotlin.coroutines.CoroutineContext
@@ -84,6 +85,8 @@ class PrivateKeyManagerImpl @Inject constructor(
 
     private val onSuccessfulUnlock = MutableSharedFlow<UnlockResult.Success>()
 
+    private val grantedUriList = Collections.synchronizedList(mutableListOf<Uri>())
+
 
     private val lockEvents: SharedFlow<Unit> = merge(
         screenOffEvents.filter { propertyManager.getLockOnScreenLock() },
@@ -122,6 +125,10 @@ class PrivateKeyManagerImpl @Inject constructor(
     }
 
     override fun forceCleanFiles() {
+        grantedUriList.forEach {
+            context.revokeUriPermission(it, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        grantedUriList.clear()
         File(context.filesDir, DECRYPT_DIR).deleteRecursively()
     }
 
@@ -317,11 +324,9 @@ class PrivateKeyManagerImpl @Inject constructor(
     }
 
     private fun offerFileView(file: File, extension: String) {
-        val uri = FileProvider.getUriForFile(
-            context,
-            "${BuildConfig.APPLICATION_ID}.fileprovider",
-            file
-        )
+        val uri = FileProvider
+            .getUriForFile(context, "${BuildConfig.APPLICATION_ID}.fileprovider", file)
+            .also { grantedUriList.add(it) }
 
         val mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension)
 
