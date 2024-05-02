@@ -7,6 +7,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.channels.trySendBlocking
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
@@ -70,7 +71,6 @@ class PropertyManagerImpl @Inject constructor(
         private const val CONFIG_URI = "configUri"
         private const val CURRENT_LOG_URI = "currentLogUri"
         private const val KNOWN_LOG_URIS = "knownLogUris"
-        private const val LOCK_ON_SCREEN_LOCK = "lockOnScreenLock"
         private const val THEME = "theme"
     }
 
@@ -94,17 +94,13 @@ class PropertyManagerImpl @Inject constructor(
         get() = onChange(CONFIG_URI)
             .map { it.getString(CONFIG_URI, null) }
 
-    override val lockOnScreenLock: Flow<Boolean>
-        get() = onChange(LOCK_ON_SCREEN_LOCK)
-            .map { it.getBoolean(LOCK_ON_SCREEN_LOCK, true) }
+    override val lockOnScreenLock = MutableStateFlow(true)
 
     override fun getCurrentLogUri(): String? {
         return prefs.getString(CURRENT_LOG_URI, null)
     }
 
-    override fun getLockOnScreenLock(): Boolean {
-        return prefs.getBoolean(LOCK_ON_SCREEN_LOCK, true)
-    }
+    override fun getLockOnScreenLock(): Boolean = lockOnScreenLock.value
 
     override fun setEncDirUri(uri: String) {
         //First remove it because if you select the same directory you still want the
@@ -151,7 +147,7 @@ class PropertyManagerImpl @Inject constructor(
     }
 
     override fun setLockOnScreenLock(enabled: Boolean) {
-        prefs.edit().putBoolean(LOCK_ON_SCREEN_LOCK, enabled).apply()
+        lockOnScreenLock.value = enabled
     }
 
     override fun setValue(name: Settings.Name, value: String) {
