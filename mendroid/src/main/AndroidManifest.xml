@@ -11,6 +11,7 @@
     <uses-permission
         android:name="android.permission.QUERY_ALL_PACKAGES"
         tools:ignore="QueryAllPackagesPermission" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
 
     <!--Permissions required by LightCompressor. See https://github.com/AbedElazizShe/LightCompressor -->
     <uses-permission
@@ -59,8 +60,8 @@
         <service
             android:name=".model.LockForegroundService"
             android:enabled="true"
-            android:foregroundServiceType="specialUse"
-            android:exported="false" />
+            android:exported="false"
+            android:foregroundServiceType="specialUse" />
 
         <service
             android:name=".model.AudioRecorderService"
@@ -75,6 +76,28 @@
                 <action android:name="android.intent.action.SCREEN_OFF" />
             </intent-filter>
         </receiver>
+
+        <service
+            android:name=".media_player.MediaPlayerService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback" />
+
+        <activity
+            android:name=".media_player.MediaPlayerActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:taskAffinity=".media_player.MediaPlayerActivity"
+            android:theme="@style/Theme.MEND4">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="content"/>
+                <data android:mimeType="audio/*" />
+                <data android:mimeType="video/*"/>
+            </intent-filter>
+        </activity>
 
     </application>
 

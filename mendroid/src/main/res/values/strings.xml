@@ -34,6 +34,7 @@
     <string name="cancel">Cancel</string>
     <string name="decrypt">Decrypt</string>
     <string name="foreground_service_channel_name">MEND Lock Foreground Service Channel</string>
+    <string name="media_player_service_channel_name">MEND Media Player Foreground Service Channel</string>
     <string name="failed_to_decrypt_file">Failed to decrypt file</string>
     <string name="no_app_to_open_file">No app found to open file with extension: %s</string>
     <string name="decrypt_cancelled">Decrypt cancelled</string>
@@ -67,4 +68,9 @@
     <string name="audio_recorder">Audio Recorder</string>
     <string name="recording_in_progress">Recording in progress</string>
     <string name="lock_mend_on_screen_lock">Lock MEND on screen lock</string>
+    <string name="mend_is_unlocked_notification_title">MEND is unlocked</string>
+    <string name="tap_here_to_lock">Tap here to lock</string>
+    <string name="mend_media_player_active">MEND Media Player Active</string>
+    <string name="failed_to_get_file_uri">Failed to get file uri.</string>
+    <string name="stop">Stop</string>
 </resources>

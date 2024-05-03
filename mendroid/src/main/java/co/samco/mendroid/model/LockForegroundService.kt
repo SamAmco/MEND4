@@ -67,9 +67,10 @@ class LockForegroundService : Service() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("MEND is unlocked")
-            .setContentText("Tap here to lock")
+            .setContentTitle(getString(R.string.mend_is_unlocked_notification_title))
+            .setContentText(getString(R.string.tap_here_to_lock))
             .setSmallIcon(R.drawable.ic_notification_icon)
             .setSilent(true)
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
