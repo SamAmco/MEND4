@@ -97,7 +97,6 @@ class LockForegroundService : Service(), CoroutineScope {
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
             .setContentIntent(pendingIntent) // Set the content intent to make the whole notification clickable
             .addAction(stopAction)
-            .setAutoCancel(true) // This makes the notification disappear when clicked
             .build()
     }
 
