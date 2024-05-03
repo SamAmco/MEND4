@@ -11,9 +11,14 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.lifecycle.lifecycleScope
 import androidx.media3.ui.PlayerView
 import co.samco.mendroid.R
+import co.samco.mendroid.model.PrivateKeyManager
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MediaPlayerActivity : ComponentActivity() {
@@ -21,6 +26,9 @@ class MediaPlayerActivity : ComponentActivity() {
     private lateinit var mediaPlayerService: MediaPlayerServiceInterface
     private var fileUri: Uri? = null
     private var isBound = false
+
+    @Inject
+    lateinit var privateKeyManager: PrivateKeyManager
 
     private val connection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
@@ -53,7 +61,17 @@ class MediaPlayerActivity : ComponentActivity() {
             android.view.WindowManager.LayoutParams.FLAG_SECURE
         )
         readFileUri(intent)
+        observeLockStatus()
         setContentView(createPlayerView())
+    }
+
+    private fun observeLockStatus() {
+        lifecycleScope.launch {
+            privateKeyManager
+                .unlocked
+                .filter { !it }
+                .collect { finish() }
+        }
     }
 
     override fun onNewIntent(intent: Intent?) {

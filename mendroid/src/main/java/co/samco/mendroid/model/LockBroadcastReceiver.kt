@@ -16,7 +16,6 @@ class LockBroadcastReceiver : BroadcastReceiver() {
     lateinit var privateKeyManager: PrivateKeyManager
 
     override fun onReceive(context: Context?, intent: Intent?) {
-        println("samsam onReceive ${intent?.action}")
         if (intent?.action == ACTION_LOCK) privateKeyManager.onUserLockMend()
     }
 }

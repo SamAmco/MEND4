@@ -87,6 +87,8 @@
             android:name=".media_player.MediaPlayerActivity"
             android:exported="true"
             android:launchMode="singleTop"
+            android:autoRemoveFromRecents="true"
+            android:label="@string/mend_media_player"
             android:taskAffinity=".media_player.MediaPlayerActivity"
             android:theme="@style/Theme.MEND4">
             <intent-filter>
