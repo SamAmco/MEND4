@@ -91,13 +91,24 @@
             android:theme="@style/Theme.MEND4">
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
+
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="content"/>
+
+                <data android:scheme="content" />
                 <data android:mimeType="audio/*" />
-                <data android:mimeType="video/*"/>
+                <data android:mimeType="video/*" />
             </intent-filter>
         </activity>
+
+        <receiver
+            android:name=".model.LockBroadcastReceiver"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="ACTION_LOCK" />
+            </intent-filter>
+        </receiver>
 
     </application>
 

@@ -10,16 +10,24 @@ import android.content.Intent
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import co.samco.mendroid.R
+import co.samco.mendroid.model.LockBroadcastReceiver.Companion.ACTION_LOCK
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.launch
 import javax.inject.Inject
+import kotlin.coroutines.CoroutineContext
 
 @AndroidEntryPoint
-class LockForegroundService : Service() {
+class LockForegroundService : Service(), CoroutineScope {
+
+    override val coroutineContext: CoroutineContext = Job() + Dispatchers.Main
 
     companion object {
         private const val CHANNEL_ID = "LockForegroundServiceChannel"
         private const val NOTIFICATION_ID = 123
-        const val ACTION_LOCK = "USER_LOCK_MEND"
     }
 
     @Inject
@@ -31,15 +39,20 @@ class LockForegroundService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        val notification = buildNotification()
-        startForeground(NOTIFICATION_ID, notification)
-
-        if (intent?.action == ACTION_LOCK) {
-            privateKeyManager.onUserLockMend()
-            stopSelf()
-        }
-
+        startForeground(NOTIFICATION_ID, buildNotification())
+        observeLockState()
         return START_STICKY
+    }
+
+    private fun observeLockState() {
+        launch {
+            privateKeyManager.unlocked
+                .filter { !it }
+                .collect {
+                    stopForeground(STOP_FOREGROUND_REMOVE)
+                    stopSelf()
+                }
+        }
     }
 
     private fun createNotificationChannel() {
@@ -57,24 +70,32 @@ class LockForegroundService : Service() {
 
     @SuppressLint("LaunchActivityFromNotification")
     private fun buildNotification(): Notification {
-        val lockIntent = Intent(this, LockForegroundService::class.java)
+        val lockIntent = Intent(this, LockBroadcastReceiver::class.java)
             .apply { action = ACTION_LOCK }
 
-        val pendingIntent = PendingIntent.getService(
+        val pendingIntent = PendingIntent.getBroadcast(
             this,
             0,
             lockIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        // Additional action button allows you to lock mend from the lock screen as well
+        val stopAction = NotificationCompat.Action.Builder(
+            R.drawable.ic_close,
+            getString(R.string.lock_mend),
+            pendingIntent
+        ).build()
 
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle(getString(R.string.mend_is_unlocked_notification_title))
             .setContentText(getString(R.string.tap_here_to_lock))
             .setSmallIcon(R.drawable.ic_notification_icon)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setSilent(true)
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
             .setContentIntent(pendingIntent) // Set the content intent to make the whole notification clickable
+            .addAction(stopAction)
             .setAutoCancel(true) // This makes the notification disappear when clicked
             .build()
     }

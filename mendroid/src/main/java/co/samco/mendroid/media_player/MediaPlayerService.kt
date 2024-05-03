@@ -142,6 +142,7 @@ class MediaPlayerService : Service(), CoroutineScope {
             .setContentTitle(getString(R.string.mend_media_player_active))
             .setSmallIcon(android.R.drawable.ic_media_play)
             .setSilent(true)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
             .setContentIntent(pendingIntent) // Set the content intent to make the whole notification clickable
             .setAutoCancel(false) // This makes the notification disappear when clicked

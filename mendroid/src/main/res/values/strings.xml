@@ -73,4 +73,5 @@
     <string name="mend_media_player_active">MEND Media Player Active</string>
     <string name="failed_to_get_file_uri">Failed to get file uri.</string>
     <string name="stop">Stop</string>
+    <string name="lock_mend">Lock MEND</string>
 </resources>
