@@ -66,8 +66,8 @@ class MediaPlayerService : Service(), CoroutineScope {
             val mediaSource = ProgressiveMediaSource.Factory(dataFactory)
                 .createMediaSource(MediaItem.fromUri(uri))
             exoPlayer.setMediaSource(mediaSource)
-            exoPlayer.prepare()
-            exoPlayer.play()
+            if (exoPlayer.availableCommands.contains(ExoPlayer.COMMAND_PREPARE)) exoPlayer.prepare()
+            if (exoPlayer.availableCommands.contains(ExoPlayer.COMMAND_PLAY_PAUSE)) exoPlayer.play()
         }
 
         override fun hasMediaUri() = currentUri != null
@@ -161,13 +161,18 @@ class MediaPlayerService : Service(), CoroutineScope {
     }
 
     private fun cleanUp() {
-        exoPlayer.stop()
-        exoPlayer.release()
+        try {
+            if (exoPlayer.availableCommands.contains(ExoPlayer.COMMAND_STOP)) exoPlayer.stop()
+            if (exoPlayer.availableCommands.contains(ExoPlayer.COMMAND_GET_TRACKS)) exoPlayer.release()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        exoPlayer.release()
+        if (exoPlayer.availableCommands.contains(ExoPlayer.COMMAND_GET_TRACKS)) exoPlayer.release()
     }
 }
