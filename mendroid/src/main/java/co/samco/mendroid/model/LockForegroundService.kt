@@ -93,6 +93,7 @@ class LockForegroundService : Service(), CoroutineScope {
             .setSmallIcon(R.drawable.ic_notification_icon)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setSilent(true)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
             .setContentIntent(pendingIntent) // Set the content intent to make the whole notification clickable
             .addAction(stopAction)
