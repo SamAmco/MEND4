@@ -13,7 +13,6 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.yield
 import org.bouncycastle.crypto.generators.Argon2BytesGenerator
 import org.bouncycastle.crypto.params.Argon2Parameters
-import org.bouncycastle.jce.spec.IESParameterSpec
 import java.io.InputStream
 import java.io.OutputStream
 import java.io.PrintStream
@@ -27,7 +26,6 @@ import java.security.KeyPairGenerator
 import java.security.PrivateKey
 import java.security.PublicKey
 import java.security.SecureRandom
-import java.security.spec.AlgorithmParameterSpec
 import java.security.spec.PKCS8EncodedKeySpec
 import java.security.spec.X509EncodedKeySpec
 import javax.crypto.Cipher
@@ -128,35 +126,20 @@ class DefaultJCECryptoProvider(
         return cipher
     }
 
-    private fun getAsymmetricCipherParamSpec(cipherTransform: String): AlgorithmParameterSpec? {
-        if (!cipherTransform.startsWith("ECIES")
-            && !cipherTransform.startsWith("XIES")
-        ) return null
-
+    private fun assertValidAsymmetricCipher(cipherTransform: String) {
         if (cipherTransform.contains("AES")) {
             throw InvalidAlgorithmParameterException(
                 "IES with AES is not supported yet."
             )
         }
-
-        //We are not using a nonce, but the only thing this cipher ever encrypts is unique
-        // randomly generated AES keys, so it should be fine.
-        return IESParameterSpec(
-            /* derivation = */ null,
-            /* encoding = */ null,
-            /* macKeySize = */ 128,
-            /* cipherKeySize = */ 256,
-            /* nonce = */ null,
-            /* usePointCompression = */ false
-        )
     }
 
     private fun getAsymmetricEncryptCipher(): Cipher {
         val cipherTransform = settings.getValue(Settings.Name.ASYMMETRIC_CIPHER_TRANSFORM)
             ?: throw NoSuchSettingException(Settings.Name.ASYMMETRIC_CIPHER_TRANSFORM)
         val cipher = Cipher.getInstance(cipherTransform)
-        val cipherParamSpec = getAsymmetricCipherParamSpec(cipherTransform)
-        cipher.init(Cipher.ENCRYPT_MODE, getPublicKey(), cipherParamSpec)
+        assertValidAsymmetricCipher(cipherTransform)
+        cipher.init(Cipher.ENCRYPT_MODE, getPublicKey())
         return cipher
     }
 
@@ -164,8 +147,8 @@ class DefaultJCECryptoProvider(
         val cipherTransform = settings.getValue(Settings.Name.ASYMMETRIC_CIPHER_TRANSFORM)
             ?: throw NoSuchSettingException(Settings.Name.ASYMMETRIC_CIPHER_TRANSFORM)
         val cipher = Cipher.getInstance(cipherTransform)
-        val cipherParamSpec = getAsymmetricCipherParamSpec(cipherTransform)
-        cipher.init(Cipher.DECRYPT_MODE, privateKey, cipherParamSpec)
+        assertValidAsymmetricCipher(cipherTransform)
+        cipher.init(Cipher.DECRYPT_MODE, privateKey)
         return cipher
     }
 

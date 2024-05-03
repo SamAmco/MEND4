@@ -6,7 +6,7 @@ plugins {
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.2")
-    api 'org.bouncycastle:bcprov-lts8on:2.73.3'
+    api 'org.bouncycastle:bcprov-lts8on:2.73.6'
 
     testImplementation group: 'junit', name: 'junit', version: '4.12'
     testImplementation group: 'org.mockito.kotlin', name: 'mockito-kotlin', version: '5.0.0'

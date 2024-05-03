@@ -11,8 +11,8 @@ dependencies {
     implementation "com.google.dagger:dagger:$dagger_version"
     kapt "com.google.dagger:dagger-compiler:$dagger_version"
 
-    implementation 'commons-io:commons-io:2.4'
-    implementation 'commons-codec:commons-codec:1.10'
+    implementation 'commons-io:commons-io:2.13.0'
+    implementation 'commons-codec:commons-codec:1.11'
     implementation 'org.apache.commons:commons-lang3:3.7'
 
     implementation project(':core-mend')
@@ -21,7 +21,7 @@ dependencies {
     testImplementation 'com.nhaarman.mockitokotlin2:mockito-kotlin:2.2.0'
 }
 
-version = '5.0.0'
+version = '5.0.1'
 
 compileKotlin.dependsOn(':core-mend:jar')
 

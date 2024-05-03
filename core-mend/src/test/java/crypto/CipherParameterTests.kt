@@ -56,7 +56,7 @@ class CipherParameterTests {
      * Whenever you update the bouncy castle dependency there's a chance that the cipher implementation
      * has been updated and old keys or ciphertexts will be invalid. This test is here to make sure that
      * we don't accidentally break backwards compatibility. If it fails you either need to change
-     * the cipher parameters to get the old behaviour or the new version if fundamentally incompatible
+     * the cipher parameters to get the old behaviour or the new version is fundamentally incompatible
      * and it's a new major release requiring re-encrypting all previous data.
      */
     @Test
