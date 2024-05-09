@@ -75,4 +75,9 @@
     <string name="stop">Stop</string>
     <string name="lock_mend">Lock MEND</string>
     <string name="mend_media_player">MEND Media Player</string>
+    <string name="unknown_audio_device">Unknown audio device</string>
+    <string name="audio_device_annotation">Audio Device: %s</string>
+    <string name="hold_to_test">Hold to test</string>
+    <string name="recording">Recording…</string>
+    <string name="playing_back">Playing…</string>
 </resources>

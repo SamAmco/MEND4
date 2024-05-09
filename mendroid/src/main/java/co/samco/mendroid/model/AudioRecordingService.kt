@@ -25,7 +25,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.launch
 import java.io.File
 import kotlin.coroutines.CoroutineContext
@@ -34,6 +33,7 @@ interface AudioRecorder {
     fun startRecording(location: File)
     suspend fun stopRecording(): File?
     fun cancelRecording()
+
     fun isRecording(): Flow<Boolean>
     fun lastRecordingStartTime(): Flow<Long>
 }
@@ -107,7 +107,7 @@ class AudioRecorderService : Service(), CoroutineScope {
     }
 
     private fun selectRecordingDevice() {
-        val audioManager = getSystemService(AudioManager::class.java)
+        val audioManager = getSystemService(AudioManager::class.java) ?: return
 
         val preferredDevice = audioManager.availableCommunicationDevices
             .minByOrNull {
@@ -128,7 +128,9 @@ class AudioRecorderService : Service(), CoroutineScope {
                 }
             }
 
-        preferredDevice?.let { audioManager.setCommunicationDevice(it) }
+        preferredDevice?.let { audioDeviceInfo ->
+            audioManager.setCommunicationDevice(audioDeviceInfo)
+        }
     }
 
     override fun onDestroy() {
@@ -141,33 +143,50 @@ class AudioRecorderService : Service(), CoroutineScope {
         launch {
             onRequestStartRecordingToFile
                 .filter { isRecording.value.not() }
-                .collect { file ->
+                .collect { doRecording(it) }
+        }
+    }
 
-                    val mediaRecorder = MediaRecorder(applicationContext)
+    private suspend fun doRecording(file: File) {
 
-                    mediaRecorder.apply {
-                        setAudioSource(MediaRecorder.AudioSource.DEFAULT)
-                        setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
-                        setAudioEncoder(MediaRecorder.AudioEncoder.AMR_WB)
-                        setOutputFile(file)
-                        prepare()
-                        start()
-                    }
+        val mediaRecorder = MediaRecorder(applicationContext)
 
-                    onRecordingStarted.emit(Unit)
+        mediaRecorder.apply {
+            setAudioSource(MediaRecorder.AudioSource.DEFAULT)
+            setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
+            setAudioEncoder(MediaRecorder.AudioEncoder.AMR_WB)
+            setOutputFile(file)
+            prepare()
+            start()
+        }
 
-                    onRequestStopRecording.take(1).collect {
-                        mediaRecorder.stop()
-                        mediaRecorder.release()
-                        onRecordToFileComplete.emit(file)
-                    }
-                }
+        onRecordingStarted.emit(Unit)
+
+        onRequestStopRecording.first()
+
+        try {
+            mediaRecorder.stop()
+            mediaRecorder.release()
+            onRecordToFileComplete.emit(file)
+        } catch (t: Throwable) {
+            t.printStackTrace()
+            tryDeleteFile(file)
+        }
+    }
+
+    private fun tryDeleteFile(file: File) {
+        try {
+            if (file.exists()) {
+                file.delete()
+            }
+        } catch (t: Throwable) {
+            t.printStackTrace()
         }
     }
 
     inner class AudioRecorderBinder : Binder(), AudioRecorder {
-        override fun startRecording(file: File) {
-            launch { onRequestStartRecordingToFile.emit(file) }
+        override fun startRecording(location: File) {
+            launch { onRequestStartRecordingToFile.emit(location) }
         }
 
         override suspend fun stopRecording(): File? {
