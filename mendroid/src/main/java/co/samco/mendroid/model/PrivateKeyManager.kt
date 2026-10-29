@@ -212,7 +212,6 @@ class PrivateKeyManagerImpl @Inject constructor(
             cryptoProvider.unlock(pass)
         } catch (e: Exception) {
             e.printStackTrace()
-            UnlockResult.Failure
             errorToastManager.showErrorToast(R.string.unlock_crashed)
             return false
         }

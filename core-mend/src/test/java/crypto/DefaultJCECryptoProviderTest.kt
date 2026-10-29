@@ -3,8 +3,8 @@ package crypto
 import co.samco.mend4.core.Settings
 import co.samco.mend4.core.crypto.UnlockResult
 import co.samco.mend4.core.crypto.impl.DefaultJCECryptoProvider
-import junit.framework.Assert.assertFalse
-import junit.framework.Assert.assertTrue
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import kotlinx.coroutines.runBlocking
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.Assert

@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.text.ClickableText
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.selection.SelectionContainer
@@ -39,8 +38,10 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.withLink
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -263,40 +264,11 @@ private fun LogText(logLine: LogViewData, cardInteractionSource: MutableInteract
 
     val annotatedString = buildAnnotatedString {
         for (textPart in logLine.text) {
-
-            when (textPart.type) {
-                TextType.PLAIN -> withStyle(style = plainTextSpanStyle()) {
-                    pushStringAnnotation(
-                        tag = "type",
-                        annotation = textPart.type.name
-                    )
-                    append(textPart.text)
-                }
-
-                TextType.FILE_ID -> withStyle(style = fileIdSpanStyle()) {
-                    pushStringAnnotation(
-                        tag = "type",
-                        annotation = textPart.type.name
-                    )
-                    append(textPart.text)
-                }
-            }
-
-        }
-    }
-    ClickableText(
-        modifier = Modifier.padding(vertical = 16.dp, horizontal = 16.dp),
-        text = annotatedString,
-        onClick = { offset ->
-            annotatedString.getStringAnnotations(offset, offset)
-                .firstOrNull()?.let { annotation ->
-                    //Because clickable text won't let me filter which parts of the text
-                    // are actually clickable i have to pass the event to the parent card
-                    // and view model if it's not a file id clicked on.
-                    if (annotation.item == TextType.FILE_ID.name) {
-                        val fileId = annotatedString.text
-                            .slice(annotation.start until annotation.end)
-                        viewModel.onFileIdClicked(fileId)
+            val link = LinkAnnotation.Clickable(
+                tag = textPart.type.name,
+                linkInteractionListener = {
+                    if (textPart.type == TextType.FILE_ID) {
+                        viewModel.onFileIdClicked(textPart.text)
                     } else {
                         val press = PressInteraction.Press(Offset.Zero)
                         cardInteractionSource.tryEmit(press)
@@ -304,7 +276,23 @@ private fun LogText(logLine: LogViewData, cardInteractionSource: MutableInteract
                         viewModel.onLogLineClicked(logLine)
                     }
                 }
+            )
+
+            when (textPart.type) {
+                TextType.PLAIN -> withStyle(style = plainTextSpanStyle()) {
+                    withLink(link) { append(textPart.text) }
+                }
+
+                TextType.FILE_ID -> withStyle(style = fileIdSpanStyle()) {
+                    withLink(link) { append(textPart.text) }
+                }
+            }
+
         }
+    }
+    Text(
+        modifier = Modifier.padding(vertical = 16.dp, horizontal = 16.dp),
+        text = annotatedString
     )
 }
 

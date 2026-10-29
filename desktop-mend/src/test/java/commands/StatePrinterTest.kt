@@ -4,7 +4,7 @@ import co.samco.mend4.core.AppProperties
 import co.samco.mend4.desktop.commands.StatePrinter
 import co.samco.mend4.desktop.dao.SettingsDao
 import co.samco.mend4.desktop.helper.impl.SettingsHelperImpl
-import junit.framework.Assert.assertTrue
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import com.nhaarman.mockitokotlin2.any
