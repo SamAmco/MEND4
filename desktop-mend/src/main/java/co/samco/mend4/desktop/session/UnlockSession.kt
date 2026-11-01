@@ -1,7 +1,5 @@
 package co.samco.mend4.desktop.session
 
-import co.samco.mend4.core.crypto.CryptoProvider
-import co.samco.mend4.core.crypto.UnlockResult
 import co.samco.mend4.desktop.dao.OSDao
 import co.samco.mend4.desktop.dao.SettingsDao
 import java.nio.file.Files
@@ -12,35 +10,24 @@ import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 
 class UnlockSession @Inject constructor(
-    private val crypto: CryptoProvider,
-    private val decrypt: SessionDecrypt,
     private val os: OSDao,
     private val settings: SettingsDao,
 ) {
     fun run(args: List<String>) {
-        val timeout = SessionTimeout(SessionTimeout.parse(args, settings.getValue(SettingsDao.SESSION_TIMEOUT)))
+        val duration = SessionTimeout.parse(args, settings.getValue(SettingsDao.SESSION_TIMEOUT))
         require(System.getProperty("os.name").let { it == "Linux" || it == "Mac OS X" }) { "Sessions require Linux or macOS" }
         require(System.console() != null) { "mend unlock requires an interactive terminal" }
         val shellName = Path.of(System.getenv("SHELL") ?: "/bin/bash").fileName.toString()
         require(shellName in listOf("bash", "zsh")) { "MEND sessions support Bash and Zsh; set SHELL accordingly." }
-        val password = os.readPassword("Password: ")
-        val result = try { crypto.unlock(password) } finally { password.fill('\u0000') }
-        require(result is UnlockResult.Success) { "Incorrect password" }
         val directory = Files.createTempDirectory(Path.of("/tmp"), "mend-",
             PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx------")))
-        val locked = AtomicBoolean(false)
         var child: Process? = null
         val broker = try {
-            SessionBroker(directory) { context ->
-                check(!locked.get()) { "MEND is locked" }
-                timeout.touch()
-                when (context.request.command) {
-                    "dec" -> decrypt.decrypt(key = result.privateKey, context = context)
-                    "lock" -> locked.set(true)
-                    "touch" -> Unit
-                    else -> error("Unknown session command")
-                }
-                0
+            val password = os.readPassword("Password: ")
+            try {
+                SessionKeyProcess.start(directory = directory, duration = duration, password = password)
+            } finally {
+                password.fill('\u0000')
             }
         } catch (e: Exception) {
             Files.deleteIfExists(directory.resolve("socket"))
@@ -61,24 +48,13 @@ class UnlockSession @Inject constructor(
         val shutdownHook = Thread(::cleanup, "mend-session-cleanup")
         Runtime.getRuntime().addShutdownHook(shutdownHook)
         try {
-            broker.start()
             child = SessionShell.launch(directory = directory, connection = broker.connection)
-            timeout.touch()
-            while (child.isAlive && !locked.get()) {
-                when (timeout.poll()) {
-                    SessionTimeout.Event.WARN -> System.err.println("\nMEND will lock shortly. Press Enter at the shell prompt to remain unlocked.")
-                    SessionTimeout.Event.EXPIRED -> {
-                        System.err.println("\nMEND session timed out.")
-                        locked.set(true)
-                    }
-                    SessionTimeout.Event.NONE -> Unit
-                }
-                child.waitFor(100, TimeUnit.MILLISECONDS)
-            }
+            // Keep the terminal's parent command alive even after the key process expires.
+            // A foreground editor can finish normally; the shell exits at its next failed touch.
+            child.waitFor()
         } finally {
             cleanup()
             Runtime.getRuntime().removeShutdownHook(shutdownHook)
-            System.err.println("MEND locked.")
         }
     }
 }

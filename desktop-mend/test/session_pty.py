@@ -46,6 +46,17 @@ class Terminal:
     def send(self, text):
         os.write(self.fd, text.encode())
 
+    def key_process_pid(self):
+        self.send("printf 'SUPERVISOR=%s\\n' \"$PPID\"\n")
+        self.expect("SUPERVISOR=")  # echoed command
+        self.expect("SUPERVISOR=")
+        supervisor = int(self.expect("\r\n").strip())
+        self.expect("[mend unlocked]")
+        children = subprocess.check_output(
+            ["ps", "-o", "pid=,args=", "--ppid", str(supervisor)], text=True)
+        return next(int(line.split()[0]) for line in children.splitlines()
+                    if "--session-broker" in line)
+
     def close(self):
         try:
             os.kill(self.pid, signal.SIGKILL)
@@ -64,13 +75,8 @@ with tempfile.TemporaryDirectory(prefix="mend-pty-") as home:
             t.expect("Password:")
             t.send("test-password\n")
             t.expect("[mend unlocked]")
-            t.send("printf 'BROKER=%s\\n' \"$PPID\"\n")
-            t.expect("BROKER=")
-            # Skip the echoed command's format string; consume the actual numeric PID.
-            t.expect("BROKER=")
-            broker_line = t.expect("\r\n").strip()
-            broker_pid = int(broker_line)
             if Path("/proc").exists():
+                broker_pid = t.key_process_pid()
                 try:
                     fd = os.open(f"/proc/{broker_pid}/mem", os.O_RDONLY)
                 except PermissionError:
@@ -81,7 +87,6 @@ with tempfile.TemporaryDirectory(prefix="mend-pty-") as home:
                 attached = subprocess.run(["jcmd", str(broker_pid), "VM.version"],
                                           capture_output=True, timeout=15)
                 assert attached.returncode != 0, "JVM diagnostic attachment should be disabled"
-            t.expect("[mend unlocked]")
             t.send("dec journal | cat\n")
             t.expect("SESSION_TEST_PLAINTEXT")
             t.expect("[mend unlocked]")
@@ -137,6 +142,38 @@ with tempfile.TemporaryDirectory(prefix="mend-pty-") as home:
             t.expect("MEND will lock shortly")
             t.expect("MEND session timed out.")
             t.expect("MEND locked.")
+            # Expiry leaves the shell alone until its next prompt hook notices the lock.
+            t.send("\n")
+            t.expect("MEND session unavailable:")
             print(f"PASS: {shell}: timeout warning, Enter renewal, expiry")
+        finally:
+            t.close()
+    for shell in ("/bin/bash", "/bin/zsh"):
+        t = Terminal(home, shell, ("--timeout", "6s"))
+        try:
+            t.expect("Password:")
+            t.send("test-password\n")
+            t.expect("[mend unlocked]")
+            broker_pid = t.key_process_pid() if Path("/proc").exists() else None
+            saved = Path(home, "vim-after-timeout.txt")
+            saved.unlink(missing_ok=True)
+            t.send("dec journal | vim -Nu NONE -n -i NONE -\n")
+            t.expect("SESSION_TEST_PLAINTEXT")
+            t.expect("MEND session timed out.")
+            t.expect("MEND locked.")
+            if broker_pid is not None:
+                deadline = time.monotonic() + 5
+                while Path(f"/proc/{broker_pid}").exists() and time.monotonic() < deadline:
+                    time.sleep(.05)
+                assert not Path(f"/proc/{broker_pid}").exists(), "Key JVM survived expiry"
+            # Vim must still accept commands and have its original plaintext buffer.
+            t.send(":call writefile(getline(1, '$'), 'vim-after-timeout.txt')\n")
+            deadline = time.monotonic() + 5
+            while not saved.exists() and time.monotonic() < deadline:
+                time.sleep(.05)
+            assert "SESSION_TEST_PLAINTEXT" in saved.read_text()
+            t.send(":q!\n")
+            t.expect("MEND session unavailable:")
+            print(f"PASS: {shell}: key JVM exits on timeout; foreground Vim remains usable")
         finally:
             t.close()

@@ -65,7 +65,7 @@ In order to decrypt anything that has been encrypted by MEND, you will first nee
 
 MEND asks for your password and opens your normal Bash/Zsh shell with local `dec` and `lock` commands. The decrypted private key stays in memory in the parent broker process. Run `lock` or exit the shell to end the session. Global `mend` commands are blocked inside it.
 
-The default inactivity timeout is 15 minutes. Configure it outside the session with `mend set session-timeout 30m`, override it with `mend unlock --timeout 2h`, or disable it with `mend unlock --no-timeout`. A warning precedes expiry; press Enter at the shell prompt to renew. Long-running viewers/jobs do not renew the timer. Timeout ends the shell and revokes decryption access.
+The default inactivity timeout is 15 minutes. Configure it outside the session with `mend set session-timeout 30m`, override it with `mend unlock --timeout 2h`, or disable it with `mend unlock --no-timeout`. A warning precedes expiry; press Enter at the shell prompt to renew. Long-running viewers/jobs do not renew the timer. Timeout exits the key process and revokes decryption access while leaving foreground applications running. The session shell exits when its next prompt hook detects the lock.
 
 Files decrypted into `dec-dir` remain after locking. Run `mend clean` outside the session to remove them using your configured command. Secure erasure is not guaranteed by deletion/shredding, especially on SSDs and snapshotting filesystems. See [SESSION_DESIGN.md](SESSION_DESIGN.md) for architecture, review order and security limits.
 

@@ -15,18 +15,20 @@ internal object MemoryProtection {
         "-XX:-CreateCoredumpOnCrash",
     )
 
+    internal fun command(args: List<String>): List<String> = listOf(
+        Path.of(System.getProperty("java.home"), "bin", "java").toString(),
+        *flags.toTypedArray(), "-Dmend.protected=true",
+        "-Duser.home=${System.getProperty("user.home")}",
+        "-cp", System.getProperty("java.class.path"),
+        "co.samco.mend4.desktop.MainKt", *args.toTypedArray(),
+    )
+
     fun prepare(args: Array<String>) {
         if (System.getProperty("os.name") !in listOf("Linux", "Mac OS X")) return
         // Attach cannot be disabled after VM startup. Relaunch once, before any key is loaded.
         if (!ManagementFactory.getRuntimeMXBean().inputArguments.containsAll(flags)) {
             check(System.getProperty("mend.protected") != "true") { "Unable to start a JVM with memory-dump protection" }
-            val child = ProcessBuilder(listOf(
-                Path.of(System.getProperty("java.home"), "bin", "java").toString(),
-                *flags.toTypedArray(), "-Dmend.protected=true",
-                "-Duser.home=${System.getProperty("user.home")}",
-                "-cp", System.getProperty("java.class.path"),
-                "co.samco.mend4.desktop.MainKt", *args,
-            )).inheritIO().start()
+            val child = ProcessBuilder(command(args.toList())).inheritIO().start()
             val hook = Thread { child.destroy() }
             Runtime.getRuntime().addShutdownHook(hook)
             val status = child.waitFor()

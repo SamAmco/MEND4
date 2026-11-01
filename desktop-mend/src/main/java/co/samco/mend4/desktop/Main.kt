@@ -11,10 +11,12 @@ import co.samco.mend4.desktop.session.SessionConnection
 import co.samco.mend4.desktop.session.SessionOutput
 import co.samco.mend4.desktop.session.SessionProtocol
 import co.samco.mend4.desktop.session.SessionRequest
+import co.samco.mend4.desktop.session.SessionKeyProcess
 import dagger.Component
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import java.security.Security
 import java.nio.file.Path
+import java.time.Duration
 import kotlin.system.exitProcess
 import javax.inject.Inject
 import javax.inject.Named
@@ -44,7 +46,7 @@ fun main(args: Array<String>) {
         System.err.println("mend is unavailable in this session; use dec or lock.")
         exitProcess(2)
     }
-    if (args.firstOrNull() in listOf("unlock", "change-password", "merge", "setup") &&
+    if (args.firstOrNull() in listOf("unlock", "change-password", "merge", "setup", "--session-broker") &&
         args.none { it == "--help" || it == "-h" }) {
         try {
             MemoryProtection.prepare(args)
@@ -55,12 +57,26 @@ fun main(args: Array<String>) {
     }
     Security.addProvider(BouncyCastleProvider())
     val runner = DaggerCommandRunnerComponent.create()
+    if (args.firstOrNull() == "--session-broker") {
+        val status = try {
+            require(args.size == 3)
+            val duration = if (args[2] == "none") null else Duration.ofSeconds(args[2].toLong())
+            runner.sessionKeyProcess().run(directory = Path.of(args[1]), duration = duration)
+            0
+        } catch (e: Exception) {
+            System.err.println(e.message ?: "Session broker failed")
+            1
+        }
+        exitProcess(status)
+    }
     runner.main.run(runner, args.toList())
 }
 
 @Singleton
 @Component(modules = [DesktopModule::class, CommandsModule::class])
 interface CommandRunnerComponent {
+    fun sessionKeyProcess(): SessionKeyProcess
+
     fun commands(): Set<Command>
 
     @Named(CommandsModule.HELP_COMMAND_NAME)
