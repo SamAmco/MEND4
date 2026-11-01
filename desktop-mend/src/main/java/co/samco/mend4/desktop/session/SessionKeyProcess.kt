@@ -48,16 +48,32 @@ class SessionKeyProcess @Inject constructor(
         Runtime.getRuntime().addShutdownHook(shutdownHook)
         try {
             broker.start()
-            // stdout is a private bootstrap pipe to the supervisor, never terminal output.
+            // The supervisor launched this JVM with stdout connected to a pipe it reads.
+            // Send it the socket address and credential for the broker we just started.
+            // UnlockSession (the supervisor) passes them to SessionShell,
+            // which delivers them to the new shell through a separate stdin pipe. The shell's
+            // dec/merge/lock clients use them to connect and authenticate; the key stays here.
+            // writeUTF/readUTF encode string lengths, so these are not newline-separated lines.
+            // Flush now so the waiting supervisor can read the details and launch the shell.
             DataOutputStream(System.out).apply {
                 writeUTF(broker.connection.socketPath.toString())
                 writeUTF(broker.connection.credential)
                 flush()
             }
-            // The supervisor keeps stdin open while the shell lives. EOF also handles
-            // supervisor failure, so an abandoned key process does not remain unlocked.
+            // This input is a pipe from the supervisor, not the user's keyboard. The password
+            // has already been read; no more bytes are expected, but the supervisor leaves
+            // the pipe open while the session shell runs. read() therefore blocks here.
+            // When the shell exits, the supervisor closes the pipe and read() returns -1 (EOF).
+            // If the supervisor dies, the OS closes its end of the pipe with the same result.
+            // Wait in a separate thread so the main loop can keep checking the timeout.
             Thread.ofVirtual().start {
-                try { input.read() } finally { locked.set(true) }
+                try {
+                    input.read()
+                } finally {
+                    // EOF, a read failure, or an unexpected byte all request shutdown.
+                    // The main loop below sees this flag and closes the broker before exiting.
+                    locked.set(true)
+                }
             }
             timeout.touch()
             while (!locked.get()) {

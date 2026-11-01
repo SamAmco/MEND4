@@ -22,54 +22,88 @@ import javax.inject.Inject
 import javax.inject.Named
 import javax.inject.Singleton
 
+/** Routes this JVM to a normal command, a short-lived session client, or the key-holding broker. */
 fun main(args: Array<String>) {
+    // Shell-local commands must reach their broker even though global mend calls are blocked.
     if (args.firstOrNull() == "--session-client") {
-        val status = try {
-            require(args.size >= 3)
-            val credential = System.`in`.bufferedReader().readLine() ?: error("Missing session credential")
-            SessionProtocol.request(
-                connection = SessionConnection(socketPath = Path.of(args[1]), credential = credential),
-                request = SessionRequest(
-                    command = args[2],
-                    arguments = args.drop(3),
-                    workingDirectory = System.getProperty("user.dir"),
-                ),
-                output = SessionOutput(stdout = System.out, stderr = System.err),
-            )
-        } catch (e: Exception) {
-            System.err.println("MEND session unavailable: ${e.message ?: "connection closed"}")
-            1
-        }
-        exitProcess(status)
+        exitProcess(runSessionClient(args))
     }
+
+    refuseGlobalCommandsInsideSession()
+    prepareMemoryProtection(args)
+    val runner = createCommandRunner()
+
+    if (args.firstOrNull() == "--session-broker") {
+        exitProcess(runSessionBroker(runner, args))
+    }
+    runner.main.run(runner, args.toList())
+}
+
+/**
+ * Internal mode: `--session-client <socket> <command>`, followed by any command arguments.
+ * The session shell starts one client for each dec/merge/lock call and prompt touch.
+ * It reads the credential from a stdin pipe, forwards the request to the broker, streams
+ * the response to stdout/stderr, then exits with the returned status. It never holds the key
+ * and does not need the cryptography provider or command dependencies initialized.
+ */
+private fun runSessionClient(args: Array<String>): Int = try {
+    require(args.size >= 3)
+    val credential = System.`in`.bufferedReader().readLine() ?: error("Missing session credential")
+    SessionProtocol.request(
+        connection = SessionConnection(socketPath = Path.of(args[1]), credential = credential),
+        request = SessionRequest(
+            command = args[2],
+            arguments = args.drop(3),
+            workingDirectory = System.getProperty("user.dir"),
+        ),
+        output = SessionOutput(stdout = System.out, stderr = System.err),
+    )
+} catch (e: Exception) {
+    System.err.println("MEND session unavailable: ${e.message ?: "connection closed"}")
+    1
+}
+
+private fun refuseGlobalCommandsInsideSession() {
     if (System.getenv("MEND_SESSION_ACTIVE") == "1") {
         System.err.println("mend is unavailable in this session; use dec, merge or lock.")
         exitProcess(2)
     }
-    if (args.firstOrNull() in listOf("unlock", "change-password", "setup", "--session-broker") &&
-        args.none { it == "--help" || it == "-h" }) {
-        try {
-            MemoryProtection.prepare(args)
-        } catch (e: Throwable) {
-            System.err.println("Unable to enable memory protection: ${e.message}")
-            exitProcess(1)
-        }
+}
+
+/** Apply protection before any password or private key is loaded; this may relaunch the JVM. */
+private fun prepareMemoryProtection(args: Array<String>) {
+    val handlesSecrets = args.firstOrNull() in listOf("unlock", "change-password", "setup", "--session-broker")
+    val helpRequested = args.any { it in Command.HELP_ALIASES }
+    if (!handlesSecrets || helpRequested) return
+
+    try {
+        MemoryProtection.prepare(args)
+    } catch (e: Throwable) {
+        System.err.println("Unable to enable memory protection: ${e.message}")
+        exitProcess(1)
     }
+}
+
+private fun createCommandRunner(): CommandRunnerComponent {
     Security.addProvider(BouncyCastleProvider())
-    val runner = DaggerCommandRunnerComponent.create()
-    if (args.firstOrNull() == "--session-broker") {
-        val status = try {
-            require(args.size == 3)
-            val duration = if (args[2] == "none") null else Duration.ofSeconds(args[2].toLong())
-            runner.sessionKeyProcess().run(directory = Path.of(args[1]), duration = duration)
-            0
-        } catch (e: Exception) {
-            System.err.println(e.message ?: "Session broker failed")
-            1
-        }
-        exitProcess(status)
-    }
-    runner.main.run(runner, args.toList())
+    return DaggerCommandRunnerComponent.create()
+}
+
+/**
+ * Internal mode: `--session-broker <session-directory> <timeout-seconds|none>`.
+ * UnlockSession starts this protected child JVM to own the private key and serve Unix-socket
+ * requests. SessionKeyProcess reads the password from stdin and returns connection details on
+ * stdout, both through private pipes. It runs until lock, timeout or supervisor disconnection;
+ * main then exits this JVM to release the key. The supervisor owns and waits for the shell.
+ */
+private fun runSessionBroker(runner: CommandRunnerComponent, args: Array<String>): Int = try {
+    require(args.size == 3)
+    val duration = if (args[2] == "none") null else Duration.ofSeconds(args[2].toLong())
+    runner.sessionKeyProcess().run(directory = Path.of(args[1]), duration = duration)
+    0
+} catch (e: Exception) {
+    System.err.println(e.message ?: "Session broker failed")
+    1
 }
 
 @Singleton
