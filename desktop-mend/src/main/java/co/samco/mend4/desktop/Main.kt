@@ -43,10 +43,10 @@ fun main(args: Array<String>) {
         exitProcess(status)
     }
     if (System.getenv("MEND_SESSION_ACTIVE") == "1") {
-        System.err.println("mend is unavailable in this session; use dec or lock.")
+        System.err.println("mend is unavailable in this session; use dec, merge or lock.")
         exitProcess(2)
     }
-    if (args.firstOrNull() in listOf("unlock", "change-password", "merge", "setup", "--session-broker") &&
+    if (args.firstOrNull() in listOf("unlock", "change-password", "setup", "--session-broker") &&
         args.none { it == "--help" || it == "-h" }) {
         try {
             MemoryProtection.prepare(args)

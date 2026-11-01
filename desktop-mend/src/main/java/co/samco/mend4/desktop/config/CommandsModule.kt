@@ -7,7 +7,6 @@ import co.samco.mend4.desktop.commands.Encrypt
 import co.samco.mend4.desktop.commands.EncryptFromStdIn
 import co.samco.mend4.desktop.commands.Gcl
 import co.samco.mend4.desktop.commands.Help
-import co.samco.mend4.desktop.commands.Merge
 import co.samco.mend4.desktop.commands.Scl
 import co.samco.mend4.desktop.commands.SetProperty
 import co.samco.mend4.desktop.commands.Setup
@@ -36,10 +35,6 @@ abstract class CommandsModule {
     @IntoSet
     @Binds
     abstract fun provideEncrypFromStdIn(c: EncryptFromStdIn): Command
-
-    @IntoSet
-    @Binds
-    abstract fun provideMerge(c: Merge): Command
 
     @IntoSet
     @Binds

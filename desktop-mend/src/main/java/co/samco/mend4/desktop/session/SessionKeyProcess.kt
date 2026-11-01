@@ -15,6 +15,7 @@ import javax.inject.Inject
 class SessionKeyProcess @Inject constructor(
     private val crypto: CryptoProvider,
     private val decrypt: SessionDecrypt,
+    private val merge: SessionMerge,
 ) {
     internal fun run(directory: Path, duration: Duration?) {
         val input = DataInputStream(System.`in`)
@@ -36,6 +37,7 @@ class SessionKeyProcess @Inject constructor(
             timeout.touch()
             when (context.request.command) {
                 "dec" -> decrypt.decrypt(key = result.privateKey, context = context)
+                "merge" -> merge.merge(key = result.privateKey, context = context)
                 "lock" -> locked.set(true)
                 "touch" -> Unit
                 else -> error("Unknown session command")

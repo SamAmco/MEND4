@@ -14,16 +14,12 @@ import co.samco.mend4.desktop.dao.impl.SettingsImpl
 import co.samco.mend4.desktop.helper.CryptoHelper
 import co.samco.mend4.desktop.helper.FileResolveHelper
 import co.samco.mend4.desktop.helper.InputHelper
-import co.samco.mend4.desktop.helper.KeyHelper
-import co.samco.mend4.desktop.helper.MergeHelper
 import co.samco.mend4.desktop.helper.SettingsHelper
 import co.samco.mend4.desktop.helper.ShredHelper
 import co.samco.mend4.desktop.helper.VersionHelper
 import co.samco.mend4.desktop.helper.impl.CryptoHelperImpl
 import co.samco.mend4.desktop.helper.impl.FileResolveHelperImpl
 import co.samco.mend4.desktop.helper.impl.InputHelperImpl
-import co.samco.mend4.desktop.helper.impl.KeyHelperImpl
-import co.samco.mend4.desktop.helper.impl.MergeHelperImpl
 import co.samco.mend4.desktop.helper.impl.SettingsHelperImpl
 import co.samco.mend4.desktop.helper.impl.ShredHelperImpl
 import co.samco.mend4.desktop.helper.impl.VersionHelperImpl
@@ -63,13 +59,6 @@ class DesktopModule {
 
     @Provides
     fun provideInputHelper(impl: InputHelperImpl): InputHelper = impl
-
-    @Provides
-    @Singleton
-    fun provideKeyHelper(impl: KeyHelperImpl): KeyHelper = impl
-
-    @Provides
-    fun provideMergeHelper(impl: MergeHelperImpl): MergeHelper = impl
 
     @Provides
     fun provideShredHelper(impl: ShredHelperImpl): ShredHelper = impl

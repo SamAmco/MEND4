@@ -34,6 +34,14 @@ fun main(args: Array<String>) {
     val crypto = DefaultJCECryptoProvider(settings, ApacheCommonsEncoder())
     crypto.storeEncryptedKeys("test-password".toCharArray(), crypto.generateKeyPair())
     runBlocking {
+        for ((name, entries) in listOf(
+            "first.mend" to listOf("01/01/2020 00:00:01 MERGE_ONE", "01/01/2020 00:00:03 MERGE_THREE"),
+            "second.mend" to listOf("01/01/2020 00:00:02 MERGE_TWO", "01/01/2020 00:00:03 MERGE_THREE"),
+        )) {
+            File(args.single(), name).outputStream().use { output ->
+                entries.forEach { crypto.encryptLogStream(it, output) }
+            }
+        }
         File(settings.getValue(SettingsDao.LOG_DIR), "journal.${AppProperties.LOG_FILE_EXTENSION}").outputStream().use {
             crypto.encryptLogStream("SESSION_TEST_PLAINTEXT", it)
         }

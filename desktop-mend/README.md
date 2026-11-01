@@ -63,7 +63,7 @@ In order to decrypt anything that has been encrypted by MEND, you will first nee
 
 	mend unlock
 
-MEND asks for your password and opens your normal Bash/Zsh shell with local `dec` and `lock` commands. The decrypted private key stays in memory in the parent broker process. Run `lock` or exit the shell to end the session. Global `mend` commands are blocked inside it.
+MEND asks for your password and opens your normal Bash/Zsh shell with local `dec`, `merge` and `lock` commands. The decrypted private key stays in memory in a separate broker process. Run `lock` or exit the shell to end the session. Global `mend` commands are blocked inside it.
 
 The default inactivity timeout is 15 minutes. Configure it outside the session with `mend set session-timeout 30m`, override it with `mend unlock --timeout 2h`, or disable it with `mend unlock --no-timeout`. A warning precedes expiry; press Enter at the shell prompt to renew. Long-running viewers/jobs do not renew the timer. Timeout exits the key process and revokes decryption access while leaving foreground applications running. The session shell exits when its next prompt hook detects the lock.
 
@@ -134,13 +134,15 @@ This will run your `shred-command` on every file in your `dec-dir`. Once again, 
 
 ## MERGING
 
-You can merge two logs together into one log file using the `merge` subcommand outside a session. It asks for your password for this operation, because it reads the date/time at the top of each log and orders the output by date. e.g.
+Inside an unlocked session, `merge` combines two encrypted logs using the session's key, without another password prompt. It reads the date/time at the top of each entry, orders the output by date and removes duplicate dated entries. The output remains encrypted. For example:
 
-    mend merge in1.mend in2.mend out.mend
+    merge in1.mend in2.mend out.mend
 
 Another way to use this command is with the -1 or -2 flag (instead of providing an output log file name.) This way the output log will replace the the first or second logs respectively. e.g.
 
-    mend merge -1 in1.mend in2.mend
+    merge -1 in1.mend in2.mend
+
+Input names can refer to configured logs or paths relative to the shell's current directory. An explicit output path is relative to that directory; `.mend` is appended if needed. There is no global `mend merge` command.
 
 
 ## CHANGING PASSWORD

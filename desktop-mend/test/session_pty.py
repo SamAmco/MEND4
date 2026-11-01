@@ -69,6 +69,9 @@ class Terminal:
 with tempfile.TemporaryDirectory(prefix="mend-pty-") as home:
     subprocess.run(["./gradlew", ":desktop-mend:sessionFixture", "-PfixtureHome=" + home,
                     "--console=plain"], check=True)
+    for obsolete in ("dec", "lock", "merge"):
+        result = subprocess.run(["java", "-Duser.home=" + home, "-jar", JAR, obsolete], capture_output=True)
+        assert result.returncode != 0, f"Obsolete global {obsolete} is still registered"
     for shell in ("/bin/bash", "/bin/zsh"):
         t = Terminal(home, shell)
         try:
@@ -108,6 +111,19 @@ with tempfile.TemporaryDirectory(prefix="mend-pty-") as home:
             t.send("dec -s document.enc\n")
             t.expect("Decrypted to:")
             t.expect("[mend unlocked]")
+            for command in (
+                "merge first.mend second.mend merged; dec merged.mend > merged.txt",
+                "cp first.mend in-first.mend; merge -1 in-first.mend second.mend; dec in-first.mend > in-first.txt",
+                "cp second.mend in-second.mend; merge -2 first.mend in-second.mend; dec in-second.mend > in-second.txt",
+                "cd nested; merge ../first.mend ../second.mend relative; dec relative.mend > relative.txt; cd ..",
+            ):
+                t.send(command + "\n")
+                t.expect("Merged to file:")
+                t.expect("[mend unlocked]")
+            for output in ("merged.txt", "in-first.txt", "in-second.txt", "nested/relative.txt"):
+                text = Path(home, output).read_text()
+                assert text.index("MERGE_ONE") < text.index("MERGE_TWO") < text.index("MERGE_THREE")
+                assert text.count("MERGE_THREE") == 1
             t.send("sleep 30\n")
             time.sleep(.2)
             t.send("\x1a")
@@ -116,7 +132,7 @@ with tempfile.TemporaryDirectory(prefix="mend-pty-") as home:
             t.expect("MEND locked.")
             assert not list(Path(home).rglob("prKey"))
             assert Path(home, "output.txt").read_text() == "BINARY_TEST_CONTENT"
-            print(f"PASS: {shell}: bootstrap, decrypt, pipe, redirect, nested shell, mend guard, job control, lock")
+            print(f"PASS: {shell}: bootstrap, decrypt, session merge (new/-1/-2/cwd), pipes, job control, lock")
         finally:
             t.close()
     for shell in ("/bin/bash", "/bin/zsh"):

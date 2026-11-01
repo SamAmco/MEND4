@@ -10,8 +10,6 @@ import co.samco.mend4.desktop.exception.SettingRequiredException
 import co.samco.mend4.desktop.helper.CryptoHelper
 import co.samco.mend4.desktop.helper.FileResolveHelper
 import co.samco.mend4.desktop.helper.InputHelper
-import co.samco.mend4.desktop.helper.KeyHelper
-import co.samco.mend4.desktop.helper.MergeHelper
 import co.samco.mend4.desktop.helper.SettingsHelper
 import co.samco.mend4.desktop.helper.ShredHelper
 import co.samco.mend4.desktop.helper.VersionHelper
@@ -36,10 +34,6 @@ open class TestBase {
     protected lateinit var fileResolveHelper: FileResolveHelper
 
     protected lateinit var inputHelper: InputHelper
-
-    protected lateinit var keyHelper: KeyHelper
-
-    protected lateinit var mergeHelper: MergeHelper
 
     protected lateinit var settingsHelper: SettingsHelper
 
@@ -74,8 +68,6 @@ open class TestBase {
         strings = I18NImpl("en", "UK")
         fileResolveHelper = mock()
         inputHelper = mock()
-        keyHelper = mock()
-        mergeHelper = mock()
         cryptoHelper = mock()
         shredHelper = mock()
     }

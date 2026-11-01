@@ -23,11 +23,11 @@ The broker's Unix-domain socket lives in a fresh mode-0700 `/tmp/mend-*` directo
 
 The shell starts interactively with stdout/stderr inherited and stdin connected to a normal `ProcessBuilder` anonymous pipe. Its startup script reads four lines: credential, socket path, Java executable, classpath. It closes/replaces that stdin with `/dev/tty`, then enables job control. This avoids custom descriptor-inheritance code. Shell configuration is loaded before reading secrets; it is part of the trusted environment.
 
-The startup script defines `dec`, `lock`, and a refusing `mend` function. `MEND_SESSION_ACTIVE` also makes the global application refuse calls from that environment. The credential is a non-exported variable; a builtin `printf` delivers it to each client over stdin. Paths/arguments are quoted, and arguments are never evaluated as shell code. Tracing and automatic variable export are disabled before reading or passing secrets.
+The startup script defines `dec`, `merge`, `lock`, and a refusing `mend` function. `MEND_SESSION_ACTIVE` also makes the global application refuse calls from that environment. The credential is a non-exported variable; a builtin `printf` delivers it to each client over stdin. Paths/arguments are quoted, and arguments are never evaluated as shell code. Tracing and automatic variable export are disabled before reading or passing secrets.
 
 Normal pipelines and forked shell subshells inherit shell state, so `(dec journal)` and `dec journal | less` work. A newly executed Bash/Zsh does not inherit the functions or credential. This is an inheritance convention, **not** a security boundary against malicious shell code: `source`, shell functions, debugging hooks, explicitly exporting secrets, or commands executed in the current shell can access its variables. The `mend` refusal can also be deliberately bypassed by clearing its marker.
 
-Each client connects with a fresh socket. The broker authenticates a random 256-bit credential before executing an allowlisted operation (`dec`, `lock`, `touch`). It limits simultaneous clients to 16 and closes incomplete handshakes after five seconds. Arguments and frames have bounded sizes. Requests include the client's working directory, so `cd` and relative paths work as expected. There is no Java object deserialization, arbitrary command execution API, key export, or network listener.
+Each client connects with a fresh socket. The broker authenticates a random 256-bit credential before executing an allowlisted operation (`dec`, `merge`, `lock`, `touch`). It limits simultaneous clients to 16 and closes incomplete handshakes after five seconds. Arguments and frames have bounded sizes. Requests include the client's working directory, so `cd` and relative paths work as expected. There is no Java object deserialization, arbitrary command execution API, key export, or network listener.
 
 Locking closes the listener and all active sockets, then exits the key-owning JVM. The `lock` shell function also exits the session shell. Normal shell exit closes the broker's control pipe and waits for its shutdown, forcing termination if needed. The supervisor removes the known startup files and empty directory when the shell ends. Terminal hangup also triggers cleanup. SIGKILL cannot run cleanup: it may leave a harmless stale socket directory and an orphan shell. A killed supervisor closes the control pipe, asking the key process to exit. Background jobs and external viewers are not a managed sandbox.
 
@@ -53,7 +53,7 @@ References: [Linux PR_SET_DUMPABLE](https://man7.org/linux/man-pages/man2/PR_SET
 
 Existing `config.xml` and encrypted data need no conversion. There is no compatibility layer for plaintext key files: sessions neither read nor check for them.
 
-`dec` and `lock` exist only inside an unlocked session. `mend merge` and `mend change-password` run outside the session and authenticate for their single operation. Normal encryption remains available outside the session without unlocking.
+`dec`, `merge` and `lock` exist only inside an unlocked session. `SessionMerge` uses the broker's existing key to sort and deduplicate log entries while preserving their encrypted records. It supports a separate output or explicit `-1`/`-2` replacement. The old global merge command and one-shot key helper have been removed. `mend change-password` runs outside the session and authenticates for its single operation. Normal encryption remains available outside the session without unlocking.
 
 Run:
 
