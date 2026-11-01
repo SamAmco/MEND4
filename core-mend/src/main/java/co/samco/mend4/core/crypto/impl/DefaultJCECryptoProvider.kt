@@ -496,7 +496,11 @@ class DefaultJCECryptoProvider(
                 privateKeyCipherIv = privateKeyCipherIv
             ).doFinal(encoder.decodeBase64(encryptedPrivateKeyEncoded))
 
-            val privateKey = getPrivateKeyFromBytes(privateKeyBytes)
+            val privateKey = try {
+                getPrivateKeyFromBytes(privateKeyBytes)
+            } finally {
+                privateKeyBytes.fill(0)
+            }
             val decAsymmetricCipher = getAsymmetricDecryptCipher(privateKey)
             val plainText = decAsymmetricCipher.doFinal(cipherTextBytes)
 
