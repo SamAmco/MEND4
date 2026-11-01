@@ -6,11 +6,13 @@ import java.nio.file.Path
 
 /** stdin is the anonymous bootstrap pipe; startup reconnects it to /dev/tty before reading commands. */
 internal object SessionShell {
+    private val startupFiles = listOf("session.sh", "bashrc", ".zshrc", ".zshenv")
+
     fun launch(directory: Path, connection: SessionConnection): Process {
         val shell = System.getenv("SHELL") ?: "/bin/bash"
         val name = Path.of(shell).fileName.toString()
         require(name == "bash" || name == "zsh") { "MEND sessions support Bash and Zsh; set SHELL accordingly." }
-        listOf("session.sh", "bashrc", ".zshrc", ".zshenv").forEach { resource ->
+        startupFiles.forEach { resource ->
             SessionShell::class.java.getResourceAsStream("/session/$resource")!!.use {
                 Files.copy(it, directory.resolve(resource))
             }
@@ -36,5 +38,12 @@ internal object SessionShell {
             child.outputStream.bufferedWriter().use { writer -> values.forEach { writer.write(it); writer.newLine() } }
         } catch (e: Exception) { child.destroyForcibly(); throw e }
         return child
+    }
+
+    fun removeStartupFiles(directory: Path) {
+        // Only remove files we install; attempt every deletion even if one fails.
+        startupFiles.forEach { name ->
+            runCatching { Files.deleteIfExists(directory.resolve(name)) }
+        }
     }
 }

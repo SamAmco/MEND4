@@ -55,8 +55,7 @@ class UnlockSession @Inject constructor(
                 it.destroy()
                 if (!it.waitFor(500, TimeUnit.MILLISECONDS)) it.destroyForcibly()
             }
-            // Only the known files belonging to this session; never recursively remove a directory.
-            listOf("session.sh", "bashrc", ".zshrc", ".zshenv").forEach { runCatching { Files.deleteIfExists(directory.resolve(it)) } }
+            SessionShell.removeStartupFiles(directory)
             runCatching { Files.deleteIfExists(directory) }
         }
         val shutdownHook = Thread(::cleanup, "mend-session-cleanup")
