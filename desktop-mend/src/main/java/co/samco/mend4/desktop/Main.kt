@@ -41,7 +41,7 @@ fun main(args: Array<String>) {
 
 /**
  * Internal mode: `--session-client <socket> <command>`, followed by any command arguments.
- * The session shell starts one client for each dec/merge/lock call and prompt touch.
+ * The session shell starts one client for each dec/merge/lock/help call and prompt touch.
  * It reads the credential from a stdin pipe, forwards the request to the broker, streams
  * the response to stdout/stderr, then exits with the returned status. It never holds the key
  * and does not need the cryptography provider or command dependencies initialized.
@@ -65,7 +65,7 @@ private fun runSessionClient(args: Array<String>): Int = try {
 
 private fun refuseGlobalCommandsInsideSession() {
     if (System.getenv("MEND_SESSION_ACTIVE") == "1") {
-        System.err.println("mend is unavailable in this session; use dec, merge or lock.")
+        System.err.println("mend is unavailable in this session; use help to see session commands.")
         exitProcess(2)
     }
 }

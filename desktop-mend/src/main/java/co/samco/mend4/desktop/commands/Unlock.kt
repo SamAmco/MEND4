@@ -15,7 +15,7 @@ import javax.inject.Inject
  * ```text
  * Supervisor JVM (UnlockSession)
  * ├── Key JVM (SessionKeyProcess): private key, Unix-socket broker, inactivity timer
- * └── Interactive Bash/Zsh: dec/merge/lock functions, pipelines, editors and other commands
+ * └── Interactive Bash/Zsh: dec/merge/lock/help functions, pipelines, editors and other commands
  * ```
  *
  * Startup proceeds as follows:
@@ -25,9 +25,9 @@ import javax.inject.Inject
  *    through another anonymous pipe. The credential authorizes requests; it is not the key.
  * 3. The supervisor launches the shell through SessionShell, passing the credential, socket path
  *    and Java launch details through the shell's stdin pipe. Static startup scripts loaded from
- *    the session directory define dec/merge/lock and the prompt hook; the functions are not piped in.
+ *    the session directory define dec/merge/lock/help and the prompt hook; the functions are not piped in.
  *    The scripts store the credential in a non-exported variable and reconnect stdin to /dev/tty.
- * 4. Each dec/merge/lock call starts a short-lived Java client which authenticates to the broker over
+ * 4. Each dec/merge/lock/help call starts a short-lived Java client which authenticates to the broker over
  *    the Unix socket. Returned stdout/stderr feed the shell's normal pipes and redirections.
  *    The prompt hook sends a touch request to renew the inactivity timer.
  *

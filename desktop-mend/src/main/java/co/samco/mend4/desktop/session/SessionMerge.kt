@@ -21,7 +21,7 @@ class SessionMerge @Inject constructor(
 ) {
     internal fun merge(key: PrivateKey, context: SessionCommandContext) {
         val args = context.request.arguments
-        require(args.size == 3) { "Usage: merge <first log> <second log> <output log> | merge <-1|-2> <first log> <second log>" }
+        require(args.size == 3) { SessionCommand.MERGE.usage }
         val inPlace = args.first() in listOf("-1", "-2")
         require(inPlace || !args.first().startsWith("-")) { "Unknown merge option: ${args.first()}" }
         val names = if (inPlace) args.drop(1) else args.take(2)

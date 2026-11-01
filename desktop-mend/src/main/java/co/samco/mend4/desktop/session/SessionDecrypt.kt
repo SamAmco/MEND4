@@ -23,11 +23,11 @@ class SessionDecrypt @Inject constructor(
     internal fun decrypt(key: PrivateKey, context: SessionCommandContext) {
         val args = context.request.arguments
         val output = context.output
-        require(args.isNotEmpty()) { "Usage: dec [--stdout] [-s] <file or log>" }
+        require(args.isNotEmpty()) { SessionCommand.DEC.usage }
         val stdout = "--stdout" in args
         val silent = "-s" in args
         val names = args.filter { it != "--stdout" && it != "-s" }
-        require(names.size == 1 && !names.single().startsWith("-")) { "Usage: dec [--stdout] [-s] <file or log>" }
+        require(names.size == 1 && !names.single().startsWith("-")) { SessionCommand.DEC.usage }
         val name = names.single()
         val candidate = if (File(name).isAbsolute) File(name) else File(context.request.workingDirectory, name)
         val file = if (candidate.isFile) candidate else {

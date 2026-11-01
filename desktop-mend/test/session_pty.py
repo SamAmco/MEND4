@@ -92,6 +92,25 @@ with tempfile.TemporaryDirectory(prefix="mend-pty-") as home:
             t.expect("Password:")
             t.send("test-password\n")
             t.expect("[mend unlocked]")
+            for command in ("dec", "merge", "lock"):
+                descriptions = []
+                for invocation in (f"help {command}", f"{command} -h", f"{command} --help"):
+                    t.send(invocation + " > command-help.txt; printf 'HELP_RESULT=%s\\n' \"$?\"\n")
+                    t.expect("\r\nHELP_RESULT=0\r\n")
+                    t.expect("[mend unlocked]")
+                    descriptions.append(Path(home, "command-help.txt").read_text())
+                assert descriptions[0] == descriptions[1] == descriptions[2]
+                assert descriptions[0].startswith("Usage: " + command)
+            t.send("help > all-help.txt; lock --invalid; printf 'LOCK_RESULT=%s\\n' \"$?\"\n")
+            t.expect("\r\nLOCK_RESULT=1\r\n")
+            t.expect("[mend unlocked]")
+            overview = Path(home, "all-help.txt").read_text()
+            assert all("Usage: " + name in overview for name in ("dec", "merge", "lock", "help"))
+            untouched = Path(home, "help-must-not-create.mend")
+            t.send("dec --help document.enc > /dev/null; merge first.mend second.mend help-must-not-create --help > /dev/null\n")
+            t.expect("[mend unlocked]")
+            assert not untouched.exists()
+            assert not list(dec_dir.iterdir()), "Requesting help performed decryption"
             if Path("/proc").exists():
                 broker_pid = t.key_process_pid()
                 try:

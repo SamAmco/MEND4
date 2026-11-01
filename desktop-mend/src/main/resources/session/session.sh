@@ -19,7 +19,7 @@ exec < /dev/tty || exit 1
 set -m
 unset MEND_STARTUP_DIR
 # Ensure a user alias cannot take precedence over the session functions defined below.
-unalias dec merge lock mend 2>/dev/null || :
+unalias dec merge lock help mend 2>/dev/null || :
 
 _mend_request() {
     # Disable tracing before touching the credential, even if enabled interactively.
@@ -34,11 +34,18 @@ _mend_request() {
 }
 dec() { _mend_request dec "$@"; }
 merge() { _mend_request merge "$@"; }
+help() { _mend_request help "$@"; }
 # Ask the key process to stop, then exit this shell so the supervisor can finish cleanup.
-lock() { _mend_request lock; exit; }
+# Arguments may request help or report an error; only a plain lock should exit the shell.
+lock() {
+    _mend_request lock "$@"
+    local request_status=$?
+    if [[ $# -eq 0 ]]; then exit "$request_status"; fi
+    return "$request_status"
+}
 # Keep global commands (including nested unlock) outside this session.
 mend() {
-    builtin printf '%s\n' 'mend is unavailable in this session; use dec, merge or lock.' >&2
+    builtin printf '%s\n' 'mend is unavailable in this session; use help to see session commands.' >&2
     return 2
 }
 

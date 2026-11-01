@@ -65,6 +65,8 @@ In order to decrypt anything that has been encrypted by MEND, you will first nee
 
 MEND asks for your password and opens your normal Bash/Zsh shell with local `dec`, `merge` and `lock` commands. The decrypted private key stays in memory in a separate broker process. Run `lock` or exit the shell to end the session. Global `mend` commands are blocked inside it.
 
+Run `help` inside the session to see the commands and their options. `help dec`, `dec -h` and `dec --help` show the same command-specific help; this also works for `merge` and `lock`. Help returns success without decrypting, merging, locking or exiting the shell. The session's `help` function shadows Bash's builtin; use `builtin help` for Bash's own help.
+
 The default inactivity timeout is 15 minutes. Configure it outside the session with `mend set session-timeout 30m`, override it with `mend unlock --timeout 2h`, or disable it with `mend unlock --no-timeout`. A warning precedes expiry; press Enter at the shell prompt to renew. Long-running viewers/jobs do not renew the timer. Timeout exits the key process and revokes decryption access while leaving foreground applications running. The session shell exits when its next prompt hook detects the lock.
 
 When the session shell exits, MEND automatically runs the same cleanup as `mend clean`, using your configured `shred-command` on `dec-dir`. This is enabled by default. Disable it globally with `mend set session-auto-clean false`, or for one session with `mend unlock --no-auto-clean`. Use `mend unlock --auto-clean` to enable it for one session even when globally disabled. These flags can be combined with timeout options.

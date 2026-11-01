@@ -35,10 +35,14 @@ class SessionKeyProcess @Inject constructor(
         val broker = SessionBroker(directory) { context ->
             check(!locked.get()) { "MEND is locked" }
             timeout.touch()
+            if (SessionCommand.printHelpIfRequested(context)) return@SessionBroker 0
             when (context.request.command) {
                 "dec" -> decrypt.decrypt(key = result.privateKey, context = context)
                 "merge" -> merge.merge(key = result.privateKey, context = context)
-                "lock" -> locked.set(true)
+                "lock" -> {
+                    require(context.request.arguments.isEmpty()) { SessionCommand.LOCK.usage }
+                    locked.set(true)
+                }
                 "touch" -> Unit
                 else -> error("Unknown session command")
             }
