@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -34,6 +33,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
@@ -48,10 +48,13 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import co.samco.mendroid.R
 import co.samco.mendroid.ui.common.ConfirmCancelDialogBody
 import co.samco.mendroid.ui.common.Divider
+import co.samco.mendroid.ui.common.DateScrollLazyColumn
 import co.samco.mendroid.viewmodel.DecryptFileDialogData
 import co.samco.mendroid.viewmodel.DecryptedLogViewModel
 import co.samco.mendroid.viewmodel.LogViewData
 import co.samco.mendroid.viewmodel.TextType
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 
 @Composable
 fun DecryptLogText(modifier: Modifier) {
@@ -81,7 +84,7 @@ fun DecryptLogText(modifier: Modifier) {
             contentAlignment = Alignment.Center
         ) { CircularProgressIndicator() }
     } else {
-        Column {
+        Column(modifier = modifier) {
             val logLines = viewModel.logLines.collectAsState().value
 
             if (logLines.isEmpty()) EmptyLinesText()
@@ -212,9 +215,16 @@ private fun ColumnScope.LogLines(logLines: List<LogViewData>) = SelectionContain
         }
     }
 
-    LazyColumn(
-        modifier = Modifier.padding(),
-        state = listState
+    val locale = LocalConfiguration.current.locales[0]
+    val dateFormatter = remember(locale) {
+        DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale)
+    }
+    val unknownDate = stringResource(R.string.unknown_date)
+
+    DateScrollLazyColumn(
+        state = listState,
+        itemCount = logLines.size,
+        dateLabel = { index -> logLines.getOrNull(index)?.date?.format(dateFormatter) ?: unknownDate }
     ) {
         items(logLines.size) { index ->
 

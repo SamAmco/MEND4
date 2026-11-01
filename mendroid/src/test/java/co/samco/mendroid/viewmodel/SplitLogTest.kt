@@ -4,8 +4,19 @@ import co.samco.mendroid.model.LogLine
 import co.samco.mendroid.viewmodel.DecryptedLogViewModel.Companion.asViewData
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import java.time.LocalDateTime
 
 class SplitLogTest {
+
+    @Test
+    fun scrollDatePreservesTheEntryDateAndOriginalIndex() {
+        val dateTime = LocalDateTime.of(2024, 2, 29, 23, 59)
+        val viewData = LogLine("hello", dateTime).asViewData(123)
+        assertEquals(dateTime.toLocalDate(), viewData.date)
+        assertEquals(123, viewData.index)
+        assertEquals(null, LogLine("undated", null).asViewData(0).date)
+    }
+
 
     @Test
     fun testSplitLogText() {

@@ -33,6 +33,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 
@@ -48,7 +49,8 @@ data class TextPart(
 data class LogViewData(
     val text: List<TextPart>,
     val dateTime: String?,
-    val index: Int
+    val index: Int,
+    val date: LocalDate?
 )
 
 data class DecryptFileDialogData(
@@ -106,7 +108,8 @@ class DecryptedLogViewModel @Inject constructor(
             return LogViewData(
                 text = textParts,
                 dateTime = dateTime?.format(DateTimeFormatter.ofPattern("EEE, yyyy-MM-dd HH:mm:ss")),
-                index = index
+                index = index,
+                date = dateTime?.toLocalDate()
             )
         }
     }

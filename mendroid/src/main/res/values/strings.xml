@@ -77,4 +77,6 @@
     <string name="hold_to_test">Hold to test</string>
     <string name="recording">Recording…</string>
     <string name="playing_back">Playing…</string>
+    <string name="scroll_by_date">Scroll by date</string>
+    <string name="unknown_date">Unknown date</string>
 </resources>
