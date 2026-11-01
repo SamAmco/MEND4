@@ -31,6 +31,15 @@ fun main(args: Array<String>) {
         System.err.println("mend is unavailable in this session; use dec or lock.")
         kotlin.system.exitProcess(2)
     }
+    if (args.firstOrNull() in listOf("unlock", "change-password", "merge", "setup") &&
+        args.none { it == "--help" || it == "-h" }) {
+        try {
+            co.samco.mend4.desktop.session.MemoryProtection.prepare(args)
+        } catch (e: Throwable) {
+            System.err.println("Unable to enable memory protection: ${e.message}")
+            kotlin.system.exitProcess(1)
+        }
+    }
     Security.addProvider(BouncyCastleProvider())
     val runner = DaggerCommandRunnerComponent.create()
     runner.main.run(runner, args.toList())

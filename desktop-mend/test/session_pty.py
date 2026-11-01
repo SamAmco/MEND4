@@ -64,6 +64,24 @@ with tempfile.TemporaryDirectory(prefix="mend-pty-") as home:
             t.expect("Password:")
             t.send("test-password\n")
             t.expect("[mend unlocked]")
+            t.send("printf 'BROKER=%s\\n' \"$PPID\"\n")
+            t.expect("BROKER=")
+            # Skip the echoed command's format string; consume the actual numeric PID.
+            t.expect("BROKER=")
+            broker_line = t.expect("\r\n").strip()
+            broker_pid = int(broker_line)
+            if Path("/proc").exists():
+                try:
+                    fd = os.open(f"/proc/{broker_pid}/mem", os.O_RDONLY)
+                except PermissionError:
+                    pass
+                else:
+                    os.close(fd)
+                    raise AssertionError("Broker memory was readable")
+                attached = subprocess.run(["jcmd", str(broker_pid), "VM.version"],
+                                          capture_output=True, timeout=15)
+                assert attached.returncode != 0, "JVM diagnostic attachment should be disabled"
+            t.expect("[mend unlocked]")
             t.send("dec journal | cat\n")
             t.expect("SESSION_TEST_PLAINTEXT")
             t.expect("[mend unlocked]")
