@@ -84,12 +84,13 @@ class SetupTest : TestBase() {
         whenever(osDao.readLine()).thenReturn(" ")
         whenever(osDao.exists(eq(settingsFilePath))).thenReturn(false)
         var count = 0
+        val passwordBuffers = mutableListOf<CharArray>()
         whenever(osDao.readPassword(anyString())).thenAnswer {
-            return@thenAnswer if (count++ == 0) {
+            (if (count++ == 0) {
                 passOne.toCharArray()
             } else {
                 passTwo.toCharArray()
-            }
+            }).also(passwordBuffers::add)
         }
 
         setup.execute(emptyList())
@@ -97,6 +98,7 @@ class SetupTest : TestBase() {
         verify(err, times(1)).println(errCaptor.capture())
         verify(cryptoProvider, never()).storeEncryptedKeys(any(), any())
         Assert.assertEquals(strings["SetupMend.passwordMismatch"], errCaptor.allValues[0])
+        Assert.assertTrue(passwordBuffers.all { buffer -> buffer.all { it == '\u0000' } })
     }
 
     @Test
@@ -111,7 +113,7 @@ class SetupTest : TestBase() {
         val exception = "exception"
         whenever(osDao.readLine()).thenReturn(" ")
         whenever(osDao.readPassword(anyString()))
-            .thenReturn("password".toCharArray())
+            .thenAnswer { "password".toCharArray() }
         var settingsExists = false
         whenever(settings.setValue(any(), anyString())).thenAnswer {
             settingsExists = true
@@ -128,7 +130,11 @@ class SetupTest : TestBase() {
     }
 
     private fun doSetup() {
-        whenever(osDao.readPassword(anyString())).thenReturn("password".toCharArray())
+        val passwordBuffers = mutableListOf<CharArray>()
+        whenever(osDao.readPassword(anyString())).thenAnswer { "password".toCharArray().also(passwordBuffers::add) }
+        whenever(cryptoProvider.storeEncryptedKeys(any(), any())).thenAnswer {
+            Assert.assertArrayEquals("password".toCharArray(), it.arguments[0] as CharArray)
+        }
         whenever(osDao.readLine()).thenReturn(" ")
         whenever(cryptoProvider.generateKeyPair())
             .thenReturn(KeyPair(null, null))
@@ -137,7 +143,8 @@ class SetupTest : TestBase() {
 
         verify(cryptoProvider).generateKeyPair()
         verify(cryptoProvider, times(1))
-            .storeEncryptedKeys(eq("password".toCharArray()), any())
+            .storeEncryptedKeys(any(), any())
+        Assert.assertTrue(passwordBuffers.all { buffer -> buffer.all { it == '\u0000' } })
         verify(out, atLeastOnce()).println(outCaptor.capture())
     }
 

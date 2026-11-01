@@ -55,6 +55,8 @@ Existing `config.xml` and encrypted data need no conversion. There is no compati
 
 `dec`, `merge` and `lock` exist only inside an unlocked session. `SessionMerge` uses the broker's existing key to sort and deduplicate log entries while preserving their encrypted records. It supports a separate output or explicit `-1`/`-2` replacement. The old global merge command and one-shot key helper have been removed. `mend change-password` runs outside the session and authenticates for its single operation. Normal encryption remains available outside the session without unlocking.
 
+Merge output is staged beside its destination and atomically replaces it only after both logs have been processed successfully. Invalid input leaves existing files intact; ordinary failures remove the staging file. Forced process termination can leave an encrypted staging file. Filesystems that cannot perform the atomic replacement cause the operation to fail. Setup and password changes clear rejected candidates, confirmation arrays and accepted password arrays on success or failure.
+
 Run:
 
 ```sh

@@ -36,8 +36,9 @@ class SessionMerge @Inject constructor(
             val name = fileResolveHelper.ensureLogNameHasFileExtension(args[2])
             if (File(name).isAbsolute) File(name) else File(context.request.workingDirectory, name)
         }
-        val output = if (inPlace) Files.createTempFile(destination.parentFile.toPath(), "mend-merge-", ".mend").toFile()
-            else destination
+        // Never truncate a source or existing destination while inputs are still being read.
+        // Staging beside the destination permits an atomic replacement after a successful merge.
+        val output = Files.createTempFile(destination.absoluteFile.parentFile.toPath(), "mend-merge-", ".mend").toFile()
         try {
             inputs[0].inputStream().use { first ->
                 inputs[1].inputStream().use { second ->
@@ -46,10 +47,10 @@ class SessionMerge @Inject constructor(
                     }
                 }
             }
-            if (inPlace) Files.move(output.toPath(), destination.toPath(), StandardCopyOption.REPLACE_EXISTING)
+            Files.move(output.toPath(), destination.toPath(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
             context.output.stdout.write("Merged to file: ${destination.absolutePath}\n".toByteArray())
         } finally {
-            if (inPlace) Files.deleteIfExists(output.toPath())
+            Files.deleteIfExists(output.toPath())
         }
     }
 

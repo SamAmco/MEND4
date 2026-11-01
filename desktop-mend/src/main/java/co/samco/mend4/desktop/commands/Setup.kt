@@ -78,11 +78,19 @@ class Setup @Inject constructor(
     private fun readPassword(args: List<String>): List<String> {
         while (password == null) {
             val passArr1 = osDao.readPassword(strings["SetupMend.enterPassword"])
-            val passArr2 = osDao.readPassword(strings["SetupMend.reEnterPassword"])
-            if (passArr1.contentEquals(passArr2)) {
-                password = passArr1
-            } else {
-                log.err().println(strings["SetupMend.passwordMismatch"])
+            try {
+                val passArr2 = osDao.readPassword(strings["SetupMend.reEnterPassword"])
+                try {
+                    if (passArr1.contentEquals(passArr2)) {
+                        password = passArr1
+                    } else {
+                        log.err().println(strings["SetupMend.passwordMismatch"])
+                    }
+                } finally {
+                    passArr2.fill('\u0000')
+                }
+            } finally {
+                if (password !== passArr1) passArr1.fill('\u0000')
             }
         }
         log.out().println()
@@ -277,7 +285,12 @@ class Setup @Inject constructor(
     }
 
     public override fun execute(args: List<String>) {
-        executeBehaviourChain(behaviourChain, args)
+        try {
+            executeBehaviourChain(behaviourChain, args)
+        } finally {
+            password?.fill('\u0000')
+            password = null
+        }
     }
 
     override val usageText: String

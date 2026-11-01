@@ -45,6 +45,7 @@ class SessionMergeTest {
         whenever(crypto.getNextLogTextWithDataBlocks(any(), any(), any())).thenAnswer {
             assertSame(key, it.arguments[1])
             val token = (it.arguments[2] as ByteArray)[0].toInt().toChar()
+            require(token != '!') { "Corrupt log" }
             val text = if (token in 'a'..'d') "01/01/2020 00:00:0${token - 'a'} record" else "undated record"
             LogDataBlocksAndText(LogDataBlocks(token.toString().toByteArray(), ByteArray(0),
                 ByteArray(0), ByteArray(0), ByteArray(0), ByteArray(0)), text)
@@ -97,5 +98,31 @@ class SessionMergeTest {
         assertThrows(IllegalArgumentException::class.java) { merge(listOf("-3", "first", "second")) }
         assertThrows(IllegalArgumentException::class.java) { merge(listOf("missing", "second", "output")) }
         assertFalse(File(directory.root, "output.mend").exists())
+    }
+
+    @Test fun corruptInputPreservesEveryExistingFileAndRemovesStagingOutput() {
+        for (arguments in listOf(
+            listOf("first.mend", "second.mend", "output"),
+            listOf("first.mend", "second.mend", "first.mend"),
+            listOf("-1", "first.mend", "second.mend"),
+            listOf("-2", "first.mend", "second.mend"),
+        )) {
+            sources("a!", "bd")
+            File(directory.root, "output.mend").writeText("previous output")
+            assertThrows(IllegalArgumentException::class.java) { merge(arguments) }
+            assertEquals("a!", File(directory.root, "first.mend").readText())
+            assertEquals("bd", File(directory.root, "second.mend").readText())
+            assertEquals("previous output", File(directory.root, "output.mend").readText())
+            assertFalse(directory.root.listFiles()!!.any { it.name.startsWith("mend-merge-") })
+        }
+        assertThrows(IllegalArgumentException::class.java) { merge(listOf("first.mend", "second.mend", "new")) }
+        assertFalse(File(directory.root, "new.mend").exists())
+    }
+
+    @Test fun outputCanAliasAnInputWithoutTruncatingItDuringTheMerge() {
+        sources("ac", "bd")
+        merge(listOf("first.mend", "second.mend", "first.mend"))
+        assertEquals("abcd", File(directory.root, "first.mend").readText())
+        assertEquals("bd", File(directory.root, "second.mend").readText())
     }
 }

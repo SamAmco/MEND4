@@ -36,7 +36,7 @@ class ChangePassword @Inject constructor(
     )
 
     private lateinit var keyPair: KeyPair
-    private lateinit var password: CharArray
+    private var password: CharArray? = null
     private lateinit var pwKeyFactoryIterations: String
     private lateinit var pwKeyFactoryParallelism: String
     private lateinit var pwKeyFactoryMemoryKb: String
@@ -85,17 +85,24 @@ class ChangePassword @Inject constructor(
     }
 
     private fun readNewPassword(args: List<String>): List<String>? {
-        var readPassword: CharArray? = null
-        while (readPassword == null) {
+        while (password == null) {
             val passArr1 = osDao.readPassword(strings["ChangePassword.enterPassword"])
-            val passArr2 = osDao.readPassword(strings["ChangePassword.reEnterPassword"])
-            if (passArr1.contentEquals(passArr2)) {
-                readPassword = passArr1
-            } else {
-                log.err().println(strings["SetupMend.passwordMismatch"])
+            try {
+                val passArr2 = osDao.readPassword(strings["ChangePassword.reEnterPassword"])
+                try {
+                    if (passArr1.contentEquals(passArr2)) {
+                        password = passArr1
+                    } else {
+                        log.err().println(strings["SetupMend.passwordMismatch"])
+                    }
+                } finally {
+                    passArr2.fill('\u0000')
+                }
+            } finally {
+                // Keep the accepted candidate only until execute() finishes storing the keys.
+                if (password !== passArr1) passArr1.fill('\u0000')
             }
         }
-        password = readPassword
         log.out().println()
         return args
     }
@@ -154,7 +161,7 @@ class ChangePassword @Inject constructor(
                 pwKeyFactoryMemoryKb
             )
 
-            cryptoProvider.storeEncryptedKeys(password, keyPair)
+            cryptoProvider.storeEncryptedKeys(requireNotNull(password), keyPair)
 
             log.out().println(strings["ChangePassword.success"])
         } catch (t: Throwable) {
@@ -183,7 +190,12 @@ class ChangePassword @Inject constructor(
     }
 
     public override fun execute(args: List<String>) {
-        executeBehaviourChain(behaviorChain, args)
+        try {
+            executeBehaviourChain(behaviorChain, args)
+        } finally {
+            password?.fill('\u0000')
+            password = null
+        }
     }
 
     override val usageText: String
