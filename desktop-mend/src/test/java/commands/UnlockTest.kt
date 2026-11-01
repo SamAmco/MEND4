@@ -8,7 +8,7 @@ import org.junit.Test
 
 class UnlockTest : TestBase() {
     @Test fun refusesWithoutAnInteractiveTerminalAndNeverWritesKeys() {
-        val session = UnlockSession(cryptoProvider, SessionDecrypt(cryptoProvider, fileResolveHelper, settings, osDao), osDao, fileResolveHelper)
+        val session = UnlockSession(cryptoProvider, SessionDecrypt(cryptoProvider, fileResolveHelper, settings, osDao), osDao, fileResolveHelper, settings)
         Unlock(session, log).executeCommand(emptyList())
         verify(err).println("mend unlock requires an interactive terminal")
         verify(osDao, never()).fileOutputSteam(any(), any())

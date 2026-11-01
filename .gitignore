@@ -9,6 +9,7 @@ mendroid/release
 
 desktop-mend/test/*
 !desktop-mend/test/tmend
+!desktop-mend/test/session_pty.py
 
 # Java class files
 *.class

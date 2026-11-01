@@ -12,6 +12,7 @@ interface SettingsDao : Settings {
         val ENC_DIR = Settings.Name("enc-dir")
         val DEC_DIR = Settings.Name("dec-dir")
         val SHRED_COMMAND = Settings.Name("shred-command")
+        val SESSION_TIMEOUT = Settings.Name("session-timeout")
 
         val ALL_SETTINGS = arrayOf(
             CURRENT_LOG,
@@ -19,6 +20,7 @@ interface SettingsDao : Settings {
             ENC_DIR,
             DEC_DIR,
             SHRED_COMMAND,
+            SESSION_TIMEOUT,
             Settings.Name.ASYMMETRIC_CIPHER_NAME,
             Settings.Name.ASYMMETRIC_CIPHER_TRANSFORM,
             Settings.Name.ASYMMETRIC_KEY_SIZE,

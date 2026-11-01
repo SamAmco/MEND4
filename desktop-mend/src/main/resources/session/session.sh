@@ -1,6 +1,7 @@
 # No secrets in this file. The parent writes four lines through an anonymous stdin pipe.
 set +x
 set +v
+set +a
 IFS= read -r _mend_credential || exit 1
 IFS= read -r _mend_socket || exit 1
 IFS= read -r _mend_java || exit 1
@@ -25,3 +26,14 @@ mend() {
     builtin printf '%s\n' 'mend is unavailable in this session; use dec or lock.' >&2
     return 2
 }
+
+_mend_prompt() {
+    local previous_status=$?
+    _mend_request touch || exit
+    return "$previous_status"
+}
+if [[ -n ${BASH_VERSION-} ]]; then
+    PROMPT_COMMAND=(_mend_prompt "${PROMPT_COMMAND[@]}")
+else
+    precmd_functions=(_mend_prompt "${precmd_functions[@]}")
+fi
