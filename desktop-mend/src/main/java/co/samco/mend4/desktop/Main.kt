@@ -14,6 +14,23 @@ import javax.inject.Named
 import javax.inject.Singleton
 
 fun main(args: Array<String>) {
+    if (args.firstOrNull() == "--session-client") {
+        val status = try {
+            require(args.size >= 3)
+            val credential = System.`in`.bufferedReader().readLine() ?: error("Missing session credential")
+            co.samco.mend4.desktop.session.SessionProtocol.request(
+                java.nio.file.Path.of(args[1]), credential, args.drop(2),
+                System.getProperty("user.dir"), System.out, System.err)
+        } catch (e: Exception) {
+            System.err.println("MEND session unavailable: ${e.message ?: "connection closed"}")
+            1
+        }
+        kotlin.system.exitProcess(status)
+    }
+    if (System.getenv("MEND_SESSION_ACTIVE") == "1") {
+        System.err.println("mend is unavailable in this session; use dec or lock.")
+        kotlin.system.exitProcess(2)
+    }
     Security.addProvider(BouncyCastleProvider())
     val runner = DaggerCommandRunnerComponent.create()
     runner.main.run(runner, args.toList())

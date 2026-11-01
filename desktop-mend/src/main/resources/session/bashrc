@@ -1,0 +1,4 @@
+# User settings run before secrets are read; normal aliases/completion remain available.
+[[ -f ~/.bashrc ]] && source ~/.bashrc
+source "$MEND_STARTUP_DIR/session.sh"
+PS1="[mend unlocked] $PS1"

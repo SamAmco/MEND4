@@ -75,14 +75,13 @@ class ChangePassword @Inject constructor(
     }
 
     private fun readKeyFiles(args: List<String>): List<String>? {
-        if (osDao.exists(fileResolveHelper.publicKeyFile) && osDao.exists(fileResolveHelper.privateKeyFile)) {
-            val publicKey = osDao.readAllBytes(fileResolveHelper.publicKeyFile)
-            val privateKey = osDao.readAllBytes(fileResolveHelper.privateKeyFile)
-            keyPair = cryptoProvider.getKeyPairFromBytes(privateKey, publicKey)
-        } else {
-            failWithMessage(log, strings.getf("ChangePassword.mendLocked", Unlock.COMMAND_NAME))
+        val oldPassword = osDao.readPassword("Current password: ")
+        val unlocked = try { cryptoProvider.unlock(oldPassword) } finally { oldPassword.fill('\u0000') }
+        if (unlocked !is co.samco.mend4.core.crypto.UnlockResult.Success) {
+            failWithMessage(log, "Incorrect password")
             return null
         }
+        keyPair = KeyPair(cryptoProvider.getPublicKey(), unlocked.privateKey)
         return args
     }
 

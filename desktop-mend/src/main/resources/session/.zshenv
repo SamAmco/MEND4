@@ -1,0 +1,2 @@
+[[ -f "$MEND_ORIGINAL_ZDOTDIR/.zshenv" ]] && source "$MEND_ORIGINAL_ZDOTDIR/.zshenv"
+ZDOTDIR="$MEND_STARTUP_DIR"

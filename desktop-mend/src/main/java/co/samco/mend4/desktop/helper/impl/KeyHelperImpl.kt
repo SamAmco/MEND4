@@ -13,9 +13,7 @@ class KeyHelperImpl @Inject constructor(
 ) : KeyHelper {
     override val privateKey: PrivateKey?
         get() {
-            val privateKeyFile = fileResolveHelper.privateKeyFile
-            if (!fileResolveHelper.isFile(privateKeyFile)) return null
-            val privateKeyBytes = Files.readAllBytes(privateKeyFile.toPath())
-            return cryptoProvider.getPrivateKeyFromBytes(privateKeyBytes)
+            // Never revive the old disk-backed unlock, even if a stale prKey exists.
+            return null
         }
 }

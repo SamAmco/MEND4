@@ -23,6 +23,13 @@ dependencies {
 
 version = '5.0.1'
 
+tasks.register('sessionFixture', JavaExec) {
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'session.SessionFixtureKt'
+    args providers.gradleProperty('fixtureHome').getOrElse('/tmp/mend-session-fixture')
+}
+
 tasks.named('compileKotlin') {
     dependsOn(':core-mend:jar')
 }

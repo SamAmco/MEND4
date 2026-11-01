@@ -15,6 +15,11 @@ import org.junit.Before
 import org.junit.Test
 import java.io.File
 import java.security.KeyPair
+import co.samco.mend4.core.crypto.UnlockResult
+import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.argThat
+import java.security.PrivateKey
+import java.security.PublicKey
 
 class ChangePasswordTest : TestBase() {
 
@@ -67,11 +72,12 @@ class ChangePasswordTest : TestBase() {
     @Test
     fun testFailsIfNotUnlocked() {
         assumeMendIsSetup()
-        whenever(osDao.exists(eq(privateKeyFile))).thenReturn(false)
+        whenever(osDao.readPassword(any())).thenReturn(charArrayOf())
+        whenever(cryptoProvider.unlock(any())).thenReturn(UnlockResult.Failure)
 
         uut.execute(emptyList())
 
-        verify(err).println(strings.getf("ChangePassword.mendLocked", Unlock.COMMAND_NAME))
+        verify(err).println("Incorrect password")
         verify(settings, never()).setValue(any(), any())
         verify(cryptoProvider, never()).storeEncryptedKeys(any(), any())
     }
@@ -88,9 +94,12 @@ class ChangePasswordTest : TestBase() {
         val password = "somePassword".toCharArray()
         whenever(osDao.readPassword(any())).thenReturn(password)
 
-        val keyPair = KeyPair(null, null)
-        whenever(cryptoProvider.getKeyPairFromBytes(eq(privateKeyBytes), eq(publicKeyBytes)))
-            .thenReturn(keyPair)
+        val privateKey = mock<PrivateKey>()
+        val publicKey = mock<PublicKey>()
+        val keyPair = KeyPair(publicKey, privateKey)
+        whenever(cryptoProvider.unlock(any())).thenReturn(UnlockResult.Success(privateKey))
+        whenever(cryptoProvider.getPublicKey()).thenReturn(publicKey)
+        whenever(osDao.readPassword(any())).thenAnswer { "somePassword".toCharArray() }
         var i = 0
         whenever(osDao.readLine()).thenAnswer { (i++).toString() }
 
@@ -100,7 +109,7 @@ class ChangePasswordTest : TestBase() {
 
         verify(out, atLeastOnce()).println(outCaptor.capture())
         assertEquals(strings["ChangePassword.success"], outCaptor.lastValue)
-        verify(cryptoProvider).storeEncryptedKeys(eq(password), eq(keyPair))
+        verify(cryptoProvider).storeEncryptedKeys(eq(password), argThat { private === privateKey && public === publicKey })
         verify(settings).setValue(eq(Settings.Name.PW_KEY_FACTORY_ITERATIONS), eq("0"))
         verify(settings).setValue(eq(Settings.Name.PW_KEY_FACTORY_PARALLELISM), eq("1"))
         verify(settings).setValue(eq(Settings.Name.PW_KEY_FACTORY_MEMORY_KB), eq("2"))
@@ -118,9 +127,12 @@ class ChangePasswordTest : TestBase() {
         val password = "somePassword".toCharArray()
         whenever(osDao.readPassword(any())).thenReturn(password)
 
-        val keyPair = KeyPair(null, null)
-        whenever(cryptoProvider.getKeyPairFromBytes(eq(privateKeyBytes), eq(publicKeyBytes)))
-            .thenReturn(keyPair)
+        val privateKey = mock<PrivateKey>()
+        val publicKey = mock<PublicKey>()
+        val keyPair = KeyPair(publicKey, privateKey)
+        whenever(cryptoProvider.unlock(any())).thenReturn(UnlockResult.Success(privateKey))
+        whenever(cryptoProvider.getPublicKey()).thenReturn(publicKey)
+        whenever(osDao.readPassword(any())).thenAnswer { "somePassword".toCharArray() }
         var i = 0
         whenever(osDao.readLine()).thenAnswer {
             if (i == 1) throw Exception("some exception")
@@ -146,9 +158,12 @@ class ChangePasswordTest : TestBase() {
         val password = "somePassword".toCharArray()
         whenever(osDao.readPassword(any())).thenReturn(password)
 
-        val keyPair = KeyPair(null, null)
-        whenever(cryptoProvider.getKeyPairFromBytes(eq(privateKeyBytes), eq(publicKeyBytes)))
-            .thenReturn(keyPair)
+        val privateKey = mock<PrivateKey>()
+        val publicKey = mock<PublicKey>()
+        val keyPair = KeyPair(publicKey, privateKey)
+        whenever(cryptoProvider.unlock(any())).thenReturn(UnlockResult.Success(privateKey))
+        whenever(cryptoProvider.getPublicKey()).thenReturn(publicKey)
+        whenever(osDao.readPassword(any())).thenAnswer { "somePassword".toCharArray() }
         var i = 0
         whenever(osDao.readLine()).thenAnswer { (i++).toString() }
 
@@ -162,7 +177,7 @@ class ChangePasswordTest : TestBase() {
         uut.execute(emptyList())
 
         verify(err).println("key storing exception")
-        verify(cryptoProvider).storeEncryptedKeys(eq(password), eq(keyPair))
+        verify(cryptoProvider).storeEncryptedKeys(eq(password), argThat { private === privateKey && public === publicKey })
         verify(settings, atLeastOnce()).setValue(settingNameCaptor.capture(), settingValueCaptor.capture())
 
         val keyValuePairs = settingNameCaptor.allValues.zip(settingValueCaptor.allValues)
