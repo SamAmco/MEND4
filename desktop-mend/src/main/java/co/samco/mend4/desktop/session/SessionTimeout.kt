@@ -23,13 +23,7 @@ internal class SessionTimeout(private val duration: Duration?, private val now: 
     enum class Event { NONE, WARN, EXPIRED }
 
     companion object {
-        fun parse(args: List<String>, configured: String?): Duration? {
-            val value = when {
-                args.isEmpty() -> configured ?: "15m"
-                args == listOf("--no-timeout") -> "none"
-                args.size == 2 && args.first() == "--timeout" -> args[1]
-                else -> error("Usage: mend unlock [--timeout <30s|15m|2h> | --no-timeout]")
-            }
+        fun parseDuration(value: String): Duration? {
             if (value == "none") return null
             val match = Regex("([1-9][0-9]*)(s|m|h)").matchEntire(value)
                 ?: error("Timeout must be a positive duration such as 30s, 15m, 2h, or none")

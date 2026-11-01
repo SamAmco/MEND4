@@ -6,13 +6,13 @@ import org.junit.Test
 import java.time.Duration
 
 class SessionTimeoutTest {
-    @Test fun configurationAndOverrides() {
-        assertEquals(Duration.ofMinutes(15), SessionTimeout.parse(emptyList(), null))
-        assertEquals(Duration.ofHours(2), SessionTimeout.parse(emptyList(), "2h"))
-        assertEquals(Duration.ofSeconds(10), SessionTimeout.parse(listOf("--timeout", "10s"), "2h"))
-        assertNull(SessionTimeout.parse(listOf("--no-timeout"), "2h"))
+    @Test fun durationParsing() {
+        assertEquals(Duration.ofMinutes(15), SessionTimeout.parseDuration("15m"))
+        assertEquals(Duration.ofHours(2), SessionTimeout.parseDuration("2h"))
+        assertEquals(Duration.ofSeconds(10), SessionTimeout.parseDuration("10s"))
+        assertNull(SessionTimeout.parseDuration("none"))
         for (bad in listOf("0s", "-1m", "10", "garbage", "9999999999999999999h")) {
-            assertThrows(RuntimeException::class.java) { SessionTimeout.parse(listOf("--timeout", bad), null) }
+            assertThrows(RuntimeException::class.java) { SessionTimeout.parseDuration(bad) }
         }
     }
 

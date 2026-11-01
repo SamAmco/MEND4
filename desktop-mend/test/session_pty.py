@@ -46,6 +46,19 @@ class Terminal:
     def send(self, text):
         os.write(self.fd, text.encode())
 
+    def expect_exit(self, timeout=10):
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            if select.select([self.fd], [], [], .1)[0]:
+                try:
+                    data = os.read(self.fd, 65536)
+                except OSError:
+                    data = b""
+                if not data:
+                    return
+                self.pending += data
+        raise AssertionError(f"Unlock did not finish: {self.pending!r}")
+
     def key_process_pid(self):
         self.send("printf 'SUPERVISOR=%s\\n' \"$PPID\"\n")
         self.expect("SUPERVISOR=")  # echoed command
@@ -69,6 +82,7 @@ class Terminal:
 with tempfile.TemporaryDirectory(prefix="mend-pty-") as home:
     subprocess.run(["./gradlew", ":desktop-mend:sessionFixture", "-PfixtureHome=" + home,
                     "--console=plain"], check=True)
+    dec_dir = Path(home, ".mend4", "dec-dir")
     for obsolete in ("dec", "lock", "merge"):
         result = subprocess.run(["java", "-Duser.home=" + home, "-jar", JAR, obsolete], capture_output=True)
         assert result.returncode != 0, f"Obsolete global {obsolete} is still registered"
@@ -130,6 +144,8 @@ with tempfile.TemporaryDirectory(prefix="mend-pty-") as home:
             t.expect("[mend unlocked]")
             t.send("kill %1; lock\n")
             t.expect("MEND locked.")
+            t.expect("Cleaning complete")
+            assert not list(dec_dir.iterdir()), "Default auto-clean left decrypted files behind"
             assert not list(Path(home).rglob("prKey"))
             assert Path(home, "output.txt").read_text() == "BINARY_TEST_CONTENT"
             print(f"PASS: {shell}: bootstrap, decrypt, session merge (new/-1/-2/cwd), pipes, job control, lock")
@@ -143,6 +159,7 @@ with tempfile.TemporaryDirectory(prefix="mend-pty-") as home:
             t.expect("[mend unlocked]")
             t.send("exit\n")
             t.expect("MEND locked.")
+            t.expect("Cleaning complete")
             print(f"PASS: {shell}: explicit exit with timeout disabled")
         finally:
             t.close()
@@ -161,6 +178,7 @@ with tempfile.TemporaryDirectory(prefix="mend-pty-") as home:
             # Expiry leaves the shell alone until its next prompt hook notices the lock.
             t.send("\n")
             t.expect("MEND session unavailable:")
+            t.expect("Cleaning complete")
             print(f"PASS: {shell}: timeout warning, Enter renewal, expiry")
         finally:
             t.close()
@@ -171,12 +189,15 @@ with tempfile.TemporaryDirectory(prefix="mend-pty-") as home:
             t.send("test-password\n")
             t.expect("[mend unlocked]")
             broker_pid = t.key_process_pid() if Path("/proc").exists() else None
+            viewer_marker = dec_dir / "viewer-open.txt"
+            viewer_marker.write_text("disposable plaintext still in use")
             saved = Path(home, "vim-after-timeout.txt")
             saved.unlink(missing_ok=True)
             t.send("dec journal | vim -Nu NONE -n -i NONE -\n")
             t.expect("SESSION_TEST_PLAINTEXT")
             t.expect("MEND session timed out.")
             t.expect("MEND locked.")
+            assert viewer_marker.exists(), "Key expiry cleaned files before Vim exited"
             if broker_pid is not None:
                 deadline = time.monotonic() + 5
                 while Path(f"/proc/{broker_pid}").exists() and time.monotonic() < deadline:
@@ -190,6 +211,46 @@ with tempfile.TemporaryDirectory(prefix="mend-pty-") as home:
             assert "SESSION_TEST_PLAINTEXT" in saved.read_text()
             t.send(":q!\n")
             t.expect("MEND session unavailable:")
+            t.expect("Cleaning complete")
+            assert not viewer_marker.exists()
             print(f"PASS: {shell}: key JVM exits on timeout; foreground Vim remains usable")
         finally:
             t.close()
+    for configured, flags, should_clean in (
+        ("true", ("--no-auto-clean",), False),
+        ("false", (), False),
+        ("false", ("--auto-clean",), True),
+    ):
+        subprocess.run(["java", "-Duser.home=" + home, "-jar", JAR,
+                        "set", "session-auto-clean", configured], check=True)
+        for shell in ("/bin/bash", "/bin/zsh"):
+            marker = dec_dir / "auto-clean-test.txt"
+            marker.write_text("disposable plaintext")
+            t = Terminal(home, shell, ("--no-timeout", *flags))
+            try:
+                t.expect("Password:")
+                t.send("test-password\n")
+                t.expect("[mend unlocked]")
+                t.send("exit\n")
+                t.expect("MEND locked.")
+                if should_clean:
+                    t.expect("Cleaning complete")
+                else:
+                    # The key process's earlier 'MEND locked' does not prove supervisor exit.
+                    t.expect_exit()
+                assert marker.exists() != should_clean
+                print(f"PASS: {shell}: session-auto-clean={configured}, flags={flags}, cleaned={should_clean}")
+            finally:
+                t.close()
+    marker = dec_dir / "failed-unlock.txt"
+    marker.write_text("disposable plaintext")
+    t = Terminal(home, "/bin/bash", ("--auto-clean",))
+    try:
+        t.expect("Password:")
+        t.send("incorrect-password\n")
+        t.expect("Incorrect password")
+        t.expect_exit()
+        assert marker.exists(), "Failed unlock must not clean existing files"
+        print("PASS: failed unlock leaves dec-dir untouched")
+    finally:
+        t.close()

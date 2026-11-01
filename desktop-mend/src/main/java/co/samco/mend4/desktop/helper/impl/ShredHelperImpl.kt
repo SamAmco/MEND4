@@ -7,12 +7,9 @@ import co.samco.mend4.desktop.dao.SettingsDao
 import co.samco.mend4.desktop.helper.FileResolveHelper
 import co.samco.mend4.desktop.helper.ShredHelper
 import co.samco.mend4.desktop.output.PrintStreamProvider
-import java.io.BufferedReader
 import java.io.File
 import java.io.InputStream
-import java.io.InputStreamReader
 import java.io.PrintStream
-import java.util.Scanner
 import javax.inject.Inject
 
 class ShredHelperImpl @Inject constructor(
@@ -44,18 +41,12 @@ class ShredHelperImpl @Inject constructor(
         log.err().println(strings.getf("Shred.cleaning", absolutePath))
 
         val tr: Process = osDao.exec(shredCommandArgs)
-        inheritIO(tr.errorStream, log.err())
-        inheritIO(tr.inputStream, log.out())
-
-        InputStreamReader(tr.inputStream).use { isr ->
-            BufferedReader(isr).use { rd ->
-                var line = rd.readLine()
-                while (line != null) {
-                    log.out().println(line)
-                    line = rd.readLine()
-                }
-            }
-        }
+        val errors = inheritIO(tr.errorStream, log.err())
+        val output = inheritIO(tr.inputStream, log.out())
+        val status = tr.waitFor()
+        errors.join()
+        output.join()
+        check(status == 0) { "Cleaning failed for $absolutePath (exit $status)" }
     }
 
     override fun shredFilesInDirectory(dir: String) {
@@ -64,10 +55,8 @@ class ShredHelperImpl @Inject constructor(
         osDao.listFiles(dirFile)?.forEach { tryShredFile(it.absolutePath) }
     }
 
-    private fun inheritIO(src: InputStream, dest: PrintStream) {
+    private fun inheritIO(src: InputStream, dest: PrintStream): Thread =
         Thread {
-            val sc = Scanner(src)
-            while (sc.hasNextLine()) dest.println(sc.nextLine())
+            src.bufferedReader().useLines { lines -> lines.forEach(dest::println) }
         }.apply { start() }
-    }
 }

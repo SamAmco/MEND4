@@ -2,6 +2,7 @@ package co.samco.mend4.desktop.commands
 
 import co.samco.mend4.desktop.output.PrintStreamProvider
 import co.samco.mend4.desktop.session.UnlockSession
+import co.samco.mend4.desktop.session.SessionOptions
 import javax.inject.Inject
 
 /**
@@ -36,7 +37,10 @@ import javax.inject.Inject
  * the shell. On timeout, only the key JVM exits: the supervisor continues waiting for the shell,
  * so a foreground editor can keep running with plaintext it already received. When the shell
  * next prepares a prompt, its failed touch request makes it exit. The supervisor then cleans
- * up the session's startup files and temporary directory.
+ * up the session's startup files and temporary directory, then runs the same cleaning logic as
+ * mend clean on the configured dec-dir. This is enabled by default; session-auto-clean configures
+ * the default, and --auto-clean / --no-auto-clean override it for this session. Cleaning waits
+ * for shell exit rather than key expiry, so a foreground editor can finish before it happens.
  */
 class Unlock @Inject constructor(
     private val session: UnlockSession,
@@ -45,7 +49,7 @@ class Unlock @Inject constructor(
     override fun execute(args: List<String>) {
         try { session.run(args) } catch (e: Exception) { failWithMessage(log, e.message) }
     }
-    override val usageText = "mend unlock [--timeout <30s|15m|2h> | --no-timeout]: enter a shell with dec, merge and lock"
+    override val usageText = "${SessionOptions.USAGE}: enter a shell with dec, merge and lock"
     override val descriptionText = "Unlock an in-memory session; exit or lock to discard the key."
     override val commandAliases = listOf(COMMAND_NAME)
     companion object { const val COMMAND_NAME = "unlock" }

@@ -67,7 +67,9 @@ MEND asks for your password and opens your normal Bash/Zsh shell with local `dec
 
 The default inactivity timeout is 15 minutes. Configure it outside the session with `mend set session-timeout 30m`, override it with `mend unlock --timeout 2h`, or disable it with `mend unlock --no-timeout`. A warning precedes expiry; press Enter at the shell prompt to renew. Long-running viewers/jobs do not renew the timer. Timeout exits the key process and revokes decryption access while leaving foreground applications running. The session shell exits when its next prompt hook detects the lock.
 
-Files decrypted into `dec-dir` remain after locking. Run `mend clean` outside the session to remove them using your configured command. Secure erasure is not guaranteed by deletion/shredding, especially on SSDs and snapshotting filesystems. See [SESSION_DESIGN.md](SESSION_DESIGN.md) for architecture, review order and security limits.
+When the session shell exits, MEND automatically runs the same cleanup as `mend clean`, using your configured `shred-command` on `dec-dir`. This is enabled by default. Disable it globally with `mend set session-auto-clean false`, or for one session with `mend unlock --no-auto-clean`. Use `mend unlock --auto-clean` to enable it for one session even when globally disabled. These flags can be combined with timeout options.
+
+Cleanup waits for the shell to exit, including after timeout while a foreground editor is still running. It cleans the whole configured `dec-dir`, including files from other sessions; it does not clean redirected output elsewhere. A failed unlock does not trigger cleanup. If you disable auto-clean, run `mend clean` outside the session when needed. Secure erasure is not guaranteed by deletion/shredding, especially on SSDs and snapshotting filesystems. See [SESSION_DESIGN.md](SESSION_DESIGN.md) for architecture, review order and security limits.
 
 
 ## ENCRYPTING

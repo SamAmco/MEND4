@@ -2,6 +2,7 @@ package co.samco.mend4.desktop.session
 
 import co.samco.mend4.desktop.dao.OSDao
 import co.samco.mend4.desktop.dao.SettingsDao
+import co.samco.mend4.desktop.commands.Clean
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.attribute.PosixFilePermissions
@@ -12,9 +13,14 @@ import javax.inject.Inject
 class UnlockSession @Inject constructor(
     private val os: OSDao,
     private val settings: SettingsDao,
+    private val clean: Clean,
 ) {
     fun run(args: List<String>) {
-        val duration = SessionTimeout.parse(args, settings.getValue(SettingsDao.SESSION_TIMEOUT))
+        val options = SessionOptions.parse(
+            args = args,
+            configuredTimeout = settings.getValue(SettingsDao.SESSION_TIMEOUT),
+            configuredAutoClean = settings.getValue(SettingsDao.SESSION_AUTO_CLEAN),
+        )
         require(System.getProperty("os.name").let { it == "Linux" || it == "Mac OS X" }) { "Sessions require Linux or macOS" }
         require(System.console() != null) { "mend unlock requires an interactive terminal" }
         val shellName = Path.of(System.getenv("SHELL") ?: "/bin/bash").fileName.toString()
@@ -25,7 +31,7 @@ class UnlockSession @Inject constructor(
         val broker = try {
             val password = os.readPassword("Password: ")
             try {
-                SessionKeyProcess.start(directory = directory, duration = duration, password = password)
+                SessionKeyProcess.start(directory = directory, duration = options.timeout, password = password)
             } finally {
                 password.fill('\u0000')
             }
@@ -44,6 +50,9 @@ class UnlockSession @Inject constructor(
             }
             SessionShell.removeStartupFiles(directory)
             runCatching { Files.deleteIfExists(directory) }
+            // Wait until the shell has ended, even if the key expired earlier in an editor.
+            // Use the same implementation as mend clean; it reports failures to stderr.
+            if (options.autoClean && child != null) clean.executeCommand(emptyList())
         }
         val shutdownHook = Thread(::cleanup, "mend-session-cleanup")
         Runtime.getRuntime().addShutdownHook(shutdownHook)
