@@ -12,7 +12,6 @@ import java.nio.channels.SocketChannel
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.attribute.PosixFilePermissions
-import java.security.MessageDigest
 import java.security.SecureRandom
 import java.util.HexFormat
 import java.util.concurrent.ConcurrentHashMap
@@ -51,17 +50,42 @@ internal class SessionBroker(
     }
 
     fun start() {
+        // Run the accepting loop in the background so start() returns immediately.
         workers.submit {
             try {
                 while (!closed.get()) {
+                    // Wait for a connection. Each client gets its own channel;
+                    // the listener stays open to accept subsequent clients.
                     val channel = listener.accept()
-                    if (!slots.tryAcquire()) { channel.close(); continue }
-                    clients.add(channel)
-                    workers.submit {
-                        try { serve(channel) } finally { clients.remove(channel); slots.release(); channel.close() }
-                    }
+                    dispatchClient(channel)
                 }
-            } catch (_: AsynchronousCloseException) { /* normal shutdown */ }
+            } catch (_: AsynchronousCloseException) {
+                // Closing the listener during shutdown wakes accept() with this exception.
+            }
+        }
+    }
+
+    private fun dispatchClient(channel: SocketChannel) {
+        // Take one of the 16 connection slots without waiting. Reject the client if full.
+        if (!slots.tryAcquire()) {
+            channel.close()
+            return
+        }
+
+        // Track the connection so locking the session can close it, even mid-request.
+        clients.add(channel)
+
+        // Give this client its own task so the accepting loop can handle another client
+        // while this one authenticates, decrypts and streams its response.
+        workers.submit {
+            try {
+                serve(channel)
+            } finally {
+                // Always give the slot back and close the connection, including on failure.
+                clients.remove(channel)
+                slots.release()
+                channel.close()
+            }
         }
     }
 
@@ -70,20 +94,7 @@ internal class SessionBroker(
         val deadline = deadlines.schedule({ channel.close() }, 5, TimeUnit.SECONDS)
         try {
             val input = DataInputStream(Channels.newInputStream(channel))
-            require(input.readInt() == SessionProtocol.VERSION)
-            val provided = input.readUTF().toByteArray(Charsets.US_ASCII)
-            val authenticated = MessageDigest.isEqual(secret, provided)
-            provided.fill(0)
-            require(authenticated) { "Invalid session credential" }
-            val workingDirectory = input.readUTF()
-            val count = input.readInt()
-            require(count in 1..16)
-            val args = List(count) { input.readUTF() }
-            val request = SessionRequest(
-                command = args.first(),
-                arguments = args.drop(1),
-                workingDirectory = workingDirectory,
-            )
+            val request = SessionProtocol.readAuthenticatedRequest(input = input, expectedCredential = secret)
             deadline.cancel(false)
             val wire = DataOutputStream(Channels.newOutputStream(channel))
             val output = SessionOutput(
