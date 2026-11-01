@@ -25,6 +25,8 @@ class UnlockSession @Inject constructor(
         require(!files.privateKeyFile.exists()) {
             "A legacy plaintext private key exists. Run mend lock to remove it before starting a session."
         }
+        val shellName = Path.of(System.getenv("SHELL") ?: "/bin/bash").fileName.toString()
+        require(shellName in listOf("bash", "zsh")) { "MEND sessions support Bash and Zsh; set SHELL accordingly." }
         val password = os.readPassword("Password: ")
         val result = try { crypto.unlock(password) } finally { password.fill('\u0000') }
         require(result is UnlockResult.Success) { "Incorrect password" }
@@ -32,25 +34,37 @@ class UnlockSession @Inject constructor(
             PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx------")))
         val locked = AtomicBoolean(false)
         var child: Process? = null
-        val broker = SessionBroker(directory) { request, cwd, out, err ->
-            check(!locked.get()) { "MEND is locked" }
-            timeout.touch()
-            when (request.first()) {
-                "dec" -> decrypt.decrypt(result.privateKey, request.drop(1), cwd, out, err)
-                "lock" -> locked.set(true)
-                "touch" -> Unit
-                else -> error("Unknown session command")
+        val broker = try {
+            SessionBroker(directory) { request, cwd, out, err ->
+                check(!locked.get()) { "MEND is locked" }
+                timeout.touch()
+                when (request.first()) {
+                    "dec" -> decrypt.decrypt(result.privateKey, request.drop(1), cwd, out, err)
+                    "lock" -> locked.set(true)
+                    "touch" -> Unit
+                    else -> error("Unknown session command")
+                }
+                0
             }
-            0
+        } catch (e: Exception) {
+            Files.deleteIfExists(directory.resolve("socket"))
+            Files.deleteIfExists(directory)
+            throw e
         }
-        val cleanup = Thread {
+        val cleaned = AtomicBoolean(false)
+        fun cleanup() {
+            if (!cleaned.compareAndSet(false, true)) return
             runCatching { broker.close() }
-            child?.destroy()
+            child?.let {
+                it.destroy()
+                if (!it.waitFor(500, java.util.concurrent.TimeUnit.MILLISECONDS)) it.destroyForcibly()
+            }
             // Only the known files belonging to this session; never recursively remove a directory.
             listOf("session.sh", "bashrc", ".zshrc", ".zshenv").forEach { runCatching { Files.deleteIfExists(directory.resolve(it)) } }
             runCatching { Files.deleteIfExists(directory) }
         }
-        Runtime.getRuntime().addShutdownHook(cleanup)
+        val shutdownHook = Thread(::cleanup, "mend-session-cleanup")
+        Runtime.getRuntime().addShutdownHook(shutdownHook)
         try {
             broker.start()
             child = SessionShell.launch(directory, broker.socket, broker.credential)
@@ -67,8 +81,8 @@ class UnlockSession @Inject constructor(
                 child.waitFor(100, java.util.concurrent.TimeUnit.MILLISECONDS)
             }
         } finally {
-            cleanup.run()
-            Runtime.getRuntime().removeShutdownHook(cleanup)
+            cleanup()
+            Runtime.getRuntime().removeShutdownHook(shutdownHook)
             System.err.println("MEND locked.")
         }
     }

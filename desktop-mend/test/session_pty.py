@@ -88,6 +88,12 @@ with tempfile.TemporaryDirectory(prefix="mend-pty-") as home:
             t.send("dec --stdout document.enc > output.txt; cat output.txt\n")
             t.expect("BINARY_TEST_CONTENT")
             t.expect("[mend unlocked]")
+            t.send("mkdir -p nested; cd nested; dec --stdout ../document.enc; cd ..\n")
+            t.expect("BINARY_TEST_CONTENT")
+            t.expect("[mend unlocked]")
+            t.send("env | grep '^_mend_' | wc -l\n")
+            t.expect("\r\n0\r\n")
+            t.expect("[mend unlocked]")
             t.send("mend unlock\n")
             t.expect("mend is unavailable")
             t.expect("[mend unlocked]")
@@ -106,6 +112,17 @@ with tempfile.TemporaryDirectory(prefix="mend-pty-") as home:
             assert not list(Path(home).rglob("prKey"))
             assert Path(home, "output.txt").read_text() == "BINARY_TEST_CONTENT"
             print(f"PASS: {shell}: bootstrap, decrypt, pipe, redirect, nested shell, mend guard, job control, lock")
+        finally:
+            t.close()
+    for shell in ("/bin/bash", "/bin/zsh"):
+        t = Terminal(home, shell, ("--no-timeout",))
+        try:
+            t.expect("Password:")
+            t.send("test-password\n")
+            t.expect("[mend unlocked]")
+            t.send("exit\n")
+            t.expect("MEND locked.")
+            print(f"PASS: {shell}: explicit exit with timeout disabled")
         finally:
             t.close()
     for shell in ("/bin/bash", "/bin/zsh"):

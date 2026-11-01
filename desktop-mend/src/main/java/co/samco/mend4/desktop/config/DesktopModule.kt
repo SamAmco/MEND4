@@ -65,6 +65,7 @@ class DesktopModule {
     fun provideInputHelper(impl: InputHelperImpl): InputHelper = impl
 
     @Provides
+    @Singleton
     fun provideKeyHelper(impl: KeyHelperImpl): KeyHelper = impl
 
     @Provides

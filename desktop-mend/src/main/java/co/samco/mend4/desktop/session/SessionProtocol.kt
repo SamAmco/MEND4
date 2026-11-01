@@ -49,6 +49,7 @@ internal object SessionProtocol {
                         val bytes = ByteArray(size)
                         reader.readFully(bytes)
                         (if (kind == STDOUT) stdout else stderr).apply { write(bytes); flush() }
+                        if (stdout is PrintStream && stdout.checkError()) throw IOException("Output pipe closed")
                     }
                     EXIT -> return reader.readInt()
                     else -> error("Invalid session response")

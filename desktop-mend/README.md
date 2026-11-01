@@ -2,7 +2,7 @@ Read the [project README](../README.md) first if you haven't already for general
 
 # Installation
 
-To get started you will need to build or download the mend.jar file (see [Releases](https://github.com/SamAmco/MEND4/releases)). To run the jar you will need java installed. You can run the jar with: 
+To get started you will need to build or download the mend.jar file (see [Releases](https://github.com/SamAmco/MEND4/releases)). Desktop sessions require Java 21+, Linux or macOS, and Bash or Zsh. You can run the jar with:
 
 ```
 java -jar /path/to/mend.jar <arguments>
@@ -63,23 +63,13 @@ In order to decrypt anything that has been encrypted by MEND, you will first nee
 
 	mend unlock
 
-MEND will ask you for your password, and then decrypt your private key and store it in a file called `prKey` next to your `config.xml` file. (It will also store your public key in a file called pubKey). 
+MEND asks for your password and opens your normal Bash/Zsh shell with local `dec` and `lock` commands. The decrypted private key stays in memory in the parent broker process. Run `lock` or exit the shell to end the session. Global `mend` commands are blocked inside it.
 
-It is important to run remember to run:
+The default inactivity timeout is 15 minutes. Configure it outside the session with `mend set session-timeout 30m`, override it with `mend unlock --timeout 2h`, or disable it with `mend unlock --no-timeout`. A warning precedes expiry; press Enter at the shell prompt to renew. Long-running viewers/jobs do not renew the timer. Timeout ends the shell and revokes decryption access.
 
-	mend lock	
+If you previously unlocked using an older version, first run `mend lock` outside any session to remove its legacy `prKey`/`pubKey` files. Global `mend lock` is now only legacy cleanup; use local `lock` to end a live session.
 
-when you're done decrypting and viewing information. This command will use the `shred-command` as set up earlier to destroy your decrypted private key file.
-
-If you used:
-
-    mend dec <enc-file-id>
-
-to decrypt a `.enc` file, it will have been decrypted to your `dec-dir`. In this case you should ALSO run: 
-
-    mend clean
-
-to securely delete all files in `dec-dir`
+Files decrypted into `dec-dir` remain after locking. Run `mend clean` outside the session to remove them using your configured command. Secure erasure is not guaranteed by deletion/shredding, especially on SSDs and snapshotting filesystems. See [SESSION_DESIGN.md](SESSION_DESIGN.md) for architecture, review order and security limits.
 
 
 ## ENCRYPTING
@@ -115,17 +105,24 @@ To encrypt text from standard input (until an EOF is met).
 
 To decrypt a log, first unlock MEND, and then run:
 
-    mend dec <name-of-log>
+    dec <name-of-log>
 	
 You don't need to specify the full path to the log file, MEND will look first to see if the name represents an absolute path, but it will default to looking for that log file in your `log-dir`. You also don't need to use the suffix `.mend`.
 
 To decrypt a file, use:
 
-    mend dec <file-id> | <path-to-encrypted-file>
+    dec <file-id-or-path>
 	
 MEND will decrypt the file to your `dec-dir`. By default, MEND will use your systems default program for that file type to open the file once it is decrypted. You can supress this behaviour using:
 
-    mend dec -s <file-id> | <path-to-encrypted-file>
+    dec -s <file-id-or-path>
+
+Stream decrypted file bytes instead of creating/opening a file:
+
+    dec --stdout document.enc | less
+    dec --stdout document.enc > document.pdf
+
+Pipes, redirection, completion and job control are handled by your real shell. Paths are resolved against its current directory. Decrypted output goes to stdout, diagnostics to stderr. `mend dec` outside the session is no longer supported.
 	
 
 ## CLEANING
@@ -139,7 +136,7 @@ This will run your `shred-command` on every file in your `dec-dir`. Once again, 
 
 ## MERGING
 
-You can merge two logs together into one log file using the `merge` subcommand. MEND needs to be unlocked to do this because it will read the date/time at the top of each log and order the output log by date. e.g.
+You can merge two logs together into one log file using the `merge` subcommand outside a session. It asks for your password for this operation, because it reads the date/time at the top of each log and orders the output by date. e.g.
 
     mend merge in1.mend in2.mend out.mend
 
@@ -150,23 +147,15 @@ Another way to use this command is with the -1 or -2 flag (instead of providing 
 
 ## CHANGING PASSWORD
 
-To change your password or password hashing parameters first unlock mend using: 
-
-    mend unlock
-
-Then run:
+To change your password or password hashing parameters, run this outside a session:
 
     mend change-password
 
-You will be asked for a new password and password hashing parameters. Again you can use the defaults here or tune them to your machine. See [the setup parameters section](#setup-parameters) for more details.
+You will be asked for your current password, then a new password and password hashing parameters. Again you can use the defaults here or tune them to your machine. See [the setup parameters section](#setup-parameters) for more details.
 
 Changing your password will re-encrypt your private key with your new password/password hashing parameters and overwrite the `encrypted-private-key` parameter in your `config.xml` file.
 
-Don't forget to run: 
-
-    mend lock
-
-To lock mend again afterwards.
+The key remains in memory only for the duration of the command.
 
 ## HELP
 

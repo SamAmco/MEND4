@@ -1,0 +1,61 @@
+# Unlock sessions: review guide
+
+Desktop requires Java 21+, Linux or macOS, and Bash or Zsh. The Android module retains its existing Java target and in-memory key manager. Linux terminal tests exercise both shells; macOS still needs on-device verification.
+
+## Revision order
+
+1. **Prepare Java 21 and stream-oriented session decryption** — `SessionDecrypt` consumes an in-memory key and writes either stdout or an owner-only file. Temporary decoded private-key bytes are cleared in the shared crypto provider.
+2. **Add authenticated Unix-domain session protocol with bounded framing** — `SessionProtocol` and `SessionBroker`. Independent connections carry a version, credential, working directory and argument vector. Responses distinguish binary stdout, stderr and exit status. Tests cover binary framing and rejected authentication. No TCP fallback.
+3. **Replace disk-backed unlock with piped Bash and Zsh sessions** — `UnlockSession`, `SessionShell`, and `resources/session/`. Password changes authenticate directly instead of reading `prKey`.
+4. **Add configurable idle timeout and shell prompt renewal** — `SessionTimeout`, prompt hooks and real-terminal smoke tests.
+5. **Protect Linux key processes from memory dumps and JVM attachment** — `MemoryProtection` isolates the OS-specific code. Live tests check denied memory reads and diagnostic attachment.
+6. **Finish migration and document session security and review steps** — standalone merge authentication, regression checks and this guide.
+
+Use `jj log` and `jj diff -r <change-id>` to review each layer. Intermediate revisions add infrastructure; the shell replacement is where `mend unlock` changes behaviour.
+
+## Runtime flow
+
+`mend unlock` starts a JVM with diagnostic attachment, automatic heap dumps, and crash core dumps disabled before prompting. On Linux it also calls `prctl(PR_SET_DUMPABLE, 0)` via JNA, verifies the flag, and refuses to proceed if that fails. A small outer JVM waits for this protected process and forwards shutdown by terminating it. No passwords or keys exist in that outer JVM.
+
+The broker reads the password, clears that character array after unlocking, retains the resulting `PrivateKey`, and starts a Unix-domain socket in a fresh mode-0700 `/tmp/mend-*` directory. The directory contains static, non-secret shell startup scripts and a socket entry. The socket entry stores no message data; messages exist in process/kernel memory. No credentials or private keys are written to those files.
+
+The shell starts interactively with stdout/stderr inherited and stdin connected to a normal `ProcessBuilder` anonymous pipe. Its startup script reads four lines: credential, socket path, Java executable, classpath. It closes/replaces that stdin with `/dev/tty`, then enables job control. This avoids custom descriptor-inheritance code. Shell configuration is loaded before reading secrets; it is part of the trusted environment.
+
+The startup script defines `dec`, `lock`, and a refusing `mend` function. `MEND_SESSION_ACTIVE` also makes the global application refuse calls from that environment. The credential is a non-exported variable; a builtin `printf` delivers it to each client over stdin. Paths/arguments are quoted, and arguments are never evaluated as shell code. Tracing and automatic variable export are disabled before reading or passing secrets.
+
+Normal pipelines and forked shell subshells inherit shell state, so `(dec journal)` and `dec journal | less` work. A newly executed Bash/Zsh does not inherit the functions or credential. This is an inheritance convention, **not** a security boundary against malicious shell code: `source`, shell functions, debugging hooks, explicitly exporting secrets, or commands executed in the current shell can access its variables. The `mend` refusal can also be deliberately bypassed by clearing its marker.
+
+Each client connects with a fresh socket. The broker authenticates a random 256-bit credential before executing an allowlisted operation (`dec`, `lock`, `touch`). It limits simultaneous clients to 16 and closes incomplete handshakes after five seconds. Arguments and frames have bounded sizes. Requests include the client's working directory, so `cd` and relative paths work as expected. There is no Java object deserialization, arbitrary command execution API, key export, or network listener.
+
+Locking closes the listener and all active sockets, terminates the session shell, removes the known startup files/socket, then exits the key-owning JVM. Normal exit, timeout and terminal hangup also clean up. SIGKILL cannot run cleanup: it removes the process/key but may leave a harmless stale socket directory and an orphan shell. That shell cannot decrypt after the broker dies. Background jobs and external viewers are not a managed sandbox.
+
+## Timeouts and plaintext
+
+The default inactivity timeout is 15 minutes. Set `mend set session-timeout 30m`, override with `mend unlock --timeout 2h`, or disable with `--no-timeout` / setting `none`. Durations accept positive integer `s`, `m` or `h`, up to one year.
+
+Authenticated requests and arrival at a shell prompt renew the monotonic clock. A warning appears up to 30 seconds before expiry (one third of short timeouts). Pressing Enter **at the prompt** renews it. Typing into a viewer or running a long foreground job is not observable shell-prompt activity: timeout can interrupt decryption and terminate the shell even then. Use a suitable timeout for that work. The timer itself never consumes terminal input.
+
+Logs print to stdout. `.enc` files normally decrypt to a unique mode-0600 file in `dec-dir` and open it using the existing desktop opener; `-s` suppresses opening. `--stdout` streams a file for pipelines or redirection. Redirected output is subject to the user's shell umask. Opened/decrypted files deliberately remain after locking; clean them with `mend clean` outside the session. Viewers, terminal scrollback, redirected output, clipboard managers and their caches may retain plaintext. Locking cannot recall output already delivered.
+
+## Security limits
+
+The private key is never intentionally persisted. Clearing temporary arrays and terminating the process reduce exposure but do not guarantee JVM/provider copies were zeroed or never swapped. Memory locking, swap/hibernation exclusion, hardware-backed keys and verified execution are outside this implementation.
+
+Linux protection blocks ordinary unprivileged process inspection; it does not defeat root, a compromised kernel, injected agents, replaced binaries, malicious startup scripts or a compromised user account. Unix socket permissions and the session token also do not sandbox same-UID malware: it can tamper with user-owned files, shell memory where permitted, or the socket namespace. The shell's credential allows decryption while the session is alive even though it is not the private key. macOS receives the JVM protections but not the Linux `prctl` protection.
+
+References: [Linux PR_SET_DUMPABLE](https://man7.org/linux/man-pages/man2/PR_SET_DUMPABLE.2const.html), [JVM diagnostic options](https://docs.oracle.com/en/java/javase/21/docs/specs/man/java.html), [JNA](https://github.com/java-native-access/jna).
+
+## Migration and validation
+
+Existing `config.xml` and encrypted data need no conversion. If an old `prKey` exists, unlocking refuses and asks you to run the legacy `mend lock` cleanup first. This removes the legacy key files using your configured deletion command; it cannot undo copies in backups or guarantee secure erasure on modern storage. Global `mend lock` is retained only for that migration, not to revoke other running sessions.
+
+`mend dec` is replaced by session-local `dec`. `mend merge` and `mend change-password` run outside the session and authenticate for their single operation. Normal encryption remains available outside the session without unlocking.
+
+Run:
+
+```sh
+./gradlew :core-mend:test :desktop-mend:test :desktop-mend:jar
+python3 desktop-mend/test/session_pty.py
+```
+
+The terminal harness uses only Python's standard library and disposable test keys/configuration. It covers both shells, stdout/pipes/redirection, relative paths, file output, nested shells, global-command refusal, job control, lock, timeout warning/renewal/expiry, and Linux memory/JVM attachment protection. It never opens the real user's MEND configuration. Running it requires Bash, Zsh, Java/JDK tools and Gradle cache access. Desktop-open UI integration on macOS requires a manual smoke test.
