@@ -5,6 +5,7 @@ package co.samco.mendroid.viewmodel
 import android.app.Application
 import android.content.Intent
 import android.net.Uri
+import androidx.core.net.toUri
 import android.util.Xml
 import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.AndroidViewModel
@@ -64,12 +65,12 @@ class SettingsViewModel @Inject constructor(
 
     private fun getDirectoryString(uriStr: String?): String? {
         if (uriStr == null) return null
-        val uri = Uri.parse(uriStr)
+        val uri = uriStr.toUri()
         return uri.path ?: uri.toString()
     }
 
     val encDirGood = propertyManager.encDirUri
-        .map { it != null && Uri.parse(it).assertValidDirectory() }
+        .map { it != null && it.toUri().assertValidDirectory() }
         .stateIn(viewModelScope, SharingStarted.Lazily, false)
     val hasConfig = propertyManager.hasConfig
         .stateIn(viewModelScope, SharingStarted.Lazily, false)

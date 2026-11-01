@@ -5,14 +5,14 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material.Button
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
+import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import co.samco.mendroid.R
 import co.samco.mendroid.ui.common.TextItemList
@@ -47,7 +47,7 @@ fun LogList(
     ) {
         Text(
             text = stringResource(id = R.string.import_log).uppercase(),
-            style = MaterialTheme.typography.button
+            style = MaterialTheme.typography.labelLarge
         )
     }
 }

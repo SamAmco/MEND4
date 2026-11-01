@@ -4,8 +4,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -39,7 +39,7 @@ private fun NoItemsText(modifier: Modifier) {
         Text(
             modifier = Modifier.alpha(0.5f),
             text = stringResource(id = R.string.no_items),
-            style = MaterialTheme.typography.subtitle1
+            style = MaterialTheme.typography.titleMedium
         )
     }
 }
@@ -60,7 +60,7 @@ private fun <T> ItemList(
             Text(
                 modifier = Modifier.padding(16.dp),
                 text = itemText(items[index]),
-                style = MaterialTheme.typography.subtitle1
+                style = MaterialTheme.typography.titleMedium
             )
 
             Divider()

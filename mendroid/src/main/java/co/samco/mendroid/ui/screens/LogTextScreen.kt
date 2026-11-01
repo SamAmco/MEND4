@@ -18,12 +18,11 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.selection.SelectionContainer
-import androidx.compose.material.Checkbox
-import androidx.compose.material.CircularProgressIndicator
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.OutlinedTextField
-import androidx.compose.material.Text
-import androidx.compose.material.TextFieldDefaults
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -45,7 +44,7 @@ import androidx.compose.ui.text.withLink
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import co.samco.mendroid.R
 import co.samco.mendroid.ui.common.ConfirmCancelDialogBody
 import co.samco.mendroid.ui.common.Divider
@@ -104,14 +103,14 @@ private fun ColumnScope.EmptyLinesText() = Box(
     Text(
         modifier = Modifier.alpha(0.5f),
         text = stringResource(id = R.string.no_entries),
-        style = MaterialTheme.typography.subtitle1
+        style = MaterialTheme.typography.titleMedium
     )
 }
 
 
 @Composable
 private fun DecryptingFileDialog() = Column(
-    modifier = Modifier.background(MaterialTheme.colors.background),
+    modifier = Modifier.background(MaterialTheme.colorScheme.background),
     horizontalAlignment = Alignment.CenterHorizontally,
     verticalArrangement = Arrangement.Center
 ) {
@@ -119,7 +118,7 @@ private fun DecryptingFileDialog() = Column(
     Text(
         modifier = Modifier.padding(16.dp),
         text = stringResource(id = R.string.decrypting_file),
-        style = MaterialTheme.typography.h6
+        style = MaterialTheme.typography.titleLarge
     )
 }
 
@@ -142,7 +141,7 @@ private fun DecryptFileDialog(
 @Composable
 private fun SearchField(logLines: List<LogViewData>) = Row(
     modifier = Modifier
-        .background(MaterialTheme.colors.background)
+        .background(MaterialTheme.colorScheme.background)
         .fillMaxWidth()
 ) {
     val viewModel = hiltViewModel<DecryptedLogViewModel>()
@@ -179,11 +178,7 @@ private fun SearchField(logLines: List<LogViewData>) = Row(
             }
         ),
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-        colors = if (viewModel.filterEnabled && logLines.isEmpty()) {
-            TextFieldDefaults.outlinedTextFieldColors(
-                backgroundColor = MaterialTheme.colors.error,
-            )
-        } else TextFieldDefaults.outlinedTextFieldColors()
+        isError = viewModel.filterEnabled && logLines.isEmpty()
     )
 
     LaunchedEffect(Unit) {
@@ -240,8 +235,8 @@ private fun ColumnScope.LogLines(logLines: List<LogViewData>) = SelectionContain
                         Text(
                             modifier = Modifier.padding(top = 16.dp, start = 16.dp, end = 16.dp),
                             text = dateTime,
-                            style = MaterialTheme.typography.subtitle2.copy(
-                                color = MaterialTheme.colors.onBackground.copy(alpha = 0.5f)
+                            style = MaterialTheme.typography.titleSmall.copy(
+                                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f)
                             )
                         )
                     }
@@ -298,21 +293,21 @@ private fun LogText(logLine: LogViewData, cardInteractionSource: MutableInteract
 
 @Composable
 private fun plainTextSpanStyle() = SpanStyle(
-    color = MaterialTheme.colors.onBackground,
-    fontSize = MaterialTheme.typography.body1.fontSize,
-    fontWeight = MaterialTheme.typography.body1.fontWeight,
-    fontStyle = MaterialTheme.typography.body1.fontStyle,
-    fontFamily = MaterialTheme.typography.body1.fontFamily,
-    letterSpacing = MaterialTheme.typography.body1.letterSpacing,
+    color = MaterialTheme.colorScheme.onBackground,
+    fontSize = MaterialTheme.typography.bodyLarge.fontSize,
+    fontWeight = MaterialTheme.typography.bodyLarge.fontWeight,
+    fontStyle = MaterialTheme.typography.bodyLarge.fontStyle,
+    fontFamily = MaterialTheme.typography.bodyLarge.fontFamily,
+    letterSpacing = MaterialTheme.typography.bodyLarge.letterSpacing,
 )
 
 @Composable
 private fun fileIdSpanStyle() = SpanStyle(
-    color = MaterialTheme.colors.onPrimary,
-    fontSize = MaterialTheme.typography.body1.fontSize,
-    fontWeight = MaterialTheme.typography.body1.fontWeight,
-    fontStyle = MaterialTheme.typography.body1.fontStyle,
-    fontFamily = MaterialTheme.typography.body1.fontFamily,
-    letterSpacing = MaterialTheme.typography.body1.letterSpacing,
-    background = MaterialTheme.colors.primary
+    color = MaterialTheme.colorScheme.onPrimary,
+    fontSize = MaterialTheme.typography.bodyLarge.fontSize,
+    fontWeight = MaterialTheme.typography.bodyLarge.fontWeight,
+    fontStyle = MaterialTheme.typography.bodyLarge.fontStyle,
+    fontFamily = MaterialTheme.typography.bodyLarge.fontFamily,
+    letterSpacing = MaterialTheme.typography.bodyLarge.letterSpacing,
+    background = MaterialTheme.colorScheme.primary
 )

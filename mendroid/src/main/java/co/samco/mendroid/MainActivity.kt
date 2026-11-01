@@ -7,6 +7,7 @@ import android.widget.Toast
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -14,13 +15,20 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideIn
 import androidx.compose.animation.slideOut
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.Icon
-import androidx.compose.material.IconButton
-import androidx.compose.material.Scaffold
-import androidx.compose.material.Text
-import androidx.compose.material.TopAppBar
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.Composable
@@ -29,7 +37,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -65,6 +72,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
         window.setFlags(
             android.view.WindowManager.LayoutParams.FLAG_SECURE,
             android.view.WindowManager.LayoutParams.FLAG_SECURE
@@ -78,20 +86,26 @@ class MainActivity : ComponentActivity() {
             val selectedTheme = propertyManager.selectedTheme
                 .collectAsState(null).value
                 ?: (if (isSystemInDarkTheme()) Theme.DARK else Theme.LIGHT)
-            MEND4Theme(darkTheme = selectedTheme == Theme.DARK) { Mend4App() }
+            MEND4Theme(darkTheme = selectedTheme == Theme.DARK) {
+                Box(
+                    Modifier.fillMaxSize()
+                        .background(MaterialTheme.colorScheme.background)
+                        .imePadding()
+                ) {
+                    Mend4App()
+                }
+            }
         }
     }
 
     private fun checkNotificationsPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             val permission = android.Manifest.permission.POST_NOTIFICATIONS
-            if (!hasPermission(permission)) requestPermissionLauncher.launch(permission)
+            if (ContextCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED) {
+                requestPermissionLauncher.launch(permission)
+            }
         }
     }
-
-    @Suppress("SameParameterValue")
-    private fun hasPermission(permission: String): Boolean =
-        ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED
 
     private fun collectToasts() {
         lifecycleScope.launch {
@@ -103,7 +117,6 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun Mend4App() {
     val settingsViewModel = viewModel<SettingsViewModel>()
@@ -140,7 +153,7 @@ fun HomeScreenScaffold() {
         },
         content = {
             HomeScreen(
-                modifier = Modifier.padding(it),
+                modifier = Modifier.padding(it).consumeWindowInsets(it),
                 navHostController = navController
             )
         }
@@ -148,6 +161,7 @@ fun HomeScreenScaffold() {
 }
 
 @Composable
+@OptIn(ExperimentalMaterial3Api::class)
 fun Mend4TopAppBar(navController: NavController) {
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
 
@@ -161,8 +175,8 @@ fun Mend4TopAppBar(navController: NavController) {
         title = {
             Text(text = stringResource(id = R.string.app_name) + " " + BuildConfig.VERSION_NAME)
         },
-        navigationIcon = if (hasBackAction) {
-            {
+        navigationIcon = {
+            if (hasBackAction) {
                 IconButton(onClick = { navController.popBackStack() }) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
@@ -170,7 +184,7 @@ fun Mend4TopAppBar(navController: NavController) {
                     )
                 }
             }
-        } else null,
+        },
         actions = {
             val settingsViewModel = viewModel<SettingsViewModel>()
             IconButton(onClick = { settingsViewModel.onUserShowSettings() }) {

@@ -19,12 +19,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.CircularProgressIndicator
-import androidx.compose.material.Icon
-import androidx.compose.material.IconButton
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Surface
-import androidx.compose.material.Text
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
@@ -159,8 +159,8 @@ private fun TestRecordingControls(
     onCancelButtonPressed: () -> Unit
 ) {
     val color =
-        if (testRecordingState == TestRecordingState.RECORDING) MaterialTheme.colors.primaryVariant
-        else MaterialTheme.colors.primary
+        if (testRecordingState == TestRecordingState.RECORDING) MaterialTheme.colorScheme.primaryContainer
+        else MaterialTheme.colorScheme.primary
     Surface(
         modifier = Modifier.animateContentSize(),
         shape = CircleShape,
@@ -196,7 +196,7 @@ private fun TestRecordingControls(
             Text(
                 modifier = Modifier.padding(bottom = 2.dp),
                 text = text,
-                style = MaterialTheme.typography.body1,
+                style = MaterialTheme.typography.bodyLarge,
             )
 
             Spacer(modifier = Modifier.width(8.dp))
@@ -214,8 +214,8 @@ private fun TestRecordingControls(
 private fun TimeText(timeText: String, fullAlpha: Boolean) {
     Text(
         text = timeText,
-        style = MaterialTheme.typography.h3.copy(
-            color = MaterialTheme.colors.onSurface.copy(
+        style = MaterialTheme.typography.displaySmall.copy(
+            color = MaterialTheme.colorScheme.onSurface.copy(
                 alpha = if (fullAlpha) 1f else 0.5f
             )
         ),
@@ -291,7 +291,7 @@ private fun RecordButtonContent(
         modifier = modifier
             .size(size)
             .background(
-                color = MaterialTheme.colors.error,
+                color = MaterialTheme.colorScheme.error,
                 shape = CircleShape
             )
     )
@@ -304,7 +304,7 @@ private fun StopButtonContent(size: Dp) {
             .size(size)
             .aspectRatio(1f)
             .background(
-                color = MaterialTheme.colors.onSurface,
+                color = MaterialTheme.colorScheme.onSurface,
                 shape = RectangleShape
             )
     )

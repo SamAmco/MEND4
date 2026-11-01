@@ -9,11 +9,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.Button
-import androidx.compose.material.CircularProgressIndicator
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.OutlinedTextField
-import androidx.compose.material.Text
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -46,7 +46,7 @@ fun UnlockScreen(
         modifier = Modifier
             .width(220.dp)
             .focusRequester(focusRequester),
-        textStyle = MaterialTheme.typography.body1.copy(textAlign = TextAlign.Center),
+        textStyle = MaterialTheme.typography.bodyLarge.copy(textAlign = TextAlign.Center),
         value = unlockViewModel.password,
         onValueChange = { unlockViewModel.password = it },
         visualTransformation = PasswordVisualTransformation(),
@@ -86,7 +86,7 @@ fun UnlockScreen(
     ) {
         Text(
             text = stringResource(id = R.string.unlock).uppercase(),
-            style = MaterialTheme.typography.button,
+            style = MaterialTheme.typography.labelLarge,
         )
     }
 }

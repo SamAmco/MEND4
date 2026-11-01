@@ -1,14 +1,11 @@
 package co.samco.mendroid.ui.screens
 
 import android.net.Uri
-import android.text.TextUtils
-import android.widget.TextView
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContract
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,14 +16,15 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.material.Button
-import androidx.compose.material.Card
-import androidx.compose.material.Icon
-import androidx.compose.material.IconButton
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Surface
-import androidx.compose.material.Switch
-import androidx.compose.material.Text
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.material3.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
@@ -34,11 +32,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import co.samco.mendroid.R
 import co.samco.mendroid.model.Theme
@@ -55,8 +53,8 @@ fun SettingsScreen() {
     val showCloseButton = settingsViewModel.showCloseButton.collectAsState().value
 
     Surface(
-        modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colors.background
+        modifier = Modifier.fillMaxSize().safeDrawingPadding(),
+        color = MaterialTheme.colorScheme.background
     ) {
         Box {
             if (showCloseButton) {
@@ -90,6 +88,7 @@ fun SettingsScreen() {
                     complete = settingsViewModel.encDirGood.collectAsState().value,
                     buttonText = stringResource(id = R.string.enc_dir_button_text),
                     contract = ActivityResultContracts.OpenDocumentTree(),
+                    launchArgs = null,
                     value = encDirText,
                     onUriSelected = settingsViewModel::onSetEncDir
                 )
@@ -135,17 +134,12 @@ fun ThemeButton(
     selectedTheme: Theme?,
     onClick: () -> Unit,
 ) = Card(
-    modifier = Modifier
-        .padding(8.dp)
-        .let {
-            return@let if (selectedTheme == theme) it.border(
-                border = BorderStroke(2.dp, MaterialTheme.colors.primary),
-                shape = MaterialTheme.shapes.small
-            )
-            else it
-        }
-        .clickable { onClick() },
-    backgroundColor = if (theme == Theme.LIGHT) White1 else Charcoal1
+    onClick = onClick,
+    modifier = Modifier.padding(8.dp),
+    border = if (selectedTheme == theme) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null,
+    colors = CardDefaults.cardColors(
+        containerColor = if (theme == Theme.LIGHT) White1 else Charcoal1
+    )
 ) {
     val icon =
         if (theme == Theme.LIGHT) painterResource(id = R.drawable.day)
@@ -175,7 +169,7 @@ fun ToggleSettingRow(
 ) {
     Text(
         text = description,
-        style = MaterialTheme.typography.body1,
+        style = MaterialTheme.typography.bodyLarge,
         modifier = Modifier.weight(1f)
     )
 
@@ -189,12 +183,11 @@ fun <T> ButtonSettingRow(
     complete: Boolean,
     buttonText: String,
     value: String? = null,
-    contract: ActivityResultContract<in T, out Uri?>,
-    launchArgs: T? = null,
+    contract: ActivityResultContract<T, out Uri?>,
+    launchArgs: T,
     onUriSelected: (Uri?) -> Unit = {}
 ) {
     val launcher = rememberLauncherForActivityResult(contract, onUriSelected)
-    val textColor = MaterialTheme.colors.onSurface.toArgb()
 
     Row(
         modifier = Modifier
@@ -203,20 +196,13 @@ fun <T> ButtonSettingRow(
         verticalAlignment = Alignment.Bottom
     ) {
 
-        //Compose doesn't support ellipsizing text at the start yet, so we have to use a AndroidView
-        AndroidView(
+        Text(
             modifier = Modifier.weight(1f),
-            factory = { context ->
-                TextView(context).apply {
-                    ellipsize = TextUtils.TruncateAt.START
-                    setSingleLine()
-                    textSize = 16f
-                }
-            },
-            update = { view ->
-                view.setTextColor(textColor)
-                view.text = value ?: view.context.getString(R.string.not_set)
-            }
+            text = value ?: stringResource(R.string.not_set),
+            color = MaterialTheme.colorScheme.onSurface,
+            fontSize = 16.sp,
+            maxLines = 1,
+            overflow = TextOverflow.StartEllipsis
         )
 
         Spacer(modifier = Modifier.size(16.dp))
@@ -225,7 +211,7 @@ fun <T> ButtonSettingRow(
             onClick = { launcher.launch(launchArgs) }) {
             Text(
                 text = buttonText,
-                style = MaterialTheme.typography.button
+                style = MaterialTheme.typography.labelLarge
             )
         }
         if (complete) {
@@ -235,7 +221,7 @@ fun <T> ButtonSettingRow(
                     .padding(8.dp),
                 imageVector = Icons.Filled.CheckCircle,
                 contentDescription = null,
-                tint = MaterialTheme.colors.primary,
+                tint = MaterialTheme.colorScheme.primary,
             )
         } else {
             Icon(
@@ -244,7 +230,7 @@ fun <T> ButtonSettingRow(
                     .padding(8.dp),
                 painter = painterResource(id = R.drawable.cancel),
                 contentDescription = null,
-                tint = MaterialTheme.colors.error,
+                tint = MaterialTheme.colorScheme.error,
             )
         }
     }

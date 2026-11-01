@@ -1,6 +1,5 @@
 package co.samco.mendroid.media_player
 
-import android.annotation.SuppressLint
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -108,7 +107,6 @@ class MediaPlayerService : Service(), CoroutineScope {
         return START_STICKY
     }
 
-    @SuppressLint("LaunchActivityFromNotification")
     private fun buildNotification(): Notification {
         val openIntent = Intent(this, MediaPlayerActivity::class.java)
             .apply { flags = Intent.FLAG_ACTIVITY_SINGLE_TOP }

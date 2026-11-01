@@ -305,7 +305,6 @@ class AudioRecordingViewModelImpl @Inject constructor(
     }
 
     override fun onCleared() {
-        super.onCleared()
         if (audioRecorderFlow.value != null) {
             context.unbindService(serviceConnection)
         }

@@ -2,24 +2,23 @@ package co.samco.mendroid.ui.theme
 
 import android.app.Activity
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.material.ButtonColors
-import androidx.compose.material.ButtonDefaults
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.TextFieldColors
-import androidx.compose.material.TextFieldDefaults
-import androidx.compose.material.darkColors
-import androidx.compose.material.lightColors
+import androidx.compose.material3.ButtonColors
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.TextFieldColors
+import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
-private val DarkColorScheme = darkColors(
+private val DarkColorScheme = darkColorScheme(
     primary = Green1,
-    primaryVariant = Green3,
+    primaryContainer = Green3,
     secondary = Gray1,
-    secondaryVariant = Gray3,
+    secondaryContainer = Gray3,
     background = Black2,
     surface = Charcoal1,
     error = Red1,
@@ -30,11 +29,11 @@ private val DarkColorScheme = darkColors(
     onError = White1,
 )
 
-private val LightColorScheme = lightColors(
+private val LightColorScheme = lightColorScheme(
     primary = Green3,
-    primaryVariant = Green2,
+    primaryContainer = Green2,
     secondary = Gray1,
-    secondaryVariant = Gray2,
+    secondaryContainer = Gray2,
     background = White2,
     surface = White1,
     error = Red1,
@@ -46,18 +45,14 @@ private val LightColorScheme = lightColors(
 )
 
 @Composable
-fun mendTextFieldColors(): TextFieldColors {
-  return TextFieldDefaults.textFieldColors(
-      cursorColor = MaterialTheme.colors.onSurface,
-  )
-}
+fun mendTextFieldColors(): TextFieldColors = TextFieldDefaults.colors(
+    cursorColor = MaterialTheme.colorScheme.onSurface,
+)
 
 @Composable
-fun mendTextButtonColors(): ButtonColors {
-  return ButtonDefaults.textButtonColors(
-      contentColor = MaterialTheme.colors.onSurface
-  )
-}
+fun mendTextButtonColors(): ButtonColors = ButtonDefaults.textButtonColors(
+    contentColor = MaterialTheme.colorScheme.onSurface
+)
 
 @Composable
 fun MEND4Theme(
@@ -72,13 +67,15 @@ fun MEND4Theme(
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            window.statusBarColor = colorScheme.primary.toArgb()
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = darkTheme
+            WindowCompat.getInsetsController(window, view).apply {
+                isAppearanceLightStatusBars = !darkTheme
+                isAppearanceLightNavigationBars = !darkTheme
+            }
         }
     }
 
     MaterialTheme(
-        colors = colorScheme,
+        colorScheme = colorScheme,
         typography = Typography,
         content = content
     )

@@ -4,6 +4,7 @@ package co.samco.mendroid.viewmodel
 
 import android.app.Application
 import android.net.Uri
+import androidx.core.net.toUri
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -193,7 +194,7 @@ class DecryptedLogViewModel @Inject constructor(
         val fileName = "$fileId.${AppProperties.ENC_FILE_EXTENSION}"
 
         val encDir = propertyManager.getEncDirUri()
-            ?.let { Uri.parse(it) }
+            ?.let { it.toUri() }
             ?.let { DocumentFile.fromTreeUri(getApplication(), it) }
 
         if (encDir == null) {

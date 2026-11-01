@@ -2,6 +2,7 @@ package co.samco.mendroid.model
 
 import android.content.Context
 import android.net.Uri
+import androidx.core.net.toUri
 import androidx.documentfile.provider.DocumentFile
 import co.samco.mend4.core.AppProperties
 import co.samco.mend4.core.crypto.CryptoProvider
@@ -43,7 +44,7 @@ class EncryptHelperImpl @Inject constructor(
             return
         }
 
-        val encDirFile = DocumentFile.fromTreeUri(context, Uri.parse(encDirUri))
+        val encDirFile = DocumentFile.fromTreeUri(context, encDirUri.toUri())
         if (encDirFile == null || !encDirFile.isDirectory
             || !encDirFile.canRead() || !encDirFile.canWrite()
         ) {

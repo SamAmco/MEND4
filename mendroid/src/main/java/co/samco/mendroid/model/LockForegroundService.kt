@@ -1,6 +1,5 @@
 package co.samco.mendroid.model;
 
-import android.annotation.SuppressLint
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -9,6 +8,7 @@ import android.app.Service
 import android.content.Intent
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
+import co.samco.mendroid.MainActivity
 import co.samco.mendroid.R
 import co.samco.mendroid.model.LockBroadcastReceiver.Companion.ACTION_LOCK
 import dagger.hilt.android.AndroidEntryPoint
@@ -68,7 +68,6 @@ class LockForegroundService : Service(), CoroutineScope {
         manager?.createNotificationChannel(serviceChannel)
     }
 
-    @SuppressLint("LaunchActivityFromNotification")
     private fun buildNotification(): Notification {
         val lockIntent = Intent(this, LockBroadcastReceiver::class.java)
             .apply { action = ACTION_LOCK }
@@ -77,6 +76,15 @@ class LockForegroundService : Service(), CoroutineScope {
             this,
             0,
             lockIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val openIntent = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+        }
+        val openPendingIntent = PendingIntent.getActivity(
+            this,
+            0,
+            openIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
@@ -89,13 +97,13 @@ class LockForegroundService : Service(), CoroutineScope {
 
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle(getString(R.string.mend_is_unlocked_notification_title))
-            .setContentText(getString(R.string.tap_here_to_lock))
+            .setContentText(getString(R.string.tap_to_open_mend))
             .setSmallIcon(R.drawable.ic_notification_icon)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setSilent(true)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
-            .setContentIntent(pendingIntent) // Set the content intent to make the whole notification clickable
+            .setContentIntent(openPendingIntent)
             .addAction(stopAction)
             .build()
     }

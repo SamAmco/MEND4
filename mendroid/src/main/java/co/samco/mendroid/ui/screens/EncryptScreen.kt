@@ -3,11 +3,9 @@ package co.samco.mendroid.ui.screens
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager.PERMISSION_GRANTED
-import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -20,17 +18,17 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.Button
-import androidx.compose.material.ButtonDefaults
-import androidx.compose.material.Card
-import androidx.compose.material.CircularProgressIndicator
-import androidx.compose.material.Divider
-import androidx.compose.material.Icon
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Surface
-import androidx.compose.material.Text
-import androidx.compose.material.TextButton
-import androidx.compose.material.TextField
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Attachment
 import androidx.compose.runtime.Composable
@@ -99,14 +97,12 @@ private fun EncryptScreenMain() = Column(modifier = Modifier.fillMaxSize()) {
     Card(
         modifier = Modifier
             .weight(1f)
-            .fillMaxWidth()
-            .border(
-                border = BorderStroke(1.dp, MaterialTheme.colors.primary),
-                shape = MaterialTheme.shapes.small
-            ),
+            .fillMaxWidth(),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
+        shape = MaterialTheme.shapes.small,
     ) {
         TextField(
-            modifier = Modifier.focusRequester(focusRequester),
+            modifier = Modifier.fillMaxSize().focusRequester(focusRequester),
             enabled = !viewModel.loading,
             value = viewModel.currentEntryText,
             onValueChange = { viewModel.currentEntryText = it },
@@ -182,11 +178,11 @@ private fun AttachmentMenu(onDismiss: () -> Unit) = Dialog(onDismissRequest = on
                 viewModel.preparePhotoUri()?.let { photoLauncher.launch(it) }
             }
 
-            Divider()
+            HorizontalDivider()
 
             VideoButton()
 
-            Divider()
+            HorizontalDivider()
 
             val audioRecordingViewModel: AudioRecordingViewModel =
                 viewModel<AudioRecordingViewModelImpl>()
@@ -210,7 +206,7 @@ private fun AttachmentMenu(onDismiss: () -> Unit) = Dialog(onDismissRequest = on
                 }
             }
 
-            Divider()
+            HorizontalDivider()
 
             val fileLauncher = rememberLauncherForActivityResult(
                 ActivityResultContracts.OpenDocument(),
@@ -234,29 +230,9 @@ private fun VideoButton() {
         viewModel::onVideoTaken
     )
 
-    val permissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestMultiplePermissions()
-    ) { results ->
-        if (results.values.all { it }) {
-            viewModel.prepareVideoUri()?.let { videoLauncher.launch(it) }
-        }
-    }
-
-    //Permissions as required by LightCompressor. See: https://github.com/AbedElazizShe/LightCompressor
+    // CaptureVideo grants access to our own output URI; no media library access is needed.
     MenuButton(R.string.record_video) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            // request READ_MEDIA_VIDEO run-time permission
-            permissionLauncher.launch(
-                arrayOf(Manifest.permission.READ_MEDIA_VIDEO)
-            )
-        } else if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
-            // request WRITE_EXTERNAL_STORAGE run-time permission
-            permissionLauncher.launch(
-                arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE)
-            )
-        } else {
-            viewModel.prepareVideoUri()?.let { videoLauncher.launch(it) }
-        }
+        viewModel.prepareVideoUri()?.let { videoLauncher.launch(it) }
     }
 }
 
@@ -271,7 +247,7 @@ private fun MenuButton(
 ) {
     Text(
         text = stringResource(id = stringId),
-        style = MaterialTheme.typography.button
+        style = MaterialTheme.typography.labelLarge
     )
 }
 
@@ -306,12 +282,12 @@ private fun SelectLogButton(modifier: Modifier) {
         onClick = viewModel::onSelectLogButtonClicked,
         enabled = !viewModel.loading,
         colors = if (logName == null) ButtonDefaults.buttonColors(
-            backgroundColor = MaterialTheme.colors.error
+            containerColor = MaterialTheme.colorScheme.error
         ) else ButtonDefaults.buttonColors(),
     ) {
         Text(
             text = logName ?: stringResource(id = R.string.select_log),
-            style = MaterialTheme.typography.button
+            style = MaterialTheme.typography.labelLarge
         )
     }
 
@@ -396,6 +372,6 @@ private fun ActionButton(
 ) {
     Text(
         text = text.uppercase(),
-        style = MaterialTheme.typography.button
+        style = MaterialTheme.typography.labelLarge
     )
 }

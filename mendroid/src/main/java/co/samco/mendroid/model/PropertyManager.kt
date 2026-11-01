@@ -2,6 +2,7 @@ package co.samco.mendroid.model
 
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.core.content.edit
 import co.samco.mend4.core.Settings
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.channels.awaitClose
@@ -105,13 +106,15 @@ class PropertyManagerImpl @Inject constructor(
     override fun setEncDirUri(uri: String) {
         //First remove it because if you select the same directory you still want the
         // onchange listener to fire
-        prefs.edit().remove(ENC_DIR_URI).apply()
-        prefs.edit().putString(ENC_DIR_URI, uri).apply()
+        prefs.edit { remove(ENC_DIR_URI) }
+        prefs.edit { putString(ENC_DIR_URI, uri) }
     }
 
     override fun setTheme(theme: Theme?) {
-        if (theme == null) prefs.edit().remove(THEME).apply()
-        else prefs.edit().putString(THEME, theme.name).apply()
+        prefs.edit {
+            if (theme == null) remove(THEME)
+            else putString(THEME, theme.name)
+        }
     }
 
     override fun getEncDirUri(): String? {
@@ -123,19 +126,21 @@ class PropertyManagerImpl @Inject constructor(
     }
 
     override fun clearSettings() {
-        prefs.edit().apply {
+        prefs.edit {
             Settings.Name.All.forEach { remove(it.encodedName) }
             remove(CONFIG_URI)
-        }.apply()
+        }
     }
 
     override fun setConfigUriPath(path: String) {
-        prefs.edit().putString(CONFIG_URI, path).apply()
+        prefs.edit { putString(CONFIG_URI, path) }
     }
 
     override fun setCurrentLogUri(uriStr: String?) {
-        if (uriStr == null) prefs.edit().remove(CURRENT_LOG_URI).apply()
-        else prefs.edit().putString(CURRENT_LOG_URI, uriStr).apply()
+        prefs.edit {
+            if (uriStr == null) remove(CURRENT_LOG_URI)
+            else putString(CURRENT_LOG_URI, uriStr)
+        }
     }
 
     override fun getKnownLogUris(): List<String> {
@@ -143,7 +148,7 @@ class PropertyManagerImpl @Inject constructor(
     }
 
     override fun setKnownLogUris(uris: List<String>) {
-        prefs.edit().putStringSet(KNOWN_LOG_URIS, uris.toSet()).apply()
+        prefs.edit { putStringSet(KNOWN_LOG_URIS, uris.toSet()) }
     }
 
     override fun setLockOnScreenLock(enabled: Boolean) {
@@ -151,7 +156,7 @@ class PropertyManagerImpl @Inject constructor(
     }
 
     override fun setValue(name: Settings.Name, value: String) {
-        prefs.edit().putString(name.encodedName, value).apply()
+        prefs.edit { putString(name.encodedName, value) }
     }
 
     override fun getValue(name: Settings.Name): String? {

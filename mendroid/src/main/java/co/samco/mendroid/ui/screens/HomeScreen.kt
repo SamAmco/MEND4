@@ -3,14 +3,13 @@ package co.samco.mendroid.ui.screens
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Tab
-import androidx.compose.material.TabRow
-import androidx.compose.material.Text
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Tab
+import androidx.compose.material3.PrimaryTabRow
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -26,9 +25,9 @@ fun HomeScreen(
     val homeViewModel = viewModel<HomeViewModel>()
     val selectedTabIndex = homeViewModel.state.collectAsState().value.index
 
-    TabRow(
-        backgroundColor = MaterialTheme.colors.background,
-        contentColor = MaterialTheme.colors.onBackground.copy(alpha = 0.6f),
+    PrimaryTabRow(
+        containerColor = MaterialTheme.colorScheme.background,
+        contentColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
         selectedTabIndex = selectedTabIndex
     ) {
         Tab(
@@ -57,6 +56,6 @@ private fun TabText(text: String) {
     Text(
         text = text.uppercase(),
         modifier = Modifier.padding(16.dp),
-        style = MaterialTheme.typography.subtitle2
+        style = MaterialTheme.typography.titleSmall
     )
 }
