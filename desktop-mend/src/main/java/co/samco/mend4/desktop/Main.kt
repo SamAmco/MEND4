@@ -6,9 +6,16 @@ import co.samco.mend4.desktop.config.DesktopModule
 import co.samco.mend4.desktop.core.I18N
 import co.samco.mend4.desktop.output.ExitManager
 import co.samco.mend4.desktop.output.PrintStreamProvider
+import co.samco.mend4.desktop.session.MemoryProtection
+import co.samco.mend4.desktop.session.SessionConnection
+import co.samco.mend4.desktop.session.SessionOutput
+import co.samco.mend4.desktop.session.SessionProtocol
+import co.samco.mend4.desktop.session.SessionRequest
 import dagger.Component
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import java.security.Security
+import java.nio.file.Path
+import kotlin.system.exitProcess
 import javax.inject.Inject
 import javax.inject.Named
 import javax.inject.Singleton
@@ -18,26 +25,32 @@ fun main(args: Array<String>) {
         val status = try {
             require(args.size >= 3)
             val credential = System.`in`.bufferedReader().readLine() ?: error("Missing session credential")
-            co.samco.mend4.desktop.session.SessionProtocol.request(
-                java.nio.file.Path.of(args[1]), credential, args.drop(2),
-                System.getProperty("user.dir"), System.out, System.err)
+            SessionProtocol.request(
+                connection = SessionConnection(socketPath = Path.of(args[1]), credential = credential),
+                request = SessionRequest(
+                    command = args[2],
+                    arguments = args.drop(3),
+                    workingDirectory = System.getProperty("user.dir"),
+                ),
+                output = SessionOutput(stdout = System.out, stderr = System.err),
+            )
         } catch (e: Exception) {
             System.err.println("MEND session unavailable: ${e.message ?: "connection closed"}")
             1
         }
-        kotlin.system.exitProcess(status)
+        exitProcess(status)
     }
     if (System.getenv("MEND_SESSION_ACTIVE") == "1") {
         System.err.println("mend is unavailable in this session; use dec or lock.")
-        kotlin.system.exitProcess(2)
+        exitProcess(2)
     }
     if (args.firstOrNull() in listOf("unlock", "change-password", "merge", "setup") &&
         args.none { it == "--help" || it == "-h" }) {
         try {
-            co.samco.mend4.desktop.session.MemoryProtection.prepare(args)
+            MemoryProtection.prepare(args)
         } catch (e: Throwable) {
             System.err.println("Unable to enable memory protection: ${e.message}")
-            kotlin.system.exitProcess(1)
+            exitProcess(1)
         }
     }
     Security.addProvider(BouncyCastleProvider())

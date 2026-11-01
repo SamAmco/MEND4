@@ -1,11 +1,12 @@
 package co.samco.mend4.desktop.session
 
+import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
 
 /** stdin is the anonymous bootstrap pipe; startup reconnects it to /dev/tty before reading commands. */
 internal object SessionShell {
-    fun launch(directory: Path, socket: Path, credential: String): Process {
+    fun launch(directory: Path, connection: SessionConnection): Process {
         val shell = System.getenv("SHELL") ?: "/bin/bash"
         val name = Path.of(shell).fileName.toString()
         require(name == "bash" || name == "zsh") { "MEND sessions support Bash and Zsh; set SHELL accordingly." }
@@ -26,9 +27,9 @@ internal object SessionShell {
             }
         }
         val javaExecutable = Path.of(System.getProperty("java.home"), "bin", "java").toString()
-        val classpath = System.getProperty("java.class.path").split(java.io.File.pathSeparator)
-            .joinToString(java.io.File.pathSeparator) { Path.of(it).toAbsolutePath().toString() }
-        val values = listOf(credential, socket.toString(), javaExecutable, classpath)
+        val classpath = System.getProperty("java.class.path").split(File.pathSeparator)
+            .joinToString(File.pathSeparator) { Path.of(it).toAbsolutePath().toString() }
+        val values = listOf(connection.credential, connection.socketPath.toString(), javaExecutable, classpath)
         require(values.none { '\n' in it || '\r' in it }) { "Session paths must not contain newlines" }
         val child = builder.start()
         try {

@@ -7,6 +7,7 @@ import co.samco.mend4.desktop.dao.SettingsDao
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.attribute.PosixFilePermissions
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 
@@ -30,11 +31,11 @@ class UnlockSession @Inject constructor(
         val locked = AtomicBoolean(false)
         var child: Process? = null
         val broker = try {
-            SessionBroker(directory) { request, cwd, out, err ->
+            SessionBroker(directory) { context ->
                 check(!locked.get()) { "MEND is locked" }
                 timeout.touch()
-                when (request.first()) {
-                    "dec" -> decrypt.decrypt(result.privateKey, request.drop(1), cwd, out, err)
+                when (context.request.command) {
+                    "dec" -> decrypt.decrypt(key = result.privateKey, context = context)
                     "lock" -> locked.set(true)
                     "touch" -> Unit
                     else -> error("Unknown session command")
@@ -52,7 +53,7 @@ class UnlockSession @Inject constructor(
             runCatching { broker.close() }
             child?.let {
                 it.destroy()
-                if (!it.waitFor(500, java.util.concurrent.TimeUnit.MILLISECONDS)) it.destroyForcibly()
+                if (!it.waitFor(500, TimeUnit.MILLISECONDS)) it.destroyForcibly()
             }
             // Only the known files belonging to this session; never recursively remove a directory.
             listOf("session.sh", "bashrc", ".zshrc", ".zshenv").forEach { runCatching { Files.deleteIfExists(directory.resolve(it)) } }
@@ -62,7 +63,7 @@ class UnlockSession @Inject constructor(
         Runtime.getRuntime().addShutdownHook(shutdownHook)
         try {
             broker.start()
-            child = SessionShell.launch(directory, broker.socket, broker.credential)
+            child = SessionShell.launch(directory = directory, connection = broker.connection)
             timeout.touch()
             while (child.isAlive && !locked.get()) {
                 when (timeout.poll()) {
@@ -73,7 +74,7 @@ class UnlockSession @Inject constructor(
                     }
                     SessionTimeout.Event.NONE -> Unit
                 }
-                child.waitFor(100, java.util.concurrent.TimeUnit.MILLISECONDS)
+                child.waitFor(100, TimeUnit.MILLISECONDS)
             }
         } finally {
             cleanup()

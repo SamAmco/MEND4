@@ -6,6 +6,7 @@ import java.io.PrintStream
 import java.net.StandardProtocolFamily
 import java.net.UnixDomainSocketAddress
 import java.nio.channels.Channels
+import java.nio.channels.AsynchronousCloseException
 import java.nio.channels.ServerSocketChannel
 import java.nio.channels.SocketChannel
 import java.nio.file.Files
@@ -23,11 +24,13 @@ import java.util.concurrent.atomic.AtomicBoolean
 /** Owns the local endpoint. Closing it revokes every connection, including in-flight streams. */
 internal class SessionBroker(
     val directory: Path,
-    private val operation: (List<String>, String, java.io.OutputStream, PrintStream) -> Int,
+    private val operation: (SessionCommandContext) -> Int,
 ) : AutoCloseable {
-    val socket: Path = directory.resolve("socket")
-    val credential: String = HexFormat.of().formatHex(ByteArray(32).also(SecureRandom()::nextBytes))
-    private val secret = credential.toByteArray(Charsets.US_ASCII)
+    val connection = SessionConnection(
+        socketPath = directory.resolve("socket"),
+        credential = HexFormat.of().formatHex(ByteArray(32).also(SecureRandom()::nextBytes)),
+    )
+    private val secret = connection.credential.toByteArray(Charsets.US_ASCII)
     private val listener = ServerSocketChannel.open(StandardProtocolFamily.UNIX)
     private val clients = ConcurrentHashMap.newKeySet<SocketChannel>()
     private val slots = Semaphore(16)
@@ -37,8 +40,8 @@ internal class SessionBroker(
 
     init {
         try {
-            listener.bind(UnixDomainSocketAddress.of(socket))
-            Files.setPosixFilePermissions(socket, PosixFilePermissions.fromString("rw-------"))
+            listener.bind(UnixDomainSocketAddress.of(connection.socketPath))
+            Files.setPosixFilePermissions(connection.socketPath, PosixFilePermissions.fromString("rw-------"))
         } catch (e: Exception) {
             listener.close()
             workers.shutdownNow()
@@ -58,7 +61,7 @@ internal class SessionBroker(
                         try { serve(channel) } finally { clients.remove(channel); slots.release(); channel.close() }
                     }
                 }
-            } catch (_: java.nio.channels.AsynchronousCloseException) { /* normal shutdown */ }
+            } catch (_: AsynchronousCloseException) { /* normal shutdown */ }
         }
     }
 
@@ -72,16 +75,24 @@ internal class SessionBroker(
             val authenticated = MessageDigest.isEqual(secret, provided)
             provided.fill(0)
             require(authenticated) { "Invalid session credential" }
-            val cwd = input.readUTF()
+            val workingDirectory = input.readUTF()
             val count = input.readInt()
             require(count in 1..16)
             val args = List(count) { input.readUTF() }
+            val request = SessionRequest(
+                command = args.first(),
+                arguments = args.drop(1),
+                workingDirectory = workingDirectory,
+            )
             deadline.cancel(false)
             val wire = DataOutputStream(Channels.newOutputStream(channel))
-            val out = SessionProtocol.output(wire, SessionProtocol.STDOUT)
-            val err = PrintStream(SessionProtocol.output(wire, SessionProtocol.STDERR), true)
-            val status = try { operation(args, cwd, out, err) } catch (e: Exception) {
-                err.println(e.message ?: "Session operation failed")
+            val output = SessionOutput(
+                stdout = SessionProtocol.output(wire, SessionProtocol.STDOUT),
+                stderr = PrintStream(SessionProtocol.output(wire, SessionProtocol.STDERR), true),
+            )
+            val context = SessionCommandContext(request = request, output = output)
+            val status = try { operation(context) } catch (e: Exception) {
+                output.stderr.println(e.message ?: "Session operation failed")
                 1
             }
             wire.writeByte(SessionProtocol.EXIT)
@@ -98,6 +109,6 @@ internal class SessionBroker(
         workers.shutdownNow()
         deadlines.shutdownNow()
         secret.fill(0)
-        Files.deleteIfExists(socket)
+        Files.deleteIfExists(connection.socketPath)
     }
 }

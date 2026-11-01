@@ -2,6 +2,7 @@ package co.samco.mend4.desktop.commands
 
 import co.samco.mend4.core.Settings
 import co.samco.mend4.core.crypto.CryptoProvider
+import co.samco.mend4.core.crypto.UnlockResult
 import co.samco.mend4.core.exception.NoSuchSettingException
 import co.samco.mend4.desktop.commands.Setup.Companion.DEFAULT_PW_FACTORY_ITERATIONS
 import co.samco.mend4.desktop.commands.Setup.Companion.DEFAULT_PW_FACTORY_MEMORY_KB
@@ -75,7 +76,7 @@ class ChangePassword @Inject constructor(
     private fun authenticate(args: List<String>): List<String>? {
         val oldPassword = osDao.readPassword("Current password: ")
         val unlocked = try { cryptoProvider.unlock(oldPassword) } finally { oldPassword.fill('\u0000') }
-        if (unlocked !is co.samco.mend4.core.crypto.UnlockResult.Success) {
+        if (unlocked !is UnlockResult.Success) {
             failWithMessage(log, "Incorrect password")
             return null
         }

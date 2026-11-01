@@ -7,7 +7,6 @@ import co.samco.mend4.desktop.dao.SettingsDao
 import co.samco.mend4.desktop.helper.FileResolveHelper
 import kotlinx.coroutines.runBlocking
 import java.io.File
-import java.io.OutputStream
 import java.io.PrintStream
 import java.nio.file.Files
 import java.nio.file.attribute.PosixFilePermissions
@@ -21,14 +20,16 @@ class SessionDecrypt @Inject constructor(
     private val settings: SettingsDao,
     private val os: OSDao,
 ) {
-    fun decrypt(key: PrivateKey, args: List<String>, cwd: String, out: OutputStream, err: PrintStream) {
+    internal fun decrypt(key: PrivateKey, context: SessionCommandContext) {
+        val args = context.request.arguments
+        val output = context.output
         require(args.isNotEmpty()) { "Usage: dec [--stdout] [-s] <file or log>" }
         val stdout = "--stdout" in args
         val silent = "-s" in args
         val names = args.filter { it != "--stdout" && it != "-s" }
         require(names.size == 1 && !names.single().startsWith("-")) { "Usage: dec [--stdout] [-s] <file or log>" }
         val name = names.single()
-        val candidate = if (File(name).isAbsolute) File(name) else File(cwd, name)
+        val candidate = if (File(name).isAbsolute) File(name) else File(context.request.workingDirectory, name)
         val file = if (candidate.isFile) candidate else {
             val enc = files.resolveAsEncFilePath(name)
             if (enc.isFile) enc else files.resolveAsLogFilePath(name)
@@ -36,16 +37,16 @@ class SessionDecrypt @Inject constructor(
         require(file.isFile) { "No such encrypted file or log: $name" }
         when (file.extension) {
             AppProperties.LOG_FILE_EXTENSION -> file.inputStream().use {
-                runBlocking { crypto.decryptLogStream(key, it, PrintStream(out, true)) }
+                runBlocking { crypto.decryptLogStream(key, it, PrintStream(output.stdout, true)) }
             }
             AppProperties.ENC_FILE_EXTENSION -> if (stdout) {
-                file.inputStream().use { runBlocking { crypto.decryptEncStream(key, it, out) } }
-            } else openFile(key, file, silent, err)
+                file.inputStream().use { runBlocking { crypto.decryptEncStream(key, it, output.stdout) } }
+            } else openFile(key = key, file = file, silent = silent, diagnostics = output.stderr)
             else -> error("Not a MEND encrypted file or log: $name")
         }
     }
 
-    private fun openFile(key: PrivateKey, file: File, silent: Boolean, err: PrintStream) {
+    private fun openFile(key: PrivateKey, file: File, silent: Boolean, diagnostics: PrintStream) {
         val directory = File(requireNotNull(settings.getValue(SettingsDao.DEC_DIR)) { "dec-dir is not configured" })
         // Unique, owner-only plaintext files prevent overwrite and symlink races.
         var output = Files.createTempFile(directory.toPath(), "mend-", ".tmp",
@@ -62,7 +63,7 @@ class SessionDecrypt @Inject constructor(
             Files.deleteIfExists(output)
             throw e
         }
-        err.println("Decrypted to: $output")
+        diagnostics.println("Decrypted to: $output")
         if (!silent) os.desktopOpenFile(output.toFile())
     }
 }
