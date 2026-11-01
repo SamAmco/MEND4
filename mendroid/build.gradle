@@ -29,8 +29,8 @@ android {
         applicationId = "co.samco.mendroid"
         minSdk = 31
         targetSdk = 37
-        versionCode = 50600
-        versionName = "5.6.0"
+        versionCode = 50700
+        versionName = "5.7.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -63,6 +63,7 @@ android {
             signingConfig = signingConfigs.debug
         }
         release {
+            debuggable = false
             minifyEnabled = false
             shrinkResources = false
             if (hasReleaseSigning) {
