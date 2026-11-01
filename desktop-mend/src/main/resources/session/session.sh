@@ -63,3 +63,7 @@ if [[ -n ${BASH_VERSION-} ]]; then
 else
     precmd_functions=(_mend_prompt "${precmd_functions[@]}")
 fi
+
+# A one-time announcement remains visible even if a prompt theme replaces our prompt prefix.
+_mend_request touch || exit
+builtin printf '%s\n' 'MEND unlocked. Type help for session commands; lock or exit to leave.' >&2
