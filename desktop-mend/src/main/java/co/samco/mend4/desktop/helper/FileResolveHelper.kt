@@ -9,8 +9,6 @@ import java.io.IOException
 interface FileResolveHelper {
     val mendDirFile: File
     val settingsFile: File
-    val publicKeyFile: File
-    val privateKeyFile: File
 
     @get:Throws(IOException::class, CorruptSettingsException::class)
     val currentLogFile: File
@@ -46,5 +44,4 @@ interface FileResolveHelper {
 
     fun getTempFile(dir: String): File
 }
-
 

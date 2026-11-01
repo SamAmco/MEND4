@@ -25,12 +25,6 @@ class FileResolveHelperImpl @Inject constructor(
     override val settingsFile: File
         get() = osDao.getSettingsFile()
 
-    override val publicKeyFile: File
-        get() = File(mendDirFile, AppProperties.PUBLIC_KEY_FILE_NAME)
-
-    override val privateKeyFile: File
-        get() = File(mendDirFile, AppProperties.PRIVATE_KEY_FILE_NAME)
-
     override fun isFile(file: File): Boolean {
         return osDao.exists(file) && osDao.isFile(file)
     }

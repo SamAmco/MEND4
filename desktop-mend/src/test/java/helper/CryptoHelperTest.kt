@@ -3,7 +3,6 @@ package helper
 import co.samco.mend4.core.AppProperties
 import co.samco.mend4.core.util.LogUtils
 import co.samco.mend4.desktop.dao.SettingsDao
-import co.samco.mend4.desktop.exception.MendLockedException
 import co.samco.mend4.desktop.helper.impl.CryptoHelperImpl
 import commands.TestBase
 import org.junit.Assert.assertEquals
@@ -14,21 +13,17 @@ import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doThrow
 import com.nhaarman.mockitokotlin2.eq
-import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.never
-import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import kotlinx.coroutines.runBlocking
 import testutils.TestUtils
 import java.io.ByteArrayOutputStream
 import java.io.File
-import java.security.PrivateKey
 import java.util.regex.Pattern
 
 class CryptoHelperTest : TestBase() {
     private val encDir = File.separatorChar.toString() + "output" + File.separatorChar + "directory"
-    private var privateKey: PrivateKey = mock()
 
     @Before
     override fun setup() {
@@ -39,7 +34,6 @@ class CryptoHelperTest : TestBase() {
             fileResolveHelper = fileResolveHelper,
             settings = settings,
             cryptoProvider = cryptoProvider,
-            keyHelper = keyHelper,
             versionHelper = versionHelper,
             osDao = osDao
         )
@@ -124,60 +118,5 @@ class CryptoHelperTest : TestBase() {
         cryptoHelper.encryptTextToLog(message.toCharArray(), false)
 
         verify(cryptoProvider).encryptLogStream(eq(messageWithHeader), any())
-    }
-
-    @Test
-    fun testDecryptLog() = runBlocking {
-        val logFile = File("/logfile.log")
-        whenever(keyHelper.privateKey).thenReturn(privateKey)
-        whenever(osDao.fileInputStream(eq(logFile))).thenReturn(TestUtils.emptyInputStream)
-
-        cryptoHelper.decryptLog(logFile)
-
-        verify(osDao).fileInputStream(eq(logFile))
-        verify(cryptoProvider).decryptLogStream(any(), any(), eq(out))
-    }
-
-    @Test(expected = MendLockedException::class)
-    fun testDecryptLogMendLocked() {
-        cryptoHelper.decryptLog(File(""))
-    }
-
-    @Test
-    fun testDecryptFile() = runBlocking {
-        val encFileName = "encFile"
-        val fileExtension = "txt"
-        val encFile =
-            File(File.separator + "path" + File.separator + encFileName + "." + AppProperties.ENC_FILE_EXTENSION)
-        val fileCaptor = argumentCaptor<File>()
-        val decDir = File.separator + "decDir"
-        whenever(cryptoProvider.decryptEncStream(any(), any(), any())).thenReturn(fileExtension)
-        whenever(keyHelper.privateKey).thenReturn(privateKey)
-        whenever(osDao.fileOutputSteam(any(), any())).thenReturn(ByteArrayOutputStream())
-        whenever(osDao.fileInputStream(any())).thenReturn(TestUtils.emptyInputStream)
-
-        cryptoHelper.decryptFile(encFile, decDir, false)
-
-        verify(fileResolveHelper).assertDirWritable(decDir)
-        verify(fileResolveHelper, times(2)).assertFileDoesNotExist(fileCaptor.capture())
-        assertEquals(
-            decDir + File.separatorChar + encFileName,
-            fileCaptor.allValues[0].absolutePath,
-        )
-        assertEquals(
-            decDir + File.separatorChar + encFileName + "." + fileExtension,
-            fileCaptor.allValues[1].absolutePath
-        )
-        verify(cryptoProvider).decryptEncStream(any(), any(), any())
-        verify(osDao).renameFile(
-            any(),
-            eq(File(decDir + File.separator + encFileName + "." + fileExtension))
-        )
-        verify(osDao).desktopOpenFile(any())
-    }
-
-    @Test(expected = MendLockedException::class)
-    fun testDecryptFileMendLocked() {
-        cryptoHelper.decryptFile(File(""), "", false)
     }
 }

@@ -31,10 +31,6 @@ fun main(args: Array<String>) {
         System.err.println("mend is unavailable in this session; use dec or lock.")
         kotlin.system.exitProcess(2)
     }
-    if (args.firstOrNull() == "dec") {
-        System.err.println("Run mend unlock, then use dec inside its shell. Global mend dec is no longer supported.")
-        kotlin.system.exitProcess(2)
-    }
     if (args.firstOrNull() in listOf("unlock", "change-password", "merge", "setup") &&
         args.none { it == "--help" || it == "-h" }) {
         try {

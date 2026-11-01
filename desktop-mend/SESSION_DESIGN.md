@@ -47,9 +47,9 @@ References: [Linux PR_SET_DUMPABLE](https://man7.org/linux/man-pages/man2/PR_SET
 
 ## Migration and validation
 
-Existing `config.xml` and encrypted data need no conversion. If an old `prKey` exists, unlocking refuses and asks you to run the legacy `mend lock` cleanup first. This removes the legacy key files using your configured deletion command; it cannot undo copies in backups or guarantee secure erasure on modern storage. Global `mend lock` is retained only for that migration, not to revoke other running sessions.
+Existing `config.xml` and encrypted data need no conversion. There is no compatibility layer for plaintext key files: sessions neither read nor check for them.
 
-`mend dec` is replaced by session-local `dec`. `mend merge` and `mend change-password` run outside the session and authenticate for their single operation. Normal encryption remains available outside the session without unlocking.
+`dec` and `lock` exist only inside an unlocked session. `mend merge` and `mend change-password` run outside the session and authenticate for their single operation. Normal encryption remains available outside the session without unlocking.
 
 Run:
 

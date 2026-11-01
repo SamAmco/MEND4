@@ -6,10 +6,8 @@ import co.samco.mend4.core.util.LogUtils
 import co.samco.mend4.desktop.core.I18N
 import co.samco.mend4.desktop.dao.OSDao
 import co.samco.mend4.desktop.dao.SettingsDao
-import co.samco.mend4.desktop.exception.MendLockedException
 import co.samco.mend4.desktop.helper.CryptoHelper
 import co.samco.mend4.desktop.helper.FileResolveHelper
-import co.samco.mend4.desktop.helper.KeyHelper
 import co.samco.mend4.desktop.helper.VersionHelper
 import co.samco.mend4.desktop.output.PrintStreamProvider
 import kotlinx.coroutines.runBlocking
@@ -26,7 +24,6 @@ class CryptoHelperImpl @Inject constructor(
     private val fileResolveHelper: FileResolveHelper,
     private val settings: SettingsDao,
     private val cryptoProvider: CryptoProvider,
-    private val keyHelper: KeyHelper,
     private val versionHelper: VersionHelper,
     private val osDao: OSDao
 ) : CryptoHelper {
@@ -86,40 +83,5 @@ class CryptoHelperImpl @Inject constructor(
                 )
             )
         }
-    }
-
-    override fun decryptLog(file: File) {
-        val privateKey = keyHelper.privateKey ?: throw MendLockedException()
-        osDao.fileInputStream(file).use { fis ->
-            runBlocking {
-                cryptoProvider.decryptLogStream(privateKey, fis, log.out())
-            }
-        }
-    }
-
-    override fun decryptFile(file: File, decDirPath: String, silent: Boolean) {
-        val privateKey = keyHelper.privateKey ?: throw MendLockedException()
-        fileResolveHelper.assertDirWritable(decDirPath)
-
-        var outputFile = File(decDirPath, FilenameUtils.removeExtension(file.name))
-        fileResolveHelper.assertFileDoesNotExist(outputFile)
-        var fileExtension: String
-        log.err().println(strings.getf("CryptoHelper.decryptingFile", outputFile.absolutePath))
-        osDao.fileInputStream(file).use { fis ->
-            osDao.fileOutputSteam(outputFile).use { fos ->
-                fileExtension = runBlocking {
-                    cryptoProvider.decryptEncStream(privateKey, fis, fos)
-                }
-            }
-        }
-        if (fileExtension != "") {
-            val newFileName = outputFile.name + "." + fileExtension
-            val newOutputFile = File(outputFile.parent + File.separator + newFileName)
-            fileResolveHelper.assertFileDoesNotExist(newOutputFile)
-            osDao.renameFile(outputFile, newOutputFile)
-            outputFile = newOutputFile
-        }
-        log.err().println(strings["CryptoHelper.decryptComplete"])
-        if (!silent) osDao.desktopOpenFile(outputFile)
     }
 }

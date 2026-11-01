@@ -13,8 +13,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import java.io.File
-import java.security.KeyPair
 import co.samco.mend4.core.crypto.UnlockResult
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.argThat
@@ -24,20 +22,15 @@ import java.security.PublicKey
 class ChangePasswordTest : TestBase() {
 
     private lateinit var uut: ChangePassword
-    private val privateKeyFile = File("privateKeyFile")
-    private val publicKeyFile = File("publicKeyFile")
 
     @Before
     override fun setup() {
         super.setup()
-        whenever(fileResolveHelper.privateKeyFile).thenReturn(privateKeyFile)
-        whenever(fileResolveHelper.publicKeyFile).thenReturn(publicKeyFile)
 
         uut = ChangePassword(
             log = log,
             strings = strings,
             cryptoProvider = cryptoProvider,
-            fileResolveHelper = fileResolveHelper,
             settings = settings,
             osDao = osDao
         )
@@ -70,7 +63,7 @@ class ChangePasswordTest : TestBase() {
     }
 
     @Test
-    fun testFailsIfNotUnlocked() {
+    fun testFailsIfAuthenticationFails() {
         assumeMendIsSetup()
         whenever(osDao.readPassword(any())).thenReturn(charArrayOf())
         whenever(cryptoProvider.unlock(any())).thenReturn(UnlockResult.Failure)
@@ -85,18 +78,11 @@ class ChangePasswordTest : TestBase() {
     @Test
     fun testSuccessfullyChangePassword() {
         assumeMendIsSetup()
-        whenever(osDao.exists(eq(privateKeyFile))).thenReturn(true)
-        whenever(osDao.exists(eq(publicKeyFile))).thenReturn(true)
-        val privateKeyBytes = "privateKeyBytes".toByteArray()
-        val publicKeyBytes = "publicKeyBytes".toByteArray()
-        whenever(osDao.readAllBytes(eq(privateKeyFile))).thenReturn(privateKeyBytes)
-        whenever(osDao.readAllBytes(eq(publicKeyFile))).thenReturn(publicKeyBytes)
         val password = "somePassword".toCharArray()
         whenever(osDao.readPassword(any())).thenReturn(password)
 
         val privateKey = mock<PrivateKey>()
         val publicKey = mock<PublicKey>()
-        val keyPair = KeyPair(publicKey, privateKey)
         whenever(cryptoProvider.unlock(any())).thenReturn(UnlockResult.Success(privateKey))
         whenever(cryptoProvider.getPublicKey()).thenReturn(publicKey)
         whenever(osDao.readPassword(any())).thenAnswer { "somePassword".toCharArray() }
@@ -118,18 +104,11 @@ class ChangePasswordTest : TestBase() {
     @Test
     fun shouldNotStoreAnythingIfAnyExceptionIsThrown() {
         assumeMendIsSetup()
-        whenever(osDao.exists(eq(privateKeyFile))).thenReturn(true)
-        whenever(osDao.exists(eq(publicKeyFile))).thenReturn(true)
-        val privateKeyBytes = "privateKeyBytes".toByteArray()
-        val publicKeyBytes = "publicKeyBytes".toByteArray()
-        whenever(osDao.readAllBytes(eq(privateKeyFile))).thenReturn(privateKeyBytes)
-        whenever(osDao.readAllBytes(eq(publicKeyFile))).thenReturn(publicKeyBytes)
         val password = "somePassword".toCharArray()
         whenever(osDao.readPassword(any())).thenReturn(password)
 
         val privateKey = mock<PrivateKey>()
         val publicKey = mock<PublicKey>()
-        val keyPair = KeyPair(publicKey, privateKey)
         whenever(cryptoProvider.unlock(any())).thenReturn(UnlockResult.Success(privateKey))
         whenever(cryptoProvider.getPublicKey()).thenReturn(publicKey)
         whenever(osDao.readPassword(any())).thenAnswer { "somePassword".toCharArray() }
@@ -149,18 +128,11 @@ class ChangePasswordTest : TestBase() {
     @Test
     fun undoesAnyChangesIfStoreKeysFails() {
         assumeMendIsSetup()
-        whenever(osDao.exists(eq(privateKeyFile))).thenReturn(true)
-        whenever(osDao.exists(eq(publicKeyFile))).thenReturn(true)
-        val privateKeyBytes = "privateKeyBytes".toByteArray()
-        val publicKeyBytes = "publicKeyBytes".toByteArray()
-        whenever(osDao.readAllBytes(eq(privateKeyFile))).thenReturn(privateKeyBytes)
-        whenever(osDao.readAllBytes(eq(publicKeyFile))).thenReturn(publicKeyBytes)
         val password = "somePassword".toCharArray()
         whenever(osDao.readPassword(any())).thenReturn(password)
 
         val privateKey = mock<PrivateKey>()
         val publicKey = mock<PublicKey>()
-        val keyPair = KeyPair(publicKey, privateKey)
         whenever(cryptoProvider.unlock(any())).thenReturn(UnlockResult.Success(privateKey))
         whenever(cryptoProvider.getPublicKey()).thenReturn(publicKey)
         whenever(osDao.readPassword(any())).thenAnswer { "somePassword".toCharArray() }

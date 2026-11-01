@@ -48,7 +48,7 @@ One property you are advised to set manually is:
         
 	mend clean
 
-It is a bad idea to leave anything in dec-dir that you wish to keep. The `shred-command` property tells MEND how to destroy decrypted files and your private key file by storing a command to be run per file to be destroyed. You can use what ever file shredding/deleting utility you like as long as you substitute the position of the filename for the term `<filename>`. For example:
+It is a bad idea to leave anything in dec-dir that you wish to keep. The `shred-command` property specifies the command run for each decrypted file being removed. You can use whatever file shredding/deleting utility you like as long as you substitute the position of the filename for the term `<filename>`. For example:
 
 	mend set shred-command "shred -u <filename>"
 	
@@ -66,8 +66,6 @@ In order to decrypt anything that has been encrypted by MEND, you will first nee
 MEND asks for your password and opens your normal Bash/Zsh shell with local `dec` and `lock` commands. The decrypted private key stays in memory in the parent broker process. Run `lock` or exit the shell to end the session. Global `mend` commands are blocked inside it.
 
 The default inactivity timeout is 15 minutes. Configure it outside the session with `mend set session-timeout 30m`, override it with `mend unlock --timeout 2h`, or disable it with `mend unlock --no-timeout`. A warning precedes expiry; press Enter at the shell prompt to renew. Long-running viewers/jobs do not renew the timer. Timeout ends the shell and revokes decryption access.
-
-If you previously unlocked using an older version, first run `mend lock` outside any session to remove its legacy `prKey`/`pubKey` files. Global `mend lock` is now only legacy cleanup; use local `lock` to end a live session.
 
 Files decrypted into `dec-dir` remain after locking. Run `mend clean` outside the session to remove them using your configured command. Secure erasure is not guaranteed by deletion/shredding, especially on SSDs and snapshotting filesystems. See [SESSION_DESIGN.md](SESSION_DESIGN.md) for architecture, review order and security limits.
 
@@ -122,7 +120,7 @@ Stream decrypted file bytes instead of creating/opening a file:
     dec --stdout document.enc | less
     dec --stdout document.enc > document.pdf
 
-Pipes, redirection, completion and job control are handled by your real shell. Paths are resolved against its current directory. Decrypted output goes to stdout, diagnostics to stderr. `mend dec` outside the session is no longer supported.
+Pipes, redirection, completion and job control are handled by your real shell. Paths are resolved against its current directory. Decrypted output goes to stdout, diagnostics to stderr. `dec` and `lock` are available only inside an unlocked session.
 	
 
 ## CLEANING

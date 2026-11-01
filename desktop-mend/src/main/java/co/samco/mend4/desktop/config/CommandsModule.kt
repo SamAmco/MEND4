@@ -3,12 +3,10 @@ package co.samco.mend4.desktop.config
 import co.samco.mend4.desktop.commands.ChangePassword
 import co.samco.mend4.desktop.commands.Clean
 import co.samco.mend4.desktop.commands.Command
-import co.samco.mend4.desktop.commands.Decrypt
 import co.samco.mend4.desktop.commands.Encrypt
 import co.samco.mend4.desktop.commands.EncryptFromStdIn
 import co.samco.mend4.desktop.commands.Gcl
 import co.samco.mend4.desktop.commands.Help
-import co.samco.mend4.desktop.commands.Lock
 import co.samco.mend4.desktop.commands.Merge
 import co.samco.mend4.desktop.commands.Scl
 import co.samco.mend4.desktop.commands.SetProperty
@@ -33,19 +31,11 @@ abstract class CommandsModule {
 
     @IntoSet
     @Binds
-    abstract fun provideDecrypt(c: Decrypt): Command
-
-    @IntoSet
-    @Binds
     abstract fun provideEncrypt(c: Encrypt): Command
 
     @IntoSet
     @Binds
     abstract fun provideEncrypFromStdIn(c: EncryptFromStdIn): Command
-
-    @IntoSet
-    @Binds
-    abstract fun provideLock(c: Lock): Command
 
     @IntoSet
     @Binds

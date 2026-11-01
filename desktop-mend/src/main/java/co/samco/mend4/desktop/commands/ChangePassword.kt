@@ -9,7 +9,6 @@ import co.samco.mend4.desktop.commands.Setup.Companion.DEFAULT_PW_FACTORY_PARALL
 import co.samco.mend4.desktop.core.I18N
 import co.samco.mend4.desktop.dao.OSDao
 import co.samco.mend4.desktop.dao.SettingsDao
-import co.samco.mend4.desktop.helper.FileResolveHelper
 import co.samco.mend4.desktop.output.PrintStreamProvider
 import java.security.KeyPair
 import java.util.function.Function
@@ -19,7 +18,6 @@ class ChangePassword @Inject constructor(
     private val log: PrintStreamProvider,
     private val strings: I18N,
     private val cryptoProvider: CryptoProvider,
-    private val fileResolveHelper: FileResolveHelper,
     private val settings: SettingsDao,
     private val osDao: OSDao
 ) : CommandBase() {
@@ -30,7 +28,7 @@ class ChangePassword @Inject constructor(
 
     private val behaviorChain: List<Function<List<String>, List<String>?>> = listOf(
         Function { readOldProperties(it) },
-        Function { readKeyFiles(it) },
+        Function { authenticate(it) },
         Function { readNewPassword(it) },
         Function { readPasswordHashingParameters(it) },
         Function { storeKeysAndParams(it) },
@@ -74,7 +72,7 @@ class ChangePassword @Inject constructor(
         return args
     }
 
-    private fun readKeyFiles(args: List<String>): List<String>? {
+    private fun authenticate(args: List<String>): List<String>? {
         val oldPassword = osDao.readPassword("Current password: ")
         val unlocked = try { cryptoProvider.unlock(oldPassword) } finally { oldPassword.fill('\u0000') }
         if (unlocked !is co.samco.mend4.core.crypto.UnlockResult.Success) {

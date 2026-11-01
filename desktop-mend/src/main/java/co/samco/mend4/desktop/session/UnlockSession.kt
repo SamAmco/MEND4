@@ -4,7 +4,6 @@ import co.samco.mend4.core.crypto.CryptoProvider
 import co.samco.mend4.core.crypto.UnlockResult
 import co.samco.mend4.desktop.dao.OSDao
 import co.samco.mend4.desktop.dao.SettingsDao
-import co.samco.mend4.desktop.helper.FileResolveHelper
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.attribute.PosixFilePermissions
@@ -15,16 +14,12 @@ class UnlockSession @Inject constructor(
     private val crypto: CryptoProvider,
     private val decrypt: SessionDecrypt,
     private val os: OSDao,
-    private val files: FileResolveHelper,
     private val settings: SettingsDao,
 ) {
     fun run(args: List<String>) {
         val timeout = SessionTimeout(SessionTimeout.parse(args, settings.getValue(SettingsDao.SESSION_TIMEOUT)))
         require(System.getProperty("os.name").let { it == "Linux" || it == "Mac OS X" }) { "Sessions require Linux or macOS" }
         require(System.console() != null) { "mend unlock requires an interactive terminal" }
-        require(!files.privateKeyFile.exists()) {
-            "A legacy plaintext private key exists. Run mend lock to remove it before starting a session."
-        }
         val shellName = Path.of(System.getenv("SHELL") ?: "/bin/bash").fileName.toString()
         require(shellName in listOf("bash", "zsh")) { "MEND sessions support Bash and Zsh; set SHELL accordingly." }
         val password = os.readPassword("Password: ")
