@@ -126,7 +126,8 @@ fun SettingsScreen() {
 @Composable
 fun ThemeButtons() = Row(
     Modifier.fillMaxWidth(),
-    horizontalArrangement = Arrangement.Center
+    horizontalArrangement = Arrangement.Center,
+    verticalAlignment = Alignment.CenterVertically
 ) {
     val settingsViewModel = viewModel<SettingsViewModel>()
     val selectedTheme = settingsViewModel.selectedTheme.collectAsState().value
@@ -209,7 +210,7 @@ fun <T> ButtonSettingRow(
         modifier = Modifier
             .wrapContentHeight()
             .fillMaxWidth(),
-        verticalAlignment = Alignment.Bottom
+        verticalAlignment = Alignment.CenterVertically
     ) {
 
         Text(
