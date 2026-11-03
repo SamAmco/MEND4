@@ -76,12 +76,22 @@ not exercise those device interactions.
 
 ## Development checks
 
+In Nextcloud settings, you can enter a hostname such as `shc-cloud.internal`;
+MEND supplies `https://`. For a server with a self-signed certificate, select
+**Trust self-signed certificates** and press **Connect**. Connect remembers that
+certificate for this hostname and port, including for background transfers.
+Hostname and expiry checks still apply. A changed self-signed certificate requires
+connecting again with the checkbox enabled. The browser login page may show its
+own certificate warning separately.
+
 ```sh
 ./gradlew :mendroid:assembleDebug :mendroid:lintDebug :mendroid:testDebugUnitTest --warning-mode all
 ```
 
-Kotlin and lint warnings fail the Android build. The app uses Material 3 throughout,
-with no lint suppressions or dependency downgrades for the migration.
+Kotlin and lint warnings fail the Android build. The app uses Material 3 throughout.
+The certificate trust manager has a targeted lint suppression: it delegates chain
+validation to platform trust managers and retains hostname verification, covered
+by real TLS handshake tests.
 
 KSP 2.3.12 currently emits a Gradle 9.8 deprecation warning for its internal use of
 `Configuration.setVisible`. This comes from the latest KSP plugin, rather than app code.

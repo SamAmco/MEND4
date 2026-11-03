@@ -39,7 +39,7 @@ class NextcloudViewModelTest {
     private lateinit var runner: UploadRunner
     private val models = ViewModelStore()
     private val login = object : NextcloudLogin {
-        override suspend fun begin(server: String) = LoginRequest("https://cloud.example/login", "https://cloud.example/poll", "secret")
+        override suspend fun begin(server: String, trustSelfSigned: Boolean) = LoginRequest("https://cloud.example/login", "https://cloud.example/poll", "secret")
         override suspend fun awaitSession(login: LoginRequest) = env.session
     }
     @Before fun setup() {

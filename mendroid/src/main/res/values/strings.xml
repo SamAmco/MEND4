@@ -151,4 +151,7 @@
     <string name="remote_read_connection">Nextcloud is unreachable. Local logs are still available. Refresh to try again.</string>
     <string name="remote_read_missing">Nextcloud folder or file no longer exists.</string>
     <string name="remote_read_access">Nextcloud denied access to this folder or file.</string>
+    <string name="nextcloud_trust_self_signed">Trust self-signed certificates</string>
+    <string name="nextcloud_trust_self_signed_help">Enable only for a server you trust. Connect will approve and remember its certificate for this server.</string>
+    <string name="nextcloud_certificate_error">The server certificate is not trusted or has changed. To approve a self-signed certificate, connect with “Trust self-signed certificates” enabled. If already connected, disconnect and connect again.</string>
 </resources>

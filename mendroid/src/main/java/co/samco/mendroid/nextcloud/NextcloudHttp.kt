@@ -4,7 +4,10 @@ import java.io.IOException
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
+import javax.net.ssl.SSLException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
 import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.Credentials
@@ -16,8 +19,11 @@ import okhttp3.Response
 
 /** Shared HTTP mechanics; no login orchestration, XML parsing, or upload policy. */
 @Singleton
-class NextcloudHttp internal constructor(private val client: OkHttpClient) {
-    @Inject constructor() : this(defaultClient())
+class NextcloudHttp internal constructor(
+    private val client: OkHttpClient = defaultClient(),
+    private val certificates: NextcloudCertificates? = null
+) {
+    @Inject constructor(certificates: NextcloudCertificates) : this(defaultClient(), certificates)
 
     private companion object {
         fun defaultClient() = OkHttpClient.Builder()
@@ -47,18 +53,59 @@ class NextcloudHttp internal constructor(private val client: OkHttpClient) {
         it.body.string()
     }
 
-    suspend fun <T> response(request: Request, timeoutMillis: Long? = null, read: (Response) -> T): T =
+    suspend fun <T> response(request: Request, timeoutMillis: Long? = null, read: (Response) -> T): T = withContext(Dispatchers.IO) {
+        try {
+            execute(certificates?.client(client, request.url) ?: client, request, timeoutMillis, read)
+        } catch (untrusted: UntrustedSelfSignedCertificate) {
+            val trust = certificates
+            if (trust == null || request.tag(TrustSelfSignedOnConnect::class.java) == null)
+                throw NextcloudException(NextcloudFailure.CERTIFICATE).apply { initCause(untrusted) }
+            try {
+                execute(trust.client(client, request.url, untrusted.certificate), request, timeoutMillis) { response ->
+                    // Save only after TLS and hostname verification succeeded, before returning any credentials.
+                    trust.remember(request.url, untrusted.certificate)
+                    read(response)
+                }
+            } catch (e: SSLException) {
+                throw NextcloudException(NextcloudFailure.CERTIFICATE).apply { initCause(e) }
+            } catch (e: UntrustedSelfSignedCertificate) {
+                throw NextcloudException(NextcloudFailure.CERTIFICATE).apply { initCause(e) }
+            }
+        } catch (e: SSLException) {
+            throw NextcloudException(NextcloudFailure.CERTIFICATE).apply { initCause(e) }
+        }
+    }
+
+    private suspend fun <T> execute(client: OkHttpClient, request: Request, timeoutMillis: Long?, read: (Response) -> T): T =
         suspendCancellableCoroutine { continuation ->
             val call = client.newCall(request)
             timeoutMillis?.let { call.timeout().timeout(it, TimeUnit.MILLISECONDS) }
             continuation.invokeOnCancellation { call.cancel() }
             call.enqueue(object : Callback {
-                override fun onFailure(call: Call, e: IOException) { continuation.resumeWith(Result.failure(e)) }
+                override fun onFailure(call: Call, e: IOException) {
+                    continuation.resumeWith(Result.failure(certificateFailure(e) ?: e))
+                }
                 override fun onResponse(call: Call, response: Response) {
                     continuation.resumeWith(runCatching { response.use(read) })
                 }
             })
         }
+
+    // Alternate IP attempts can leave the TLS failure suppressed under a connection error.
+    private fun certificateFailure(error: IOException): Throwable? {
+        val remaining = ArrayDeque<Throwable>().apply { add(error) }
+        val visited = mutableSetOf<Throwable>()
+        var tlsFailure: SSLException? = null
+        while (remaining.isNotEmpty()) {
+            val failure = remaining.removeFirst()
+            if (!visited.add(failure)) continue
+            if (failure is UntrustedSelfSignedCertificate) return failure
+            if (failure is SSLException) tlsFailure = failure
+            failure.cause?.let(remaining::add)
+            remaining.addAll(failure.suppressed)
+        }
+        return tlsFailure
+    }
 
     fun checkStatus(code: Int) {
         if (code in 200..299) return

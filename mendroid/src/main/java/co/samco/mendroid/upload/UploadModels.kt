@@ -23,7 +23,7 @@ enum class UploadFailure(val automaticRetry: Boolean = false, val requiresLocalV
     LOCAL_WRITE_INTERRUPTED(requiresLocalVerification = true),
     LOCAL_WRITE_FAILED(requiresLocalVerification = true),
     REGISTRATION_FAILED, LOCAL_FILE_UNAVAILABLE, ACCOUNT_UNAVAILABLE, DESTINATION_COLLISION,
-    AUTHENTICATION, ACCESS_DENIED, DESTINATION_MISSING, REMOTE_CONFLICT,
+    CERTIFICATE, AUTHENTICATION, ACCESS_DENIED, DESTINATION_MISSING, REMOTE_CONFLICT,
     TOO_LARGE, STORAGE_FULL, REDIRECT, SERVER_REJECTED, INVALID_RESPONSE,
     CONNECTION(automaticRetry = true), SERVER_BUSY(automaticRetry = true), BACKGROUND_UNAVAILABLE
 }
@@ -52,6 +52,7 @@ fun NextcloudConfig.target(file: LocalBackupFile): UploadTarget? {
 }
 
 fun NextcloudFailure.asUploadFailure(): UploadFailure = when (this) {
+    NextcloudFailure.CERTIFICATE -> UploadFailure.CERTIFICATE
     NextcloudFailure.ACCOUNT_UNAVAILABLE -> UploadFailure.ACCOUNT_UNAVAILABLE
     NextcloudFailure.AUTHENTICATION -> UploadFailure.AUTHENTICATION
     NextcloudFailure.ACCESS_DENIED -> UploadFailure.ACCESS_DENIED

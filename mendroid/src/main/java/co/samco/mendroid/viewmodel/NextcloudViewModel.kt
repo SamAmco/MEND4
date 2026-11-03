@@ -76,13 +76,13 @@ class NextcloudViewModel @Inject constructor(
 
     init { command { backups.refresh() } }
 
-    fun connect(server: String) {
+    fun connect(server: String, trustSelfSigned: Boolean = false) {
         cancelLogin()
         val generation = loginGeneration
         actions.update { it.copy(signingIn = true, error = null) }
         loginJob = viewModelScope.launch {
             try {
-                val request = login.begin(server)
+                val request = login.begin(server, trustSelfSigned)
                 effectsChannel.send(NextcloudEffect.OpenBrowser(request.browserUrl))
                 val session = login.awaitSession(request)
                 if (generation == loginGeneration) backups.connect(session)

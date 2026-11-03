@@ -14,6 +14,7 @@ import co.samco.mendroid.viewmodel.NextcloudUiProblem
 
 @StringRes
 internal fun uploadFailureMessage(failure: UploadFailure): Int = when (failure) {
+    UploadFailure.CERTIFICATE -> R.string.nextcloud_certificate_error
     UploadFailure.LOCAL_WRITE_INTERRUPTED, UploadFailure.LOCAL_WRITE_FAILED -> R.string.upload_error_local_write
     UploadFailure.REGISTRATION_FAILED -> R.string.upload_error_unqueued
     UploadFailure.LOCAL_FILE_UNAVAILABLE -> R.string.upload_error_local_file
@@ -46,6 +47,7 @@ internal fun NextcloudError(error: NextcloudUiError) {
 
 @StringRes
 internal fun remoteReadFailureMessage(reason: NextcloudFailure): Int = when (reason) {
+    NextcloudFailure.CERTIFICATE -> R.string.nextcloud_certificate_error
     NextcloudFailure.AUTHENTICATION, NextcloudFailure.ACCOUNT_UNAVAILABLE -> R.string.remote_read_auth
     NextcloudFailure.CONNECTION, NextcloudFailure.SERVER_BUSY -> R.string.remote_read_connection
     NextcloudFailure.DESTINATION_MISSING -> R.string.remote_read_missing

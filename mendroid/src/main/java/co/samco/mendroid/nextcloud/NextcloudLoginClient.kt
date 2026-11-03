@@ -11,14 +11,17 @@ import org.json.JSONObject
 class LoginRequest internal constructor(val browserUrl: String, internal val pollUrl: String, internal val token: String)
 
 interface NextcloudLogin {
-    suspend fun begin(server: String): LoginRequest
+    suspend fun begin(server: String, trustSelfSigned: Boolean = false): LoginRequest
     suspend fun awaitSession(login: LoginRequest): NextcloudSession
 }
 
 class NextcloudLoginClient @Inject constructor(private val http: NextcloudHttp) : NextcloudLogin {
-    override suspend fun begin(server: String): LoginRequest {
+    override suspend fun begin(server: String, trustSelfSigned: Boolean): LoginRequest {
         val url = "${http.serverUrl(server)}/index.php/login/v2".toHttpUrl()
-        val json = JSONObject(http.request(Request.Builder().url(url).post(ByteArray(0).toRequestBody()).build()))
+        val request = Request.Builder().url(url).post(ByteArray(0).toRequestBody()).apply {
+            if (trustSelfSigned) tag(TrustSelfSignedOnConnect::class.java, TrustSelfSignedOnConnect)
+        }.build()
+        val json = JSONObject(http.request(request))
         val poll = json.getJSONObject("poll")
         val login = json.getString("login").toHttpUrl()
         val endpoint = poll.getString("endpoint").toHttpUrl()

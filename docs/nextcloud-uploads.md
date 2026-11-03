@@ -48,6 +48,7 @@ All implementation paths below are under
 | `nextcloud/EncryptedCredentialStore.kt` | Atomic credential-file format and non-exportable Android Keystore key. |
 | `nextcloud/NextcloudLoginClient.kt` | Documented Login Flow v2 and OCS user-ID lookup. |
 | `nextcloud/NextcloudHttp.kt` | HTTPS setup validation, credential-origin checks, cancellation, response handling and typed HTTP failures. |
+| `nextcloud/NextcloudCertificates.kt` | Platform trust plus server-specific self-signed certificates explicitly approved by Connect. |
 | `nextcloud/WebDavClient.kt`, `nextcloud/WebDavListing.kt` | DAV paths, successful direct-child resource parsing, streaming GET/PUT, explicit MOVE publication, conflict verification and bounded remote cleanup. |
 | `upload/LocalBackupWriter.kt` | Local output-stream lifetime and successful-write registration. Local success is independent of queue availability. |
 | `upload/UploadSnapshots.kt` | Claim a revision and copy its encrypted bytes under the local-write lock. Explicit ready/superseded/unavailable results and snapshot cleanup. |
@@ -109,6 +110,19 @@ depend on queue models.
 - Typed failures determine retry policy; UI text comes from string resources.
   Observable state never contains the Nextcloud app password.
 - Deleting local files never deletes remote backups. Uploads need no MEND private key.
+
+## Server certificate trust
+
+Addresses without a scheme default to HTTPS. Platform certificate validation is
+the default. Checking **Trust self-signed certificates** tags only the initial
+Connect request: it can retry with the presented self-signed certificate, then
+remember the exact certificate after TLS and hostname verification succeed.
+The atomic approval file lives in `noBackupFilesDir`, scoped by HTTPS hostname
+and port. Uploads, downloads and login polling share this trust configuration.
+Expired certificates and hostname mismatches remain errors. A replacement
+self-signed certificate requires Connect approval again; background requests
+cannot approve certificates. Certificate failures require attention rather than
+automatic retries. Browser login has its own certificate trust policy.
 
 ## Additional read folders
 
@@ -184,7 +198,7 @@ External file-manager edits cannot participate in MEND's local-write lock.
 
 The debug APK is `mendroid/build/outputs/apk/debug/mendroid-debug.apk`.
 Run `./gradlew :mendroid:assembleDebug :mendroid:lintDebug :mendroid:testDebugUnitTest`.
-The complete suite has 123 unit tests, including remote reads and lock-session races.
+The complete suite has 130 unit tests, including TLS handshakes, remote reads and lock-session races.
 Tests use real SQLite through Robolectric, fake transfer boundaries for runner
 contracts, mocked HTTP for WebDAV/login, and controlled coroutine scheduling for
 view-model races. Each rebuilt revision is checked before proceeding to the next.

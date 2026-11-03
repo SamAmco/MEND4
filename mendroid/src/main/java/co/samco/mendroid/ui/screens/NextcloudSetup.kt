@@ -4,11 +4,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -18,12 +20,20 @@ import co.samco.mendroid.nextcloud.RemotePath
 import co.samco.mendroid.viewmodel.NextcloudFolderUse
 
 @Composable
-internal fun NextcloudConnectionForm(server: String, onServerChanged: (String) -> Unit, signingIn: Boolean) =
+internal fun NextcloudConnectionForm(
+    server: String, onServerChanged: (String) -> Unit, signingIn: Boolean,
+    trustSelfSigned: Boolean, onTrustSelfSignedChanged: (Boolean) -> Unit
+) =
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         OutlinedTextField(value = server, onValueChange = onServerChanged, singleLine = true,
             enabled = !signingIn, label = { Text(stringResource(R.string.nextcloud_server)) },
             modifier = Modifier.fillMaxWidth())
         Text(stringResource(R.string.nextcloud_setup_help))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Checkbox(checked = trustSelfSigned, onCheckedChange = onTrustSelfSignedChanged, enabled = !signingIn)
+            Text(stringResource(R.string.nextcloud_trust_self_signed))
+        }
+        if (trustSelfSigned) Text(stringResource(R.string.nextcloud_trust_self_signed_help))
         if (signingIn) {
             LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
             Text(stringResource(R.string.nextcloud_finish_login))
