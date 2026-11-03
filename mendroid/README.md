@@ -114,7 +114,7 @@ the separate Nextcloud settings to back up logs after local writes.
 
 Nextcloud uploads are optional and keep your existing local storage arrangement.
 Select an **enc folder on your device** and a **local log directory** in Settings.
-Then open Nextcloud uploads from Settings or the status button above the main tabs:
+Then open Nextcloud files and uploads from Settings:
 
 1. Enter your Nextcloud HTTPS server address (including its subdirectory, if any).
 2. Tap **Connect to Nextcloud**, sign in in your browser, and grant MEND access.
@@ -127,7 +127,7 @@ Uploads continue while MEND is locked. By default they wait for an unmetered
 connection; enable metered connections if you want to use mobile data. Android
 may delay background work, particularly after force-stopping the app or under
 battery restrictions. Reopen MEND after force-stopping it to resume scheduling.
-The status button opens individual upload states, progress and errors, with
+The Nextcloud button in Settings opens individual upload states, progress and errors, with
 **Retry**, **Pause uploads**, and **Disconnect** controls. **Remove from upload
 list** clears a completed/failed queue entry without deleting local or remote
 files. Removing an entry does not prevent a future MEND write from queuing it again.
