@@ -60,8 +60,8 @@ exclude all app data from both cloud backups and device transfers.
 
 The normal debug build uses `co.samco.mendroid.debug`, so release installs alongside
 it with separate app data. Import your `config.xml` and select your encrypted-data
-folder in the release app. Keep the debug app until you have checked decryption in
-the release app. Update your existing debug installation too, or remove it after
+folder and log directory in the release app. Keep the debug app until you have
+checked decryption in the release app. Update your existing debug installation too, or remove it after
 migrating, so its installed copy also stops participating in backups. Updating an
 existing installation of `co.samco.mendroid` requires
 the same signing key as that installation; keep using and securely retain your JKS.
@@ -96,11 +96,25 @@ KSP 2.3.12 currently emits a Gradle 9.8 deprecation warning for its internal use
 	<img src="./screenshots/7.png" width="200px" />
 </p>
 
+## Local log directory
+
+Select **log-dir** in Settings using a folder in device storage or on an SD card.
+Both Encrypt and Decrypt list the `.mend` files directly inside that folder.
+Encrypt remembers the selected log; **Create** asks for a name and creates the log
+inside log-dir, adding `.mend` if needed. Existing names are rejected rather than
+overwritten. Decrypt no longer imports individual log files.
+
+Use a file manager to add, remove, rename, or move logs. Lists refresh when you
+return to the screen. If the selected log is removed, choose another before
+writing; MEND does not automatically recreate it. Changing log-dir clears the
+selection. Cloud document-provider folders cannot be selected for log-dir; use
+the separate Nextcloud settings to back up logs after local writes.
+
 ## Automatic Nextcloud backups
 
 Nextcloud uploads are optional and keep your existing local storage arrangement.
-Select an **enc folder on your device** and local log files as usual. From Settings
-or the upload status button above the main tabs:
+Select an **enc folder on your device** and a **local log directory** in Settings.
+Then open Nextcloud uploads from Settings or the status button above the main tabs:
 
 1. Enter your Nextcloud HTTPS server address (including its subdirectory, if any).
 2. Tap **Connect to Nextcloud**, sign in in your browser, and grant MEND access.

@@ -2,6 +2,12 @@
     <string name="app_name">MEND</string>
     <string name="config_button_text">config.xml</string>
     <string name="enc_dir_button_text">enc-dir</string>
+    <string name="log_dir_button_text">log-dir</string>
+    <string name="log_dir_error">Select a readable, writable log directory in device storage or on an SD card.</string>
+    <string name="create_log">Create log</string>
+    <string name="log_name">Log name (.mend)</string>
+    <string name="invalid_log_name">Enter a filename without slashes or control characters.</string>
+    <string name="log_already_exists">A file with this name already exists. Select it from the log list or choose another name.</string>
 
     <string name="not_set">NOT SET</string>
     <string name="config_import_error">Failed to import XML file.</string>
@@ -38,12 +44,9 @@
     <string name="no_app_to_open_file">No app found to open file with extension: %s</string>
     <string name="decrypt_cancelled">Decrypt cancelled</string>
     <string name="select_log">Select Log</string>
-    <string name="open">Open</string>
     <string name="create">Create</string>
     <string name="could_not_find_current_log">Could not find log file.</string>
     <string name="failed_to_write_to_log_file">Failed to write to log file</string>
-    <string name="log_file_must_have_mend_extension">A log file must have the extension %s</string>
-    <string name="import_log">Import log file</string>
     <string name="no_items">No items</string>
     <string name="no_entries">No entries</string>
     <string name="delete_file_question">Would you like to delete the original file?</string>

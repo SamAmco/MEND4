@@ -20,11 +20,14 @@ enum class Theme {
 
 interface PropertyManager : Settings {
     val selectedTheme: Flow<Theme?>
+    val logDirUri: Flow<String?>
     val encDirUri: Flow<String?>
     val hasConfig: Flow<Boolean>
     val configUri: Flow<String?>
     val lockOnScreenLock: Flow<Boolean>
 
+    fun setLogDirUri(uri: String)
+    fun getLogDirUri(): String?
     fun setEncDirUri(uri: String)
     fun setTheme(theme: Theme?)
     fun getEncDirUri(): String?
@@ -36,8 +39,6 @@ interface PropertyManager : Settings {
     fun getCurrentLogUri(): String?
     fun getLockOnScreenLock(): Boolean
     fun setCurrentLogUri(uriStr: String?)
-    fun getKnownLogUris(): List<String>
-    fun setKnownLogUris(uris: List<String>)
     fun setLockOnScreenLock(enabled: Boolean)
 }
 
@@ -71,13 +72,25 @@ class PropertyManagerImpl @Inject constructor(
         private const val ENC_DIR_URI = "encDirUri"
         private const val CONFIG_URI = "configUri"
         private const val CURRENT_LOG_URI = "currentLogUri"
-        private const val KNOWN_LOG_URIS = "knownLogUris"
+        private const val LOG_DIR_URI = "logDirUri"
         private const val THEME = "theme"
     }
 
     override val selectedTheme: Flow<Theme?>
         get() = onChange(THEME)
             .map { prefs -> prefs.getString(THEME, null)?.let { Theme.valueOf(it) } }
+
+    override val logDirUri: Flow<String?>
+        get() = onChange(LOG_DIR_URI).map { it.getString(LOG_DIR_URI, null) }
+
+    override fun getLogDirUri(): String? = prefs.getString(LOG_DIR_URI, null)
+
+    override fun setLogDirUri(uri: String) {
+        prefs.edit {
+            if (getLogDirUri() != uri) remove(CURRENT_LOG_URI)
+            putString(LOG_DIR_URI, uri)
+        }
+    }
 
     override val encDirUri: Flow<String?>
         get() = onChange(ENC_DIR_URI)
@@ -141,14 +154,6 @@ class PropertyManagerImpl @Inject constructor(
             if (uriStr == null) remove(CURRENT_LOG_URI)
             else putString(CURRENT_LOG_URI, uriStr)
         }
-    }
-
-    override fun getKnownLogUris(): List<String> {
-        return prefs.getStringSet(KNOWN_LOG_URIS, null)?.toList() ?: emptyList()
-    }
-
-    override fun setKnownLogUris(uris: List<String>) {
-        prefs.edit { putStringSet(KNOWN_LOG_URIS, uris.toSet()) }
     }
 
     override fun setLockOnScreenLock(enabled: Boolean) {

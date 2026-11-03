@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -46,8 +47,9 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.viewmodel.compose.viewModel
-import co.samco.mend4.core.AppProperties
 import co.samco.mendroid.R
 import co.samco.mendroid.ui.common.ConfirmCancelDialogBody
 import co.samco.mendroid.ui.common.TextItemList
@@ -62,6 +64,8 @@ fun EncryptScreen(modifier: Modifier = Modifier) = Box(modifier) {
 
     val viewModel = viewModel<EncryptViewModel>()
     val audioRecordingViewModel: AudioRecordingViewModel = viewModel<AudioRecordingViewModelImpl>()
+
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME, onEvent = viewModel::refreshLogs)
 
     EncryptScreenMain()
 
@@ -298,64 +302,56 @@ private fun SelectLogButton(modifier: Modifier) {
 private fun SelectLogDialog() {
     val viewModel = viewModel<EncryptViewModel>()
 
-    val logFileMimeType = "*/*"
-
-    val openLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.OpenDocument(),
-        viewModel::onNewLogFileSelected
-    )
-
-    val createLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.CreateDocument(logFileMimeType),
-        viewModel::onNewLogFileSelected
-    )
+    if (viewModel.showCreateLogDialog) {
+        CreateLogDialog(viewModel)
+        return
+    }
 
     Dialog(onDismissRequest = viewModel::hideSelectLogDialog) {
         Surface(shape = MaterialTheme.shapes.small) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(8.dp)
-            ) {
-
-                val knownLogs by viewModel.knownLogs.collectAsState()
-
+            Column(Modifier.fillMaxWidth().padding(8.dp)) {
+                val logs by viewModel.logs.collectAsState()
                 TextItemList(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .wrapContentHeight()
-                        .heightIn(min = 160.dp, max = 320.dp),
-                    items = knownLogs,
-                    onItemClicked = { viewModel.onKnownLogFileSelected(it) },
+                    modifier = Modifier.fillMaxWidth().wrapContentHeight().heightIn(min = 160.dp, max = 320.dp),
+                    items = logs,
+                    onItemClicked = viewModel::onLogSelected,
                     itemText = { it.name }
                 )
-
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 8.dp)
-                ) {
-                    ActionButton(
-                        modifier = Modifier.weight(1f),
-                        text = stringResource(id = R.string.open)
-                    ) {
-                        openLauncher.launch(arrayOf(logFileMimeType))
-                    }
-
-                    Spacer(modifier = Modifier.size(16.dp))
-
-                    ActionButton(
-                        modifier = Modifier.weight(1f),
-                        text = stringResource(id = R.string.create)
-                    ) {
-                        createLauncher.launch(
-                            "${AppProperties.DEFAULT_LOG_FILE_NAME}.${AppProperties.LOG_FILE_EXTENSION}"
-                        )
-                    }
-                }
+                ActionButton(
+                    modifier = Modifier.fillMaxWidth(),
+                    text = stringResource(R.string.create),
+                    onClick = viewModel::showCreateLog
+                )
             }
         }
     }
+}
+
+@Composable
+private fun CreateLogDialog(viewModel: EncryptViewModel) {
+    AlertDialog(
+        onDismissRequest = viewModel::hideCreateLog,
+        title = { Text(stringResource(R.string.create_log)) },
+        text = {
+            Column {
+                TextField(
+                    value = viewModel.newLogName,
+                    onValueChange = { viewModel.newLogName = it },
+                    label = { Text(stringResource(R.string.log_name)) },
+                    singleLine = true,
+                    enabled = !viewModel.loading,
+                    isError = viewModel.logCreationError != null
+                )
+                viewModel.logCreationError?.let { Text(stringResource(it), color = MaterialTheme.colorScheme.error) }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = viewModel::createLog, enabled = !viewModel.loading) { Text(stringResource(R.string.create)) }
+        },
+        dismissButton = {
+            TextButton(onClick = viewModel::hideCreateLog, enabled = !viewModel.loading) { Text(stringResource(R.string.cancel)) }
+        }
+    )
 }
 
 

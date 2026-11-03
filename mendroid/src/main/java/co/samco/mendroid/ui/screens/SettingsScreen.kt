@@ -1,5 +1,7 @@
 package co.samco.mendroid.ui.screens
 
+import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContract
@@ -51,6 +53,7 @@ fun SettingsScreen() {
     val settingsViewModel = viewModel<SettingsViewModel>()
 
     val configText = settingsViewModel.configPath.collectAsState().value
+    val logDirText = settingsViewModel.logDirText.collectAsState().value
     val encDirText = settingsViewModel.encDirText.collectAsState().value
     val showCloseButton = settingsViewModel.showCloseButton.collectAsState().value
 
@@ -94,6 +97,15 @@ fun SettingsScreen() {
                     launchArgs = null,
                     value = encDirText,
                     onUriSelected = settingsViewModel::onSetEncDir
+                )
+                Spacer(modifier = Modifier.size(48.dp))
+                ButtonSettingRow(
+                    complete = settingsViewModel.logDirGood.collectAsState().value,
+                    buttonText = stringResource(R.string.log_dir_button_text),
+                    contract = LocalDirectoryPicker(),
+                    launchArgs = null,
+                    value = logDirText,
+                    onUriSelected = settingsViewModel::onSetLogDir
                 )
                 Spacer(modifier = Modifier.size(48.dp))
                 ToggleSettingRow(
@@ -238,4 +250,10 @@ fun <T> ButtonSettingRow(
             )
         }
     }
+}
+
+/** The local-only hint filters the picker; the selected provider is also validated before saving. */
+internal class LocalDirectoryPicker : ActivityResultContracts.OpenDocumentTree() {
+    override fun createIntent(context: Context, input: Uri?): Intent =
+        super.createIntent(context, input).putExtra(Intent.EXTRA_LOCAL_ONLY, true)
 }

@@ -19,6 +19,7 @@ import androidx.core.content.FileProvider
 import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import co.samco.mend4.core.AppProperties
 import co.samco.mend4.core.crypto.CryptoProvider
 import co.samco.mend4.core.util.LogUtils
 import co.samco.mendroid.BuildConfig
@@ -45,6 +46,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.io.File
 import java.io.IOException
+import java.nio.file.FileAlreadyExistsException
 import javax.inject.Inject
 import kotlin.random.Random
 
@@ -71,7 +73,7 @@ class EncryptViewModel @Inject constructor(
 
     var currentEntryText by mutableStateOf(TextFieldValue(""))
 
-    val knownLogs = logFileManager.knownLogs
+    val logs = logFileManager.logs
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     private val _showSelectLogDialog = MutableStateFlow(false)
@@ -112,24 +114,19 @@ class EncryptViewModel @Inject constructor(
     }
 
     fun encryptText() {
+        if (loading) return
+        loading = true
         viewModelScope.launch {
-            val currLog = currentLog.value
-            if (currLog == null) {
-                errorToastManager.showErrorToast(R.string.could_not_find_current_log)
-                return@launch
-            }
-
-
-            val logText = LogUtils.addHeaderToLogText(
-                currentEntryText.text,
-                "ANDROID",
-                BuildConfig.VERSION_NAME,
-                "\n"
-            )
-
             try {
-                val saved = uploads.write(LocalBackupFile(currLog.uri.toString(), "${currLog.name}.mend", UploadKind.LOG), WriteMode.APPEND) { output ->
-                    cryptoProvider.encryptLogStream(logText, output)
+                // Re-read the directory: external deletion or a folder change must invalidate selection.
+                val log = logFileManager.currentForWrite()
+                if (log == null) {
+                    errorToastManager.showErrorToast(R.string.could_not_find_current_log)
+                    return@launch
+                }
+                val text = LogUtils.addHeaderToLogText(currentEntryText.text, "ANDROID", BuildConfig.VERSION_NAME, "\n")
+                val saved = uploads.write(LocalBackupFile(log.uri.toString(), log.name, UploadKind.LOG), WriteMode.APPEND) {
+                    cryptoProvider.encryptLogStream(text, it)
                 }
                 if (saved.backup == BackupRegistration.NEEDS_ATTENTION) errorToastManager.showErrorToast(R.string.encrypted_backup_pending)
                 currentEntryText = TextFieldValue("")
@@ -137,6 +134,8 @@ class EncryptViewModel @Inject constructor(
                 throw e
             } catch (_: Exception) {
                 errorToastManager.showErrorToast(R.string.failed_to_write_to_log_file)
+            } finally {
+                loading = false
             }
         }
     }
@@ -173,27 +172,75 @@ class EncryptViewModel @Inject constructor(
         }
     }
 
-    fun onSelectLogButtonClicked() {
-        logFileManager.forcePruneKnownLogs()
-        _showSelectLogDialog.value = true
+    fun refreshLogs() {
+        viewModelScope.launch {
+            try {
+                logFileManager.refresh()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                errorToastManager.showErrorToast(R.string.log_dir_error)
+            }
+        }
     }
 
-    fun onNewLogFileSelected(uri: Uri?) {
-        if (uri == null) {
-            errorToastManager.showErrorToast(R.string.no_file)
-            return
-        }
-        logFileManager.setCurrentLogFromUri(uri)
-        _showSelectLogDialog.value = false
+    fun onSelectLogButtonClicked() {
+        refreshLogs()
+        _showSelectLogDialog.value = true
     }
 
     fun hideSelectLogDialog() {
         _showSelectLogDialog.value = false
     }
 
-    fun onKnownLogFileSelected(selected: LogFileData) {
-        logFileManager.setCurrentLog(selected)
-        _showSelectLogDialog.value = false
+    fun onLogSelected(log: LogFileData) {
+        viewModelScope.launch {
+            try {
+                logFileManager.select(log)
+                hideSelectLogDialog()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                errorToastManager.showErrorToast(R.string.could_not_find_current_log)
+            }
+        }
+    }
+
+    var showCreateLogDialog by mutableStateOf(false)
+        private set
+    var newLogName by mutableStateOf(AppProperties.DEFAULT_LOG_FILE_NAME)
+    var logCreationError by mutableStateOf<Int?>(null)
+        private set
+
+    fun showCreateLog() {
+        logCreationError = null
+        newLogName = AppProperties.DEFAULT_LOG_FILE_NAME
+        showCreateLogDialog = true
+    }
+
+    fun hideCreateLog() { showCreateLogDialog = false }
+
+    fun createLog() {
+        if (loading) return
+        loading = true
+        logCreationError = null
+        viewModelScope.launch {
+            try {
+                logFileManager.create(newLogName)
+                hideCreateLog()
+                hideSelectLogDialog()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: IllegalArgumentException) {
+                logCreationError = R.string.invalid_log_name
+            } catch (_: FileAlreadyExistsException) {
+                logCreationError = R.string.log_already_exists
+            } catch (_: Exception) {
+                logCreationError = R.string.failed_to_create_file
+            } finally {
+                loading = false
+            }
+        }
     }
 
     fun dismissOfferDeleteFileDialog() {

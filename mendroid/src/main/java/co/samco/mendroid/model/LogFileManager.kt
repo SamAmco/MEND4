@@ -1,149 +1,84 @@
 package co.samco.mendroid.model
 
-import android.content.Context
-import android.content.Intent
 import android.net.Uri
-import androidx.documentfile.provider.DocumentFile
-import co.samco.mend4.core.AppProperties
-import co.samco.mendroid.R
-import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.CoroutineScope
+import java.io.IOException
+import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.merge
-import kotlinx.coroutines.flow.onStart
-import kotlinx.coroutines.launch
-import javax.inject.Inject
-import kotlin.coroutines.CoroutineContext
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 
-data class LogFileData(
-    val name: String,
-    val documentFile: DocumentFile,
-    val uri: Uri
-)
+data class LogFileData(val name: String, val uri: Uri)
 
 interface LogFileManager {
     val currentLog: Flow<LogFileData?>
-
-    val knownLogs: Flow<List<LogFileData>>
-
-    fun setCurrentLogFromUri(uri: Uri): Boolean
-
-    fun addLogFromUri(uri: Uri): Boolean
-
-    fun setCurrentLog(data: LogFileData)
-
-    fun forcePruneKnownLogs()
+    val logs: Flow<List<LogFileData>>
+    suspend fun refresh()
+    suspend fun currentForWrite(): LogFileData?
+    suspend fun select(log: LogFileData)
+    suspend fun create(name: String)
 }
 
+/** Directory snapshots and selection only; no registry of individually imported documents. */
 class LogFileManagerImpl @Inject constructor(
-    @ApplicationContext private val context: Context,
-    private val propertyManager: PropertyManager,
-    private val errorToastManager: ErrorToastManager
-) : LogFileManager, CoroutineScope {
+    private val directory: LocalLogDirectory,
+    private val properties: PropertyManager
+) : LogFileManager {
+    private data class Selection(val logs: List<LogFileData> = emptyList(), val current: LogFileData? = null)
+    private val selection = MutableStateFlow(Selection())
+    private val lock = Mutex()
+    override val currentLog = selection.map { it.current }.distinctUntilChanged()
+    override val logs = selection.map { it.logs }.distinctUntilChanged()
 
-    private val logFileExtension = ".${AppProperties.LOG_FILE_EXTENSION}"
-
-    override val coroutineContext: CoroutineContext = Job() + Dispatchers.IO
-
-    private val onLogCrudEvent = MutableSharedFlow<Unit>()
-
-    private val logCrudEvents = onLogCrudEvent.onStart { emit(Unit) }
-
-    override val currentLog: Flow<LogFileData?> = logCrudEvents
-        .map {
-            propertyManager.getCurrentLogUri()
-                ?.let { getLogFileData(it) }
-                ?: return@map null
-        }
-        .distinctUntilChanged()
-
-    private val onForcePruneKnownLogs = MutableSharedFlow<Unit>()
-
-    private val knownLogDataMap = merge(
-        logCrudEvents,
-        onForcePruneKnownLogs
-    ).map { propertyManager.getKnownLogUris().associateWith { getLogFileData(it) } }
-
-    override fun forcePruneKnownLogs() {
-        launch { onForcePruneKnownLogs.emit(Unit) }
+    override suspend fun refresh() = withContext(Dispatchers.IO) {
+        lock.withLock { refreshSelection() }
     }
 
-    init {
-        launch {
-            knownLogDataMap.collect { storedLogs ->
-                val size = storedLogs.size
-                val knownLogData = storedLogs.values.filterNotNull()
-                if (size != knownLogData.size) {
-                    propertyManager.setKnownLogUris(knownLogData.map { it.uri.toString() })
-                    onLogCrudEvent.emit(Unit)
-                }
-            }
+    override suspend fun currentForWrite(): LogFileData? = withContext(Dispatchers.IO) {
+        lock.withLock {
+            refreshSelection()
+            selection.value.current
         }
     }
 
-    override val knownLogs: Flow<List<LogFileData>> = logCrudEvents.map {
-        propertyManager.getKnownLogUris()
-            .mapNotNull { getLogFileData(it) }
-    }
-
-    private fun addLogFileFromUri(
-        uri: Uri,
-        extraAction: (uri: Uri) -> Unit = {}
-    ): Boolean {
-        context.contentResolver.takePersistableUriPermission(
-            uri,
-            Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-        )
-
-        val doc = DocumentFile.fromSingleUri(context, uri)
-        if (doc == null || !doc.isFile || !doc.canRead() || !doc.canWrite()) {
-            errorToastManager.showErrorToast(R.string.error_opening_log)
-            return false
+    override suspend fun select(log: LogFileData) = withContext(Dispatchers.IO) {
+        lock.withLock {
+            refreshSelection()
+            val current = selection.value.logs.firstOrNull { it.uri == log.uri }
+                ?: throw IOException("Selected log is no longer in the directory")
+            properties.setCurrentLogUri(current.uri.toString())
+            selection.value = selection.value.copy(current = current)
         }
+    }
 
-        if (doc.name?.endsWith(logFileExtension) != true) {
-            errorToastManager.showErrorToast(
-                R.string.log_file_must_have_mend_extension,
-                listOf(logFileExtension)
-            )
-            return false
+    override suspend fun create(name: String) = withContext(Dispatchers.IO) {
+        lock.withLock {
+            val log = directory.create(name)
+            properties.setCurrentLogUri(log.uri.toString())
+            refreshSelection()
         }
+    }
 
-        extraAction(uri)
-
-        val knownFiles = propertyManager.getKnownLogUris()
-        if (!knownFiles.contains(uri.toString())) {
-            propertyManager.setKnownLogUris(knownFiles + uri.toString())
+    private suspend fun refreshSelection() {
+        if (properties.getLogDirUri() == null) {
+            selection.value = Selection()
+            return
         }
-
-        launch { onLogCrudEvent.emit(Unit) }
-        return true
-    }
-
-    override fun setCurrentLogFromUri(uri: Uri) = addLogFileFromUri(uri) {
-        propertyManager.setCurrentLogUri(uri.toString())
-    }
-
-    override fun addLogFromUri(uri: Uri) = addLogFileFromUri(uri)
-
-    override fun setCurrentLog(data: LogFileData) {
-        propertyManager.setCurrentLogUri(data.uri.toString())
-        launch { onLogCrudEvent.emit(Unit) }
-    }
-
-    private fun getLogFileData(uriStr: String?): LogFileData? {
-        val documentFile = Uri.parse(uriStr)
-            ?.let { DocumentFile.fromSingleUri(context, it) }
-            ?.takeIf { it.isFile && it.canWrite() && it.canRead() }
-            ?: return null
-
-        val name = documentFile.name?.removeSuffix(logFileExtension) ?: return null
-
-        return LogFileData(name, documentFile, documentFile.uri)
+        try {
+            val logs = directory.files()
+            val current = logs.firstOrNull { it.uri.toString() == properties.getCurrentLogUri() }
+            if (current == null) properties.setCurrentLogUri(null)
+            selection.value = Selection(logs, current)
+        } catch (e: IOException) {
+            selection.value = Selection()
+            throw e
+        } catch (e: SecurityException) {
+            selection.value = Selection()
+            throw e
+        }
     }
 }

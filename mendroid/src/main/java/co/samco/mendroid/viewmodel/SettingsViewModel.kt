@@ -12,16 +12,21 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import co.samco.mend4.core.Settings
 import co.samco.mendroid.model.ErrorToastManager
+import co.samco.mendroid.model.LocalLogDirectory
+import co.samco.mendroid.model.LogFileManager
 import co.samco.mendroid.model.PropertyManager
 import co.samco.mendroid.R
 import co.samco.mendroid.model.Theme
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onStart
@@ -37,7 +42,8 @@ import javax.inject.Inject
 class SettingsViewModel @Inject constructor(
     private val propertyManager: PropertyManager,
     application: Application,
-    private val errorToastManager: ErrorToastManager
+    private val errorToastManager: ErrorToastManager,
+    private val logs: LogFileManager
 ) : AndroidViewModel(application) {
 
     val lockOnScreenLock: StateFlow<Boolean> = propertyManager
@@ -61,6 +67,14 @@ class SettingsViewModel @Inject constructor(
         .map { getDirectoryString(it) }
         .stateIn(viewModelScope, SharingStarted.Lazily, null)
 
+    val logDirText = propertyManager.logDirUri
+        .map { getDirectoryString(it) }
+        .stateIn(viewModelScope, SharingStarted.Lazily, null)
+    val logDirGood = propertyManager.logDirUri
+        .map { it != null && LocalLogDirectory.isLocalTree(it.toUri()) && it.toUri().assertValidDirectory() }
+        .flowOn(Dispatchers.IO)
+        .stateIn(viewModelScope, SharingStarted.Lazily, false)
+
     data class ConfigImportException(val messageId: Int, val formatArgs: List<String>) : Exception()
 
     private fun getDirectoryString(uriStr: String?): String? {
@@ -79,7 +93,7 @@ class SettingsViewModel @Inject constructor(
     private val _userRequestCloseSettings = MutableSharedFlow<Unit>()
 
     private val forceShowSettings = combine(
-        listOf(hasConfig, encDirGood)
+        listOf(hasConfig, encDirGood, logDirGood)
     ) { list -> list.any { !it } }
         .debounce(10)
         .stateIn(viewModelScope, SharingStarted.Lazily, false)
@@ -171,16 +185,13 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    private fun Uri.assertValidDirectory(): Boolean {
-        val documentFile = DocumentFile.fromTreeUri(context, this)
-
-        if (documentFile == null || !documentFile.isDirectory
-            || !documentFile.canRead() || !documentFile.canWrite()
-        ) {
-            return false
-        }
-
-        return true
+    private fun Uri.assertValidDirectory(): Boolean = try {
+        val directory = DocumentFile.fromTreeUri(context, this)
+        directory != null && directory.isDirectory && directory.canRead() && directory.canWrite()
+    } catch (_: SecurityException) {
+        false
+    } catch (_: IllegalArgumentException) {
+        false
     }
 
     private fun claimPersistentUriPermission(uri: Uri) {
@@ -197,6 +208,25 @@ class SettingsViewModel @Inject constructor(
         }
         claimPersistentUriPermission(uri)
         propertyManager.setEncDirUri(uri.toString())
+    }
+
+    fun onSetLogDir(uri: Uri?) {
+        if (uri == null) return
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                if (!LocalLogDirectory.isLocalTree(uri) || !uri.assertValidDirectory()) {
+                    showErrorToast(R.string.log_dir_error, emptyList())
+                    return@launch
+                }
+                claimPersistentUriPermission(uri)
+                propertyManager.setLogDirUri(uri.toString())
+                logs.refresh()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                showErrorToast(R.string.log_dir_error, emptyList())
+            }
+        }
     }
 
     fun onUserShowSettings() {
