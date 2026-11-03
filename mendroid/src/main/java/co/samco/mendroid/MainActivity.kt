@@ -93,7 +93,6 @@ class MainActivity : ComponentActivity() {
                 Box(
                     Modifier.fillMaxSize()
                         .background(MaterialTheme.colorScheme.background)
-                        .imePadding()
                 ) {
                     Mend4App()
                 }
@@ -130,7 +129,7 @@ fun Mend4App() {
     val localKeyboardController = LocalSoftwareKeyboardController.current
 
     // The home text fields must not request focus behind the settings overlay.
-    Box(Modifier.focusProperties { canFocus = !showSettings }) {
+    Box(Modifier.imePadding().focusProperties { canFocus = !showSettings }) {
         HomeScreenScaffold()
     }
 
