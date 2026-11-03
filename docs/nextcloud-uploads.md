@@ -44,11 +44,11 @@ All implementation paths below are under
 | Component | Owns |
 | --- | --- |
 | `upload/UploadQueue.kt` | Transactional persistence and revision/state checks. Publishes read-only entries. Queries return snapshots without recovery or flow updates; `refreshEntries` explicitly refreshes observers. |
-| `upload/UploadSettings.kt` | Account-bound folder selections, network preferences and an outstanding rescan warning. Contains no password in observable state. |
-| `upload/EncryptedCredentialStore.kt` | Atomic credential-file format and non-exportable Android Keystore key. |
-| `upload/NextcloudLoginClient.kt` | Documented Login Flow v2 and OCS user-ID lookup. |
-| `upload/NextcloudHttp.kt` | HTTPS setup validation, credential-origin checks, cancellation, response handling and typed HTTP failures. |
-| `upload/WebDavClient.kt`, `WebDavListing.kt` | DAV paths, successful direct-child resource parsing, streaming GET/PUT, explicit MOVE publication, conflict verification and bounded remote cleanup. |
+| `nextcloud/NextcloudSettings.kt` | Account-bound folder selections, network preferences and an outstanding rescan warning. Contains no password in observable state. |
+| `nextcloud/EncryptedCredentialStore.kt` | Atomic credential-file format and non-exportable Android Keystore key. |
+| `nextcloud/NextcloudLoginClient.kt` | Documented Login Flow v2 and OCS user-ID lookup. |
+| `nextcloud/NextcloudHttp.kt` | HTTPS setup validation, credential-origin checks, cancellation, response handling and typed HTTP failures. |
+| `nextcloud/WebDavClient.kt`, `nextcloud/WebDavListing.kt` | DAV paths, successful direct-child resource parsing, streaming GET/PUT, explicit MOVE publication, conflict verification and bounded remote cleanup. |
 | `upload/LocalBackupWriter.kt` | Local output-stream lifetime and successful-write registration. Local success is independent of queue availability. |
 | `upload/UploadSnapshots.kt` | Claim a revision and copy its encrypted bytes under the local-write lock. Explicit ready/superseded/unavailable results and snapshot cleanup. |
 | `upload/UploadRunner.kt` | Serialized transfer lifecycle and the decision whether a staged revision may be published. No scheduler or UI dependencies. |
@@ -56,6 +56,13 @@ All implementation paths below are under
 | `upload/BackupService.kt`, `DeviceBackupFiles.kt` | Application commands and explicit local-file discovery (logs come from `model/LocalLogDirectory.kt`); presentation does not access SQLite or credentials. |
 | `viewmodel/NextcloudViewModel.kt` | One read-only UI state, browser effects, independently tracked login/import/browse operations and stale-response prevention. |
 | `ui/screens/Nextcloud*.kt` | Setup, destinations, folder picker, upload rows and string-resource presentation. |
+
+Shared account/session types, paths, credentials, settings, HTTP and WebDAV live in
+`nextcloud/`. Connection failures use `NextcloudFailure` and `NextcloudException`;
+remote reads do not depend on the upload package. The uploader explicitly translates
+connection failures into persisted `UploadFailure` states and owns retry policy.
+`NextcloudConfig.target` is an upload-package extension, so shared settings do not
+depend on queue models.
 
 ## Enforced contracts
 

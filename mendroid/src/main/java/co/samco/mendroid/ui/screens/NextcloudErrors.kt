@@ -6,9 +6,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import co.samco.mendroid.R
+import co.samco.mendroid.nextcloud.NextcloudFailure
 import co.samco.mendroid.upload.UploadFailure
-import co.samco.mendroid.viewmodel.UploadUiError
-import co.samco.mendroid.viewmodel.UploadUiProblem
+import co.samco.mendroid.upload.asUploadFailure
+import co.samco.mendroid.viewmodel.NextcloudUiError
+import co.samco.mendroid.viewmodel.NextcloudUiProblem
 
 @StringRes
 internal fun uploadFailureMessage(failure: UploadFailure): Int = when (failure) {
@@ -30,22 +32,23 @@ internal fun uploadFailureMessage(failure: UploadFailure): Int = when (failure) 
 }
 
 @Composable
-internal fun NextcloudError(error: UploadUiError) {
+internal fun NextcloudError(error: NextcloudUiError) {
     val message = when (error) {
-        is UploadUiError.Backup -> uploadFailureMessage(error.reason)
-        is UploadUiError.Operation -> when (error.problem) {
-            UploadUiProblem.INVALID_SETUP -> R.string.upload_error_setup
-            UploadUiProblem.OPERATION_FAILED -> R.string.upload_error_operation
+        is NextcloudUiError.Backup -> uploadFailureMessage(error.reason)
+        is NextcloudUiError.Nextcloud -> uploadFailureMessage(error.reason.asUploadFailure())
+        is NextcloudUiError.Operation -> when (error.problem) {
+            NextcloudUiProblem.INVALID_SETUP -> R.string.upload_error_setup
+            NextcloudUiProblem.OPERATION_FAILED -> R.string.upload_error_operation
         }
     }
     Text(stringResource(message), color = MaterialTheme.colorScheme.error)
 }
 
 @StringRes
-internal fun remoteReadFailureMessage(reason: UploadFailure): Int = when (reason) {
-    UploadFailure.AUTHENTICATION, UploadFailure.ACCOUNT_UNAVAILABLE -> R.string.remote_read_auth
-    UploadFailure.CONNECTION, UploadFailure.SERVER_BUSY -> R.string.remote_read_connection
-    UploadFailure.DESTINATION_MISSING -> R.string.remote_read_missing
-    UploadFailure.ACCESS_DENIED -> R.string.remote_read_access
+internal fun remoteReadFailureMessage(reason: NextcloudFailure): Int = when (reason) {
+    NextcloudFailure.AUTHENTICATION, NextcloudFailure.ACCOUNT_UNAVAILABLE -> R.string.remote_read_auth
+    NextcloudFailure.CONNECTION, NextcloudFailure.SERVER_BUSY -> R.string.remote_read_connection
+    NextcloudFailure.DESTINATION_MISSING -> R.string.remote_read_missing
+    NextcloudFailure.ACCESS_DENIED -> R.string.remote_read_access
     else -> R.string.remote_read_error
 }

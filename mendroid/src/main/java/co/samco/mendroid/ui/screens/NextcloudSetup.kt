@@ -15,8 +15,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import co.samco.mendroid.R
-import co.samco.mendroid.upload.RemotePath
-import co.samco.mendroid.upload.UploadConfig
+import co.samco.mendroid.nextcloud.NextcloudConfig
+import co.samco.mendroid.nextcloud.RemotePath
 import co.samco.mendroid.viewmodel.NextcloudFolderUse
 
 @Composable
@@ -35,7 +35,7 @@ internal fun NextcloudConnectionForm(signingIn: Boolean, connect: (String) -> Un
 
 @Composable
 internal fun NextcloudDestinationSettings(
-    config: UploadConfig, browse: (NextcloudFolderUse, RemotePath) -> Unit, pause: (Boolean) -> Unit, mobileData: (Boolean) -> Unit
+    config: NextcloudConfig, browse: (NextcloudFolderUse, RemotePath) -> Unit, pause: (Boolean) -> Unit, mobileData: (Boolean) -> Unit
 ) {
     Text(config.account?.server.orEmpty())
     Text(config.account?.userId.orEmpty())
@@ -62,7 +62,7 @@ internal fun NextcloudBackupControls(importing: Boolean, retry: () -> Unit, disc
 }
 
 @Composable
-internal fun AdditionalNextcloudFolders(config: UploadConfig, browse: () -> Unit, remove: (RemotePath) -> Unit) {
+internal fun AdditionalNextcloudFolders(config: NextcloudConfig, browse: () -> Unit, remove: (RemotePath) -> Unit) {
     Text(stringResource(R.string.additional_nextcloud_folders))
     Text(stringResource(R.string.additional_nextcloud_help))
     for (folder in config.additionalFolders) {

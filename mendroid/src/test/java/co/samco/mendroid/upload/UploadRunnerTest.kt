@@ -1,6 +1,11 @@
 package co.samco.mendroid.upload
 
 import android.app.Application
+import co.samco.mendroid.nextcloud.AccountId
+import co.samco.mendroid.nextcloud.NextcloudException
+import co.samco.mendroid.nextcloud.NextcloudFailure
+import co.samco.mendroid.nextcloud.NextcloudSession
+import co.samco.mendroid.nextcloud.RemotePath
 import java.io.File
 import java.io.IOException
 import kotlinx.coroutines.CompletableDeferred
@@ -21,12 +26,12 @@ internal class TestTransport : UploadTransport {
     val published = mutableListOf<String>()
     var discarded = 0
     var stageHook: (suspend () -> Unit)? = null
-    var failure: UploadFailure? = null
+    var failure: NextcloudFailure? = null
     override suspend fun stage(session: NextcloudSession, path: RemotePath, file: File, progress: (Long) -> Unit): StagedUpload {
         val contents = file.readText()
         staged.add(contents)
         stageHook?.invoke()
-        failure?.let { throw UploadException(it) }
+        failure?.let { throw NextcloudException(it) }
         return object : StagedUpload {
             override suspend fun publish(policy: OverwritePolicy) { published.add(contents) }
             override suspend fun discard() { discarded++ }
@@ -96,7 +101,7 @@ class UploadRunnerTest {
     @Test fun transientFailureReturnsRetryWithoutDeletingLocalFile() = runBlocking {
         val file = env.files.source(content = "saved")
         env.writer.enqueueExisting(file)
-        transport.failure = UploadFailure.SERVER_BUSY
+        transport.failure = NextcloudFailure.SERVER_BUSY
         assertEquals(RunResult.RETRY, runner.run())
         assertEquals("saved", env.files.sources.getValue(file.uri).readText())
         assertEquals(1, env.queue.pending().size)

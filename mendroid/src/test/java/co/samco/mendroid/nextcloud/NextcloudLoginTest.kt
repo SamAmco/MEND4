@@ -1,4 +1,4 @@
-package co.samco.mendroid.upload
+package co.samco.mendroid.nextcloud
 
 import android.app.Application
 import kotlinx.coroutines.runBlocking

@@ -1,4 +1,4 @@
-package co.samco.mendroid.upload
+package co.samco.mendroid.nextcloud
 
 import android.content.Context
 import androidx.core.content.edit
@@ -8,7 +8,7 @@ import javax.inject.Singleton
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-data class UploadConfig(
+data class NextcloudConfig(
     val account: NextcloudAccount? = null,
     val attachments: RemotePath? = null,
     val logs: RemotePath? = null,
@@ -17,19 +17,10 @@ data class UploadConfig(
     val credentialError: Boolean = false,
     val needsRescan: Boolean = false,
     val additionalFolders: List<RemotePath> = emptyList()
-) {
-    fun target(file: LocalBackupFile): UploadTarget? {
-        val identity = account ?: return null
-        val folder = when (file.kind) {
-            UploadKind.ATTACHMENT -> attachments
-            UploadKind.LOG -> logs
-        } ?: return null
-        return UploadTarget(identity.id, folder.child(file.name))
-    }
-}
+)
 
 @Singleton
-class UploadSettings @Inject constructor(
+class NextcloudSettings @Inject constructor(
     @ApplicationContext context: Context,
     private val credentials: CredentialStore
 ) {
@@ -37,14 +28,14 @@ class UploadSettings @Inject constructor(
     private val mutableConfig = MutableStateFlow(load())
     val config = mutableConfig.asStateFlow()
 
-    private fun load(): UploadConfig {
+    private fun load(): NextcloudConfig {
         val credential = credentials.read()
         val account = (credential as? CredentialRead.Available)?.session?.account
         val ownsFolders = account != null && prefs.getString("folderAccount", null) == account.id.value
         fun folder(key: String): RemotePath? = if (!ownsFolders) null else prefs.getString(key, null)?.let(RemotePath::of)
         val additional = if (ownsFolders) prefs.getStringSet("additionalFolders", emptySet()).orEmpty()
             .map(RemotePath::of).sortedBy { it.value } else emptyList()
-        return UploadConfig(account, folder("attachments"), folder("logs"), prefs.getBoolean("paused", false),
+        return NextcloudConfig(account, folder("attachments"), folder("logs"), prefs.getBoolean("paused", false),
             prefs.getBoolean("mobileData", false), credential == CredentialRead.Unavailable, prefs.getBoolean("needsRescan", false), additional)
     }
 
@@ -57,10 +48,13 @@ class UploadSettings @Inject constructor(
         mutableConfig.value = load()
     }
 
+    fun selectAttachmentFolder(path: RemotePath) = selectFolder("attachments", path)
+    fun selectLogFolder(path: RemotePath) = selectFolder("logs", path)
+
     @Synchronized
-    fun selectFolder(kind: UploadKind, path: RemotePath) {
+    private fun selectFolder(key: String, path: RemotePath) {
         check(mutableConfig.value.account != null)
-        prefs.edit { putString(if (kind == UploadKind.ATTACHMENT) "attachments" else "logs", path.value) }
+        prefs.edit { putString(key, path.value) }
         mutableConfig.value = load()
     }
 

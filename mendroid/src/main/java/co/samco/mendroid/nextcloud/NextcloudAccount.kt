@@ -1,6 +1,11 @@
-package co.samco.mendroid.upload
+package co.samco.mendroid.nextcloud
 
 import java.security.MessageDigest
+
+@JvmInline
+value class AccountId(val value: String) {
+    init { require(value.isNotBlank()) }
+}
 
 /** Safe to expose in UI state. Credentials are held separately. */
 data class NextcloudAccount(val server: String, val userId: String) {

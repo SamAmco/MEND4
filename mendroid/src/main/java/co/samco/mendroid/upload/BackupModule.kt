@@ -8,7 +8,5 @@ import dagger.hilt.components.SingletonComponent
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class BackupModule {
-    @Binds abstract fun login(implementation: NextcloudLoginClient): NextcloudLogin
-    @Binds abstract fun folders(implementation: WebDavClient): RemoteFolderBrowser
     @Binds abstract fun existingFiles(implementation: DeviceBackupFiles): ExistingBackupSource
 }

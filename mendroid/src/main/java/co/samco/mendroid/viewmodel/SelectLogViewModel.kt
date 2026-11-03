@@ -10,12 +10,12 @@ import co.samco.mendroid.model.ErrorToastManager
 import co.samco.mendroid.model.LogFileData
 import co.samco.mendroid.model.LogFileManager
 import co.samco.mendroid.model.PrivateKeyManager
+import co.samco.mendroid.nextcloud.NextcloudException
+import co.samco.mendroid.nextcloud.NextcloudFailure
+import co.samco.mendroid.nextcloud.RemotePath
 import co.samco.mendroid.remote.NextcloudReadFiles
 import co.samco.mendroid.remote.RemoteReadFile
 import co.samco.mendroid.remote.RemoteReadProblem
-import co.samco.mendroid.upload.RemotePath
-import co.samco.mendroid.upload.UploadException
-import co.samco.mendroid.upload.UploadFailure
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.io.IOException
 import javax.inject.Inject
@@ -96,7 +96,7 @@ class SelectLogViewModel @Inject constructor(
             } catch (e: CancellationException) { throw e }
             catch (e: IOException) {
                 if (request == generation) mutableState.update { it.copy(problems = listOf(RemoteReadProblem(
-                    RemotePath.ROOT, (e as? UploadException)?.reason ?: UploadFailure.CONNECTION))) }
+                    RemotePath.ROOT, (e as? NextcloudException)?.reason ?: NextcloudFailure.CONNECTION))) }
             } finally {
                 if (request == generation) mutableState.update { it.copy(loading = false) }
             }

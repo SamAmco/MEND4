@@ -2,6 +2,11 @@ package co.samco.mendroid.upload
 
 import android.content.Context
 import android.net.ConnectivityManager
+import co.samco.mendroid.nextcloud.AccountId
+import co.samco.mendroid.nextcloud.CredentialRead
+import co.samco.mendroid.nextcloud.CredentialStore
+import co.samco.mendroid.nextcloud.NextcloudSession
+import co.samco.mendroid.nextcloud.NextcloudSettings
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 
@@ -17,7 +22,7 @@ sealed interface UploadPermission {
 }
 
 class UploadEligibility @Inject constructor(
-    private val settings: UploadSettings,
+    private val settings: NextcloudSettings,
     private val credentials: CredentialStore,
     private val network: NetworkStatus
 ) {

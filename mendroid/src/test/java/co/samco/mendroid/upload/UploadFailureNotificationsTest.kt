@@ -7,6 +7,8 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import co.samco.mendroid.R
+import co.samco.mendroid.nextcloud.AccountId
+import co.samco.mendroid.nextcloud.RemotePath
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking

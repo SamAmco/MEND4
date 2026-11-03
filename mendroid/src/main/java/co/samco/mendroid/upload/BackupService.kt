@@ -1,12 +1,19 @@
 package co.samco.mendroid.upload
 
+import co.samco.mendroid.nextcloud.CredentialRead
+import co.samco.mendroid.nextcloud.CredentialStore
+import co.samco.mendroid.nextcloud.NextcloudSession
+import co.samco.mendroid.nextcloud.NextcloudSettings
+import co.samco.mendroid.nextcloud.RemoteFolder
+import co.samco.mendroid.nextcloud.RemoteFolderBrowser
+import co.samco.mendroid.nextcloud.RemotePath
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 /** Application commands exposed to presentation; persistence and credentials stay encapsulated. */
 class BackupService @Inject constructor(
-    private val settings: UploadSettings,
+    private val settings: NextcloudSettings,
     private val credentials: CredentialStore,
     private val queue: UploadQueue,
     private val writer: LocalBackupWriter,
@@ -32,7 +39,10 @@ class BackupService @Inject constructor(
         ?: throw UploadException(UploadFailure.ACCOUNT_UNAVAILABLE)
     suspend fun folders(path: RemotePath): List<RemoteFolder> = folders.folders(session(), path)
     suspend fun selectFolder(kind: UploadKind, path: RemotePath) = withContext(Dispatchers.IO) {
-        settings.selectFolder(kind, path)
+        when (kind) {
+            UploadKind.ATTACHMENT -> settings.selectAttachmentFolder(path)
+            UploadKind.LOG -> settings.selectLogFolder(path)
+        }
         wakeup.requestUpload()
     }
     suspend fun addAdditionalFolder(path: RemotePath) = withContext(Dispatchers.IO) { settings.addAdditionalFolder(path) }

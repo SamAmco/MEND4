@@ -1,4 +1,4 @@
-package co.samco.mendroid.upload
+package co.samco.mendroid.nextcloud
 
 import android.content.Context
 import android.security.keystore.KeyGenParameterSpec

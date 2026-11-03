@@ -1,6 +1,10 @@
 package co.samco.mendroid.upload
 
 import android.app.Application
+import co.samco.mendroid.nextcloud.NextcloudSession
+import co.samco.mendroid.nextcloud.RemoteFolder
+import co.samco.mendroid.nextcloud.RemoteFolderBrowser
+import co.samco.mendroid.nextcloud.RemotePath
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.*
@@ -47,7 +51,7 @@ class BackupServiceTest {
         val original = requireNotNull(env.settings.config.value.target(file))
         env.queue.failWrite(env.queue.beginWrite(file, original))
         val failed = env.queue.entries.value.single()
-        env.settings.selectFolder(UploadKind.LOG, RemotePath.of("/different"))
+        env.settings.selectLogFolder(RemotePath.of("/different"))
         val service = service()
         service.retry()
         assertTrue(env.queue.pending().isEmpty())

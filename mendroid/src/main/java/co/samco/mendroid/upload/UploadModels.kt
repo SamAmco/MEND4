@@ -1,32 +1,10 @@
 package co.samco.mendroid.upload
 
+import co.samco.mendroid.nextcloud.AccountId
+import co.samco.mendroid.nextcloud.NextcloudConfig
+import co.samco.mendroid.nextcloud.NextcloudFailure
+import co.samco.mendroid.nextcloud.RemotePath
 import java.io.IOException
-
-@JvmInline
-value class AccountId(val value: String) {
-    init { require(value.isNotBlank()) }
-}
-
-/** Decoded, account-relative DAV path. Encoding belongs exclusively to the HTTP client. */
-@JvmInline
-value class RemotePath private constructor(val value: String) {
-    fun child(name: String): RemotePath {
-        require(name.isNotBlank() && '/' !in name && name != "." && name != "..")
-        return of("${value.trimEnd('/')}/$name")
-    }
-    val name: String get() = value.substringAfterLast('/')
-    val parent: RemotePath get() = of(value.substringBeforeLast('/').ifEmpty { "/" })
-
-    companion object {
-        val ROOT = RemotePath("/")
-        fun of(value: String): RemotePath {
-            require(value.startsWith('/'))
-            val segments = value.split('/').filter { it.isNotEmpty() }
-            require(segments.none { it == "." || it == ".." })
-            return RemotePath("/" + segments.joinToString("/"))
-        }
-    }
-}
 
 enum class OverwritePolicy { REPLACE, REQUIRE_IDENTICAL }
 enum class UploadKind(val overwrite: OverwritePolicy) {
@@ -61,4 +39,29 @@ enum class RunResult { COMPLETE, WAITING, RETRY }
 enum class BackupRegistration { NOT_CONFIGURED, QUEUED, NEEDS_ATTENTION }
 data class LocalSaveResult(val backup: BackupRegistration)
 
-class UploadException(val reason: UploadFailure, val statusCode: Int? = null) : IOException(reason.name)
+class UploadException(val reason: UploadFailure) : IOException(reason.name)
+
+/** Upload-specific interpretation of the shared connection and folder settings. */
+fun NextcloudConfig.target(file: LocalBackupFile): UploadTarget? {
+    val identity = account ?: return null
+    val folder = when (file.kind) {
+        UploadKind.ATTACHMENT -> attachments
+        UploadKind.LOG -> logs
+    } ?: return null
+    return UploadTarget(identity.id, folder.child(file.name))
+}
+
+fun NextcloudFailure.asUploadFailure(): UploadFailure = when (this) {
+    NextcloudFailure.ACCOUNT_UNAVAILABLE -> UploadFailure.ACCOUNT_UNAVAILABLE
+    NextcloudFailure.AUTHENTICATION -> UploadFailure.AUTHENTICATION
+    NextcloudFailure.ACCESS_DENIED -> UploadFailure.ACCESS_DENIED
+    NextcloudFailure.DESTINATION_MISSING -> UploadFailure.DESTINATION_MISSING
+    NextcloudFailure.REMOTE_CONFLICT -> UploadFailure.REMOTE_CONFLICT
+    NextcloudFailure.TOO_LARGE -> UploadFailure.TOO_LARGE
+    NextcloudFailure.STORAGE_FULL -> UploadFailure.STORAGE_FULL
+    NextcloudFailure.REDIRECT -> UploadFailure.REDIRECT
+    NextcloudFailure.SERVER_REJECTED -> UploadFailure.SERVER_REJECTED
+    NextcloudFailure.INVALID_RESPONSE -> UploadFailure.INVALID_RESPONSE
+    NextcloudFailure.CONNECTION -> UploadFailure.CONNECTION
+    NextcloudFailure.SERVER_BUSY -> UploadFailure.SERVER_BUSY
+}

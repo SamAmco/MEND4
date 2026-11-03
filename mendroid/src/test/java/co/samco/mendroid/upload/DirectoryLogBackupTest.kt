@@ -5,6 +5,7 @@ import androidx.documentfile.provider.DocumentFile
 import co.samco.mendroid.model.LocalLogDirectory
 import co.samco.mendroid.model.LogFileManagerImpl
 import co.samco.mendroid.model.PropertyManagerImpl
+import co.samco.mendroid.nextcloud.RemotePath
 import java.io.File
 import kotlinx.coroutines.runBlocking
 import org.junit.After

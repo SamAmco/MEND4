@@ -1,5 +1,6 @@
 package co.samco.mendroid.upload
 
+import co.samco.mendroid.nextcloud.NextcloudSettings
 import java.io.OutputStream
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -13,7 +14,7 @@ class LocalBackupWriter @Inject constructor(
     private val queue: UploadQueue,
     private val files: LocalBackupFiles,
     private val lock: LocalBackupLock,
-    private val settings: UploadSettings,
+    private val settings: NextcloudSettings,
     private val wakeup: UploadWakeup
 ) {
     /** This component owns stream closure; backup bookkeeping never turns a save into a failure. */

@@ -1,6 +1,7 @@
-package co.samco.mendroid.upload
+package co.samco.mendroid.nextcloud
 
 import android.app.Application
+import co.samco.mendroid.upload.MemoryCredentials
 import org.junit.Assert.*
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -10,24 +11,24 @@ import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
 @Config(application = Application::class, sdk = [35])
-class UploadSettingsTest {
+class NextcloudSettingsTest {
     @Test fun newAccountCannotReusePreviousAccountsFolderSelections() {
         val context = RuntimeEnvironment.getApplication()
         val credentials = MemoryCredentials()
-        val settings = UploadSettings(context, credentials)
+        val settings = NextcloudSettings(context, credentials)
         settings.connect(NextcloudSession(NextcloudAccount("https://cloud.example", "one"), "login", "secret"))
-        settings.selectFolder(UploadKind.LOG, RemotePath.of("/one"))
+        settings.selectLogFolder(RemotePath.of("/one"))
         // Simulate process death after storing the new credential but before changing preferences.
         credentials.save(NextcloudSession(NextcloudAccount("https://cloud.example", "two"), "login", "secret"))
-        assertNull(UploadSettings(context, credentials).config.value.logs)
+        assertNull(NextcloudSettings(context, credentials).config.value.logs)
     }
     @Test fun reconnectingSameAccountPreservesFoldersWithoutExposingCredentials() {
         val context = RuntimeEnvironment.getApplication()
         val credentials = MemoryCredentials()
-        val settings = UploadSettings(context, credentials)
+        val settings = NextcloudSettings(context, credentials)
         val session = NextcloudSession(NextcloudAccount("https://cloud.example", "user"), "login", "secret")
         settings.connect(session)
-        settings.selectFolder(UploadKind.LOG, RemotePath.of("/logs"))
+        settings.selectLogFolder(RemotePath.of("/logs"))
         settings.disconnect()
         settings.connect(session)
         assertEquals(RemotePath.of("/logs"), settings.config.value.logs)
@@ -36,12 +37,12 @@ class UploadSettingsTest {
     @Test fun additionalFoldersAreUniquePersistedAndBoundToTheirAccount() {
         val context = RuntimeEnvironment.getApplication()
         val credentials = MemoryCredentials()
-        val settings = UploadSettings(context, credentials)
+        val settings = NextcloudSettings(context, credentials)
         val session = NextcloudSession(NextcloudAccount("https://cloud.example", "user"), "login", "secret")
         settings.connect(session)
         settings.addAdditionalFolder(RemotePath.of("/read"))
         settings.addAdditionalFolder(RemotePath.of("/read"))
-        assertEquals(listOf(RemotePath.of("/read")), UploadSettings(context, credentials).config.value.additionalFolders)
+        assertEquals(listOf(RemotePath.of("/read")), NextcloudSettings(context, credentials).config.value.additionalFolders)
         settings.disconnect()
         settings.connect(session)
         assertEquals(listOf(RemotePath.of("/read")), settings.config.value.additionalFolders)
@@ -49,12 +50,12 @@ class UploadSettingsTest {
         assertTrue(settings.config.value.additionalFolders.isEmpty())
         settings.addAdditionalFolder(RemotePath.of("/read"))
         credentials.save(NextcloudSession(NextcloudAccount("https://cloud.example", "other"), "login", "secret"))
-        assertTrue(UploadSettings(context, credentials).config.value.additionalFolders.isEmpty())
+        assertTrue(NextcloudSettings(context, credentials).config.value.additionalFolders.isEmpty())
     }
 
     @Test fun unreadableCredentialsBecomeExplicitSetupState() {
         val credentials = MemoryCredentials().apply { value = CredentialRead.Unavailable }
-        val config = UploadSettings(RuntimeEnvironment.getApplication(), credentials).config.value
+        val config = NextcloudSettings(RuntimeEnvironment.getApplication(), credentials).config.value
         assertTrue(config.credentialError)
         assertNull(config.account)
     }

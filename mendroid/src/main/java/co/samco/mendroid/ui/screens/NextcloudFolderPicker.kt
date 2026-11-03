@@ -14,9 +14,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import co.samco.mendroid.R
-import co.samco.mendroid.upload.RemotePath
-import co.samco.mendroid.viewmodel.NextcloudFolderUse
+import co.samco.mendroid.nextcloud.RemotePath
 import co.samco.mendroid.viewmodel.FolderPickerState
+import co.samco.mendroid.viewmodel.NextcloudFolderUse
 
 @Composable
 internal fun NextcloudFolderPicker(

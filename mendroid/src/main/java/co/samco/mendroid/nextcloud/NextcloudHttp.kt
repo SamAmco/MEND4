@@ -1,4 +1,4 @@
-package co.samco.mendroid.upload
+package co.samco.mendroid.nextcloud
 
 import java.io.IOException
 import java.util.concurrent.TimeUnit
@@ -62,16 +62,16 @@ class NextcloudHttp internal constructor(private val client: OkHttpClient) {
     fun checkStatus(code: Int) {
         if (code in 200..299) return
         val reason = when (code) {
-            401 -> UploadFailure.AUTHENTICATION
-            403 -> UploadFailure.ACCESS_DENIED
-            404, 409 -> UploadFailure.DESTINATION_MISSING
-            412 -> UploadFailure.REMOTE_CONFLICT
-            413 -> UploadFailure.TOO_LARGE
-            507 -> UploadFailure.STORAGE_FULL
-            408, 423, 429, in 500..599 -> UploadFailure.SERVER_BUSY
-            in 300..399 -> UploadFailure.REDIRECT
-            else -> UploadFailure.SERVER_REJECTED
+            401 -> NextcloudFailure.AUTHENTICATION
+            403 -> NextcloudFailure.ACCESS_DENIED
+            404, 409 -> NextcloudFailure.DESTINATION_MISSING
+            412 -> NextcloudFailure.REMOTE_CONFLICT
+            413 -> NextcloudFailure.TOO_LARGE
+            507 -> NextcloudFailure.STORAGE_FULL
+            408, 423, 429, in 500..599 -> NextcloudFailure.SERVER_BUSY
+            in 300..399 -> NextcloudFailure.REDIRECT
+            else -> NextcloudFailure.SERVER_REJECTED
         }
-        throw UploadException(reason, code)
+        throw NextcloudException(reason, code)
     }
 }

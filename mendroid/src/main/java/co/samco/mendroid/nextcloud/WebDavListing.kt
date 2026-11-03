@@ -1,11 +1,9 @@
-package co.samco.mendroid.upload
+package co.samco.mendroid.nextcloud
 
 import android.util.Xml
 import co.samco.mendroid.remote.RemoteDirectoryEntry
 import okhttp3.HttpUrl
 import org.xmlpull.v1.XmlPullParser
-
-data class RemoteFolder(val name: String, val path: RemotePath)
 
 /** Only successful DAV resource types on immediate children become entries. */
 internal class WebDavListing {
@@ -15,7 +13,7 @@ internal class WebDavListing {
             setInput(xml.reader())
         }
         parser.nextTag()
-        if (parser.name != "multistatus" || parser.namespace != DAV) throw UploadException(UploadFailure.INVALID_RESPONSE)
+        if (parser.name != "multistatus" || parser.namespace != DAV) throw NextcloudException(NextcloudFailure.INVALID_RESPONSE)
         val entries = mutableListOf<RemoteDirectoryEntry>()
         var complete = false
         while (parser.next() != XmlPullParser.END_DOCUMENT) {
@@ -27,7 +25,7 @@ internal class WebDavListing {
                 }
             }
         }
-        if (!complete) throw UploadException(UploadFailure.INVALID_RESPONSE)
+        if (!complete) throw NextcloudException(NextcloudFailure.INVALID_RESPONSE)
         return entries.distinctBy { it.path }.sortedBy { it.path.name.lowercase() }
     }
 

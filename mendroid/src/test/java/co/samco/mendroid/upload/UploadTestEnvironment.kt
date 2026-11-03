@@ -1,13 +1,17 @@
 package co.samco.mendroid.upload
 
 import android.content.Context
+import co.samco.mendroid.nextcloud.NextcloudAccount
+import co.samco.mendroid.nextcloud.NextcloudSession
+import co.samco.mendroid.nextcloud.NextcloudSettings
+import co.samco.mendroid.nextcloud.RemotePath
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
-import kotlinx.coroutines.runBlocking
 import java.util.concurrent.ConcurrentHashMap
+import kotlinx.coroutines.runBlocking
 
 internal class TestBackupFiles(private val directory: File) : LocalBackupFiles {
     val sources = ConcurrentHashMap<String, File>()
@@ -40,7 +44,7 @@ internal class TestWakeup : UploadWakeup {
 
 internal class UploadTestEnvironment(context: Context) {
     val credentials = MemoryCredentials()
-    val settings = UploadSettings(context, credentials)
+    val settings = NextcloudSettings(context, credentials)
     val queue = SqliteUploadQueue(context).also {
         runBlocking { it.recoverAfterRestart() }
     }
@@ -52,7 +56,7 @@ internal class UploadTestEnvironment(context: Context) {
     val session = NextcloudSession(NextcloudAccount("https://cloud.example", "user"), "login", "secret")
     fun connect() {
         settings.connect(session)
-        settings.selectFolder(UploadKind.ATTACHMENT, RemotePath.of("/enc"))
-        settings.selectFolder(UploadKind.LOG, RemotePath.of("/logs"))
+        settings.selectAttachmentFolder(RemotePath.of("/enc"))
+        settings.selectLogFolder(RemotePath.of("/logs"))
     }
 }

@@ -1,6 +1,8 @@
 package co.samco.mendroid.upload
 
 import android.app.Application
+import co.samco.mendroid.nextcloud.AccountId
+import co.samco.mendroid.nextcloud.RemotePath
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.*

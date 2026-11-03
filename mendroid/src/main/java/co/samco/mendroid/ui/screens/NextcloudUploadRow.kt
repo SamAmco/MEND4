@@ -15,7 +15,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import co.samco.mendroid.R
-import co.samco.mendroid.upload.AccountId
+import co.samco.mendroid.nextcloud.AccountId
 import co.samco.mendroid.upload.UploadEntry
 import co.samco.mendroid.upload.UploadProgress
 import co.samco.mendroid.upload.UploadState

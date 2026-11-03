@@ -1,13 +1,13 @@
 package co.samco.mendroid.remote
 
-import co.samco.mendroid.upload.AccountId
-import co.samco.mendroid.upload.CredentialRead
-import co.samco.mendroid.upload.CredentialStore
-import co.samco.mendroid.upload.NextcloudSession
-import co.samco.mendroid.upload.RemotePath
-import co.samco.mendroid.upload.UploadException
-import co.samco.mendroid.upload.UploadFailure
-import co.samco.mendroid.upload.UploadSettings
+import co.samco.mendroid.nextcloud.AccountId
+import co.samco.mendroid.nextcloud.CredentialRead
+import co.samco.mendroid.nextcloud.CredentialStore
+import co.samco.mendroid.nextcloud.NextcloudException
+import co.samco.mendroid.nextcloud.NextcloudFailure
+import co.samco.mendroid.nextcloud.NextcloudSession
+import co.samco.mendroid.nextcloud.NextcloudSettings
+import co.samco.mendroid.nextcloud.RemotePath
 import java.io.File
 import java.io.IOException
 import java.io.OutputStream
@@ -20,7 +20,7 @@ data class RemoteDirectoryEntry(val path: RemotePath, val directory: Boolean)
 data class RemoteReadFile(val account: AccountId, val path: RemotePath) {
     val name: String get() = path.name
 }
-data class RemoteReadProblem(val folder: RemotePath, val reason: UploadFailure)
+data class RemoteReadProblem(val folder: RemotePath, val reason: NextcloudFailure)
 data class RemoteLogListing(val files: List<RemoteReadFile>, val problems: List<RemoteReadProblem>)
 
 interface RemoteReadClient {
@@ -30,7 +30,7 @@ interface RemoteReadClient {
 
 /** Read-only sources: immediate children only, bound to the connected account and selected folders. */
 class NextcloudReadFiles @Inject constructor(
-    private val settings: UploadSettings,
+    private val settings: NextcloudSettings,
     private val credentials: CredentialStore,
     private val client: RemoteReadClient,
     private val cache: RemoteReadCache
@@ -103,18 +103,18 @@ class NextcloudReadFiles @Inject constructor(
 
     private fun session(): NextcloudSession {
         val session = (credentials.read() as? CredentialRead.Available)?.session
-        if (session == null || session.account.id != config.value.account?.id) throw UploadException(UploadFailure.ACCOUNT_UNAVAILABLE)
+        if (session == null || session.account.id != config.value.account?.id) throw NextcloudException(NextcloudFailure.ACCOUNT_UNAVAILABLE)
         return session
     }
 
     private fun requireAllowed(session: NextcloudSession, file: RemoteReadFile) {
         if (file.account != session.account.id || config.value.account?.id != file.account)
-            throw UploadException(UploadFailure.ACCOUNT_UNAVAILABLE)
+            throw NextcloudException(NextcloudFailure.ACCOUNT_UNAVAILABLE)
         requireFolder(session, file.path.parent)
     }
     private fun requireFolder(session: NextcloudSession, folder: RemotePath) {
-        if (config.value.account?.id != session.account.id) throw UploadException(UploadFailure.ACCOUNT_UNAVAILABLE)
-        if (folder !in config.value.additionalFolders) throw UploadException(UploadFailure.DESTINATION_MISSING)
+        if (config.value.account?.id != session.account.id) throw NextcloudException(NextcloudFailure.ACCOUNT_UNAVAILABLE)
+        if (folder !in config.value.additionalFolders) throw NextcloudException(NextcloudFailure.DESTINATION_MISSING)
     }
-    private fun reason(error: IOException) = (error as? UploadException)?.reason ?: UploadFailure.CONNECTION
+    private fun reason(error: IOException) = (error as? NextcloudException)?.reason ?: NextcloudFailure.CONNECTION
 }

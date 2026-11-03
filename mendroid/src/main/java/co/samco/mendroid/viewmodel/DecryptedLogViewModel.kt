@@ -16,20 +16,23 @@ import co.samco.mendroid.R
 import co.samco.mendroid.model.ErrorToastManager
 import co.samco.mendroid.model.LogLine
 import co.samco.mendroid.model.PrivateKeyManager
+import co.samco.mendroid.nextcloud.NextcloudException
+import co.samco.mendroid.nextcloud.NextcloudFailure
 import co.samco.mendroid.remote.AttachmentFiles
-import co.samco.mendroid.upload.UploadException
-import co.samco.mendroid.upload.UploadFailure
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.flatMapLatest
@@ -37,9 +40,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
-import javax.inject.Inject
 
 enum class TextType {
     PLAIN, FILE_ID
@@ -218,8 +218,8 @@ class DecryptedLogViewModel @Inject constructor(
                 if (uri == null) errorToastManager.showErrorToast(R.string.could_not_find_enc_file, listOf(fileName))
                 else if (request == lookupGeneration && privateKeyManager.unlocked.value) _decryptFileDialogData.value = DecryptFileDialogData(uri, fileName)
             } catch (e: CancellationException) { throw e }
-            catch (e: UploadException) {
-                errorToastManager.showErrorToast(if (e.reason == UploadFailure.AUTHENTICATION || e.reason == UploadFailure.ACCOUNT_UNAVAILABLE)
+            catch (e: NextcloudException) {
+                errorToastManager.showErrorToast(if (e.reason == NextcloudFailure.AUTHENTICATION || e.reason == NextcloudFailure.ACCOUNT_UNAVAILABLE)
                     R.string.remote_read_auth else R.string.remote_read_error)
             } catch (_: Exception) { errorToastManager.showErrorToast(R.string.remote_read_error) }
             finally { if (request == lookupGeneration) resolvingAttachment.value = false }

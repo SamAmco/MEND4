@@ -1,7 +1,8 @@
-package co.samco.mendroid.upload
+package co.samco.mendroid.nextcloud
 
 import android.app.Application
 import co.samco.mendroid.remote.RemoteDirectoryEntry
+import co.samco.mendroid.upload.OverwritePolicy
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.nio.file.Files
@@ -63,15 +64,15 @@ class WebDavClientTest {
         server.enqueue(MockResponse().setBody("different content"))
         server.enqueue(MockResponse().setResponseCode(204))
         try { upload("/enc/123.enc", OverwritePolicy.REQUIRE_IDENTICAL); fail() }
-        catch (e: UploadException) { assertEquals(UploadFailure.REMOTE_CONFLICT, e.reason) }
+        catch (e: NextcloudException) { assertEquals(NextcloudFailure.REMOTE_CONFLICT, e.reason) }
     }
     @Test fun failuresHaveStructuredReasonsAndRetryPolicies() = runBlocking {
-        for ((code, reason) in listOf(401 to UploadFailure.AUTHENTICATION, 403 to UploadFailure.ACCESS_DENIED,
-            507 to UploadFailure.STORAGE_FULL, 503 to UploadFailure.SERVER_BUSY, 429 to UploadFailure.SERVER_BUSY)) {
+        for ((code, reason) in listOf(401 to NextcloudFailure.AUTHENTICATION, 403 to NextcloudFailure.ACCESS_DENIED,
+            507 to NextcloudFailure.STORAGE_FULL, 503 to NextcloudFailure.SERVER_BUSY, 429 to NextcloudFailure.SERVER_BUSY)) {
             server.enqueue(MockResponse().setResponseCode(code))
             server.enqueue(MockResponse().setResponseCode(204))
             try { upload("/enc/a.enc", OverwritePolicy.REQUIRE_IDENTICAL); fail() }
-            catch (e: UploadException) { assertEquals(reason, e.reason) }
+            catch (e: NextcloudException) { assertEquals(reason, e.reason) }
         }
     }
     @Test fun stageCanBeDiscardedWithoutEverPublishing() = runBlocking {
@@ -88,7 +89,7 @@ class WebDavClientTest {
             server.enqueue(MockResponse().setResponseCode(302).setHeader("Location", other.url("/steal")))
             server.enqueue(MockResponse().setResponseCode(204))
             try { upload("/enc/a.enc", OverwritePolicy.REQUIRE_IDENTICAL); fail() }
-            catch (e: UploadException) { assertEquals(UploadFailure.REDIRECT, e.reason) }
+            catch (e: NextcloudException) { assertEquals(NextcloudFailure.REDIRECT, e.reason) }
             assertEquals(0, other.requestCount)
         } finally { other.shutdown() }
     }
@@ -126,7 +127,7 @@ class WebDavClientTest {
     @Test fun malformedListingHasAStructuredFailure() = runBlocking {
         server.enqueue(MockResponse().setResponseCode(207).setBody("<d:multistatus xmlns:d=\"DAV:\"><d:response>"))
         try { client.children(session(), RemotePath.ROOT); fail() }
-        catch (e: UploadException) { assertEquals(UploadFailure.INVALID_RESPONSE, e.reason) }
+        catch (e: NextcloudException) { assertEquals(NextcloudFailure.INVALID_RESPONSE, e.reason) }
     }
 
     @Test fun downloadStreamsEncryptedBytesUsingOnlyAnAuthenticatedGet() = runBlocking {
@@ -145,7 +146,7 @@ class WebDavClientTest {
         server.enqueue(MockResponse().setResponseCode(401).setBody("server error page"))
         val output = ByteArrayOutputStream()
         try { client.download(session(), RemotePath.of("/logs/a.mend"), output); fail() }
-        catch (e: UploadException) { assertEquals(UploadFailure.AUTHENTICATION, e.reason) }
+        catch (e: NextcloudException) { assertEquals(NextcloudFailure.AUTHENTICATION, e.reason) }
         assertEquals(0, output.size())
     }
 

@@ -1,11 +1,14 @@
-package co.samco.mendroid.upload
+package co.samco.mendroid.nextcloud
 
 import co.samco.mendroid.remote.RemoteDirectoryEntry
 import co.samco.mendroid.remote.RemoteReadClient
-import java.io.OutputStream
+import co.samco.mendroid.upload.OverwritePolicy
+import co.samco.mendroid.upload.StagedUpload
+import co.samco.mendroid.upload.UploadTransport
 import java.io.File
 import java.io.IOException
 import java.io.InputStream
+import java.io.OutputStream
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
@@ -18,20 +21,6 @@ import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import okio.BufferedSink
 import org.xmlpull.v1.XmlPullParserException
-
-/** A completed temporary upload. The runner owns the decision to publish it. */
-interface StagedUpload {
-    suspend fun publish(policy: OverwritePolicy)
-    suspend fun discard()
-}
-
-interface UploadTransport {
-    suspend fun stage(session: NextcloudSession, path: RemotePath, file: File, progress: (Long) -> Unit): StagedUpload
-}
-
-interface RemoteFolderBrowser {
-    suspend fun folders(session: NextcloudSession, path: RemotePath): List<RemoteFolder>
-}
 
 class WebDavClient @Inject constructor(private val http: NextcloudHttp) : UploadTransport, RemoteFolderBrowser, RemoteReadClient {
     internal fun fileUrl(account: NextcloudAccount, path: RemotePath): HttpUrl =
@@ -50,7 +39,7 @@ class WebDavClient @Inject constructor(private val http: NextcloudHttp) : Upload
         try {
             WebDavListing().parse(root, folder, response)
         } catch (e: XmlPullParserException) {
-            throw UploadException(UploadFailure.INVALID_RESPONSE).apply { initCause(e) }
+            throw NextcloudException(NextcloudFailure.INVALID_RESPONSE).apply { initCause(e) }
         }
     }
 
@@ -99,7 +88,7 @@ class WebDavClient @Inject constructor(private val http: NextcloudHttp) : Upload
             try {
                 http.request(http.authorized(session, temporary).header("Destination", target.toString())
                     .header("Overwrite", if (policy == OverwritePolicy.REPLACE) "T" else "F").method("MOVE", null).build())
-            } catch (e: UploadException) {
+            } catch (e: NextcloudException) {
                 if (policy != OverwritePolicy.REQUIRE_IDENTICAL || e.statusCode != 412 || !existingMatches()) throw e
             }
         }

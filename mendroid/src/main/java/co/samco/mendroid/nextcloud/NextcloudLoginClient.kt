@@ -1,4 +1,4 @@
-package co.samco.mendroid.upload
+package co.samco.mendroid.nextcloud
 
 import javax.inject.Inject
 import kotlinx.coroutines.delay
@@ -32,7 +32,7 @@ class NextcloudLoginClient @Inject constructor(private val http: NextcloudHttp) 
             if (credentials != null) return resolveUser(credentials, login)
             delay(3000)
         }
-        throw UploadException(UploadFailure.AUTHENTICATION)
+        throw NextcloudException(NextcloudFailure.AUTHENTICATION)
     }
 
     private suspend fun poll(login: LoginRequest): JSONObject? {

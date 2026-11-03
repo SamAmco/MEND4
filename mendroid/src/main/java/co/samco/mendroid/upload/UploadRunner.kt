@@ -1,5 +1,7 @@
 package co.samco.mendroid.upload
 
+import co.samco.mendroid.nextcloud.NextcloudException
+import co.samco.mendroid.nextcloud.NextcloudSession
 import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -88,6 +90,7 @@ class UploadRunner @Inject constructor(
             throw e
         } catch (e: Exception) {
             val failure = when (e) {
+                is NextcloudException -> e.reason.asUploadFailure()
                 is UploadException -> e.reason
                 is IOException -> UploadFailure.CONNECTION
                 else -> UploadFailure.BACKGROUND_UNAVAILABLE

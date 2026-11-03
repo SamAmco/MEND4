@@ -2,11 +2,11 @@ package co.samco.mendroid.remote
 
 import android.app.Application
 import android.net.Uri
-import co.samco.mendroid.upload.NextcloudAccount
-import co.samco.mendroid.upload.NextcloudSession
-import co.samco.mendroid.upload.RemotePath
-import co.samco.mendroid.upload.UploadException
-import co.samco.mendroid.upload.UploadFailure
+import co.samco.mendroid.nextcloud.NextcloudAccount
+import co.samco.mendroid.nextcloud.NextcloudException
+import co.samco.mendroid.nextcloud.NextcloudFailure
+import co.samco.mendroid.nextcloud.NextcloudSession
+import co.samco.mendroid.nextcloud.RemotePath
 import java.io.File
 import java.io.IOException
 import kotlinx.coroutines.CancellationException
@@ -52,7 +52,7 @@ class NextcloudReadFilesTest {
         val available = env.file("/b/available.mend")
         val result = env.files.logs()
         assertEquals(listOf(available), result.files)
-        assertEquals(listOf(RemoteReadProblem(RemotePath.of("/a"), UploadFailure.CONNECTION)), result.problems)
+        assertEquals(listOf(RemoteReadProblem(RemotePath.of("/a"), NextcloudFailure.CONNECTION)), result.problems)
     }
     @Test fun logIsDownloadedOnSelectionAndFetchedFreshOnEachOpen() = runBlocking {
         env.folder("/logs")
@@ -66,7 +66,7 @@ class NextcloudReadFilesTest {
         env.folder("/logs")
         for (path in listOf("/other/a.mend", "/logs/sub/a.mend")) {
             try { env.files.open(RemoteReadFile(env.session.account.id, RemotePath.of(path))); fail() }
-            catch (e: UploadException) { assertEquals(UploadFailure.DESTINATION_MISSING, e.reason) }
+            catch (e: NextcloudException) { assertEquals(NextcloudFailure.DESTINATION_MISSING, e.reason) }
         }
         assertTrue(env.client.downloaded.isEmpty())
     }
@@ -75,7 +75,7 @@ class NextcloudReadFilesTest {
         val file = env.file("/logs/phone.mend")
         env.settings.connect(NextcloudSession(NextcloudAccount("https://cloud.example", "other"), "other", "other-secret"))
         try { env.files.open(file); fail() }
-        catch (e: UploadException) { assertEquals(UploadFailure.ACCOUNT_UNAVAILABLE, e.reason) }
+        catch (e: NextcloudException) { assertEquals(NextcloudFailure.ACCOUNT_UNAVAILABLE, e.reason) }
         assertTrue(env.client.downloaded.isEmpty())
     }
     @Test fun localAttachmentTakesPrecedenceWithoutContactingNextcloud() = runBlocking {
@@ -112,7 +112,7 @@ class NextcloudReadFilesTest {
         val file = env.file("/logs/phone.mend")
         env.client.downloadHook = { env.settings.removeAdditionalFolder(RemotePath.of("/logs")) }
         try { env.files.open(file); fail() }
-        catch (e: UploadException) { assertEquals(UploadFailure.DESTINATION_MISSING, e.reason) }
+        catch (e: NextcloudException) { assertEquals(NextcloudFailure.DESTINATION_MISSING, e.reason) }
         assertTrue(env.directory.listFiles().orEmpty().isEmpty())
     }
     @Test fun lockedSessionCannotIssueReadRequests() = runBlocking {

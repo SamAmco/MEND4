@@ -9,6 +9,7 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.Operation
 import androidx.work.WorkManager
 import androidx.work.await
+import co.samco.mendroid.nextcloud.NextcloudSettings
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
@@ -18,7 +19,7 @@ import javax.inject.Singleton
 @Singleton
 class UploadScheduler @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val settings: UploadSettings,
+    private val settings: NextcloudSettings,
     private val failures: UploadFailureNotifications
 ) : UploadWakeup {
     private val manager get() = WorkManager.getInstance(context)

@@ -10,8 +10,8 @@ import co.samco.mendroid.model.LogFileManagerImpl
 import co.samco.mendroid.model.LogLine
 import co.samco.mendroid.model.PrivateKeyManager
 import co.samco.mendroid.model.PropertyManagerImpl
-import co.samco.mendroid.upload.RemotePath
-import co.samco.mendroid.upload.UploadFailure
+import co.samco.mendroid.nextcloud.NextcloudFailure
+import co.samco.mendroid.nextcloud.RemotePath
 import co.samco.mendroid.viewmodel.DecryptLogItem
 import co.samco.mendroid.viewmodel.SelectLogViewModel
 import java.io.File
@@ -84,7 +84,7 @@ class RemoteLogViewModelTest {
         val model = model()
         val state = withTimeout(5_000) { model.state.first { !it.loading && it.logs.size == 1 } }
         assertTrue(state.logs.single() is DecryptLogItem.Local)
-        assertEquals(UploadFailure.CONNECTION, state.problems.single().reason)
+        assertEquals(NextcloudFailure.CONNECTION, state.problems.single().reason)
     }
     @Test fun remoteAndLocalLogsAreListedTogetherAndSelectionDecryptsDownloadedBytes() = runBlocking {
         File(folder, "phone.mend").writeText("local encrypted")

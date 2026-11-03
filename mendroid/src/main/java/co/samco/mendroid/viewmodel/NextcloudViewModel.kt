@@ -2,11 +2,13 @@ package co.samco.mendroid.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import co.samco.mendroid.nextcloud.NextcloudConfig
+import co.samco.mendroid.nextcloud.NextcloudException
+import co.samco.mendroid.nextcloud.NextcloudFailure
+import co.samco.mendroid.nextcloud.NextcloudLogin
+import co.samco.mendroid.nextcloud.RemoteFolder
+import co.samco.mendroid.nextcloud.RemotePath
 import co.samco.mendroid.upload.BackupService
-import co.samco.mendroid.upload.NextcloudLogin
-import co.samco.mendroid.upload.RemoteFolder
-import co.samco.mendroid.upload.RemotePath
-import co.samco.mendroid.upload.UploadConfig
 import co.samco.mendroid.upload.UploadEntry
 import co.samco.mendroid.upload.UploadException
 import co.samco.mendroid.upload.UploadFailure
@@ -26,10 +28,11 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-enum class UploadUiProblem { INVALID_SETUP, OPERATION_FAILED }
-sealed interface UploadUiError {
-    data class Backup(val reason: UploadFailure) : UploadUiError
-    data class Operation(val problem: UploadUiProblem) : UploadUiError
+enum class NextcloudUiProblem { INVALID_SETUP, OPERATION_FAILED }
+sealed interface NextcloudUiError {
+    data class Backup(val reason: UploadFailure) : NextcloudUiError
+    data class Nextcloud(val reason: NextcloudFailure) : NextcloudUiError
+    data class Operation(val problem: NextcloudUiProblem) : NextcloudUiError
 }
 enum class NextcloudFolderUse { ATTACHMENTS, LOGS, ADDITIONAL }
 data class FolderPickerState(
@@ -37,17 +40,17 @@ data class FolderPickerState(
     val path: RemotePath,
     val folders: List<RemoteFolder> = emptyList(),
     val loading: Boolean = true,
-    val error: UploadUiError? = null
+    val error: NextcloudUiError? = null
 )
 data class UploadActions(
     val signingIn: Boolean = false,
     val importing: Boolean = false,
     val picker: FolderPickerState? = null,
-    val error: UploadUiError? = null,
+    val error: NextcloudUiError? = null,
     val imported: Boolean = false
 )
 data class NextcloudUiState(
-    val config: UploadConfig = UploadConfig(),
+    val config: NextcloudConfig = NextcloudConfig(),
     val entries: List<UploadEntry> = emptyList(),
     val progress: UploadProgress? = null,
     val actions: UploadActions = UploadActions()
@@ -98,7 +101,7 @@ class NextcloudViewModel @Inject constructor(
         loginJob?.cancel()
         actions.update { it.copy(signingIn = false) }
     }
-    fun browserFailed() { cancelLogin(); actions.update { it.copy(error = UploadUiError.Operation(UploadUiProblem.OPERATION_FAILED)) } }
+    fun browserFailed() { cancelLogin(); actions.update { it.copy(error = NextcloudUiError.Operation(NextcloudUiProblem.OPERATION_FAILED)) } }
     fun disconnect() { cancelLogin(); closeFolderPicker(); command { backups.disconnect() } }
     fun pause(value: Boolean) = command { backups.pause(value) }
     fun mobileData(value: Boolean) = command { backups.allowMobileData(value) }
@@ -169,10 +172,11 @@ class NextcloudViewModel @Inject constructor(
         }
     }
 
-    private fun error(exception: Exception): UploadUiError = when (exception) {
-        is UploadException -> UploadUiError.Backup(exception.reason)
-        is IOException -> UploadUiError.Backup(UploadFailure.CONNECTION)
-        is IllegalArgumentException -> UploadUiError.Operation(UploadUiProblem.INVALID_SETUP)
-        else -> UploadUiError.Operation(UploadUiProblem.OPERATION_FAILED)
+    private fun error(exception: Exception): NextcloudUiError = when (exception) {
+        is NextcloudException -> NextcloudUiError.Nextcloud(exception.reason)
+        is UploadException -> NextcloudUiError.Backup(exception.reason)
+        is IOException -> NextcloudUiError.Nextcloud(NextcloudFailure.CONNECTION)
+        is IllegalArgumentException -> NextcloudUiError.Operation(NextcloudUiProblem.INVALID_SETUP)
+        else -> NextcloudUiError.Operation(NextcloudUiProblem.OPERATION_FAILED)
     }
 }

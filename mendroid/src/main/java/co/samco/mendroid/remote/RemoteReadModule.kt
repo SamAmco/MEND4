@@ -1,6 +1,6 @@
 package co.samco.mendroid.remote
 
-import co.samco.mendroid.upload.WebDavClient
+import co.samco.mendroid.nextcloud.WebDavClient
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
