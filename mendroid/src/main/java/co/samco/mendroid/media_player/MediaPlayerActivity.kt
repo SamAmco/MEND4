@@ -1,5 +1,6 @@
 package co.samco.mendroid.media_player
 
+import android.view.WindowManager.LayoutParams.FLAG_SECURE
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
@@ -63,8 +64,8 @@ class MediaPlayerActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         window.setFlags(
-            android.view.WindowManager.LayoutParams.FLAG_SECURE,
-            android.view.WindowManager.LayoutParams.FLAG_SECURE
+            FLAG_SECURE,
+            FLAG_SECURE
         )
         readFileUri(intent)
         observeLockStatus()

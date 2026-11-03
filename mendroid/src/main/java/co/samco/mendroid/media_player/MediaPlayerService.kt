@@ -1,5 +1,6 @@
 package co.samco.mendroid.media_player
 
+import android.R.drawable.ic_media_play
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -138,7 +139,7 @@ class MediaPlayerService : Service(), CoroutineScope {
 
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle(getString(R.string.mend_media_player_active))
-            .setSmallIcon(android.R.drawable.ic_media_play)
+            .setSmallIcon(ic_media_play)
             .setSilent(true)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)

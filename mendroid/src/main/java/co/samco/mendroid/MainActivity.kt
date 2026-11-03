@@ -1,5 +1,7 @@
 package co.samco.mendroid
 
+import android.view.WindowManager.LayoutParams.FLAG_SECURE
+import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -74,8 +76,8 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         window.setFlags(
-            android.view.WindowManager.LayoutParams.FLAG_SECURE,
-            android.view.WindowManager.LayoutParams.FLAG_SECURE
+            FLAG_SECURE,
+            FLAG_SECURE
         )
 
         checkNotificationsPermission()
@@ -100,7 +102,7 @@ class MainActivity : ComponentActivity() {
 
     private fun checkNotificationsPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            val permission = android.Manifest.permission.POST_NOTIFICATIONS
+            val permission = Manifest.permission.POST_NOTIFICATIONS
             if (ContextCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED) {
                 requestPermissionLauncher.launch(permission)
             }

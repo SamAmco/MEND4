@@ -1,5 +1,6 @@
 package co.samco.mendroid.viewmodel
 
+import androidx.annotation.OptIn as AndroidOptIn
 import android.app.Application
 import android.content.ComponentName
 import android.content.Context
@@ -168,7 +169,7 @@ class AudioRecordingViewModelImpl @Inject constructor(
         }
     }
 
-    @androidx.annotation.OptIn(UnstableApi::class)
+    @AndroidOptIn(UnstableApi::class)
     private suspend fun playAudioFile(exoPlayer: ExoPlayer, file: File) {
         val dataFactory = DefaultDataSource.Factory(context)
         val mediaSource = ProgressiveMediaSource.Factory(dataFactory)
