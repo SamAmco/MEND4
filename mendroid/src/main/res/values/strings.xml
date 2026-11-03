@@ -81,4 +81,5 @@
     <string name="unknown_date">Unknown date</string>
     <string name="nextcloud_uploads">Nextcloud uploads</string>
     <string name="upload_in_progress">Uploading encrypted files</string>
+    <string name="encrypted_backup_pending">Encrypted locally. Nextcloud backup needs attention.</string>
 </resources>

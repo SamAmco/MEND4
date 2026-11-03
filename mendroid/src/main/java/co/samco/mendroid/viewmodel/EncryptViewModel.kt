@@ -1,6 +1,12 @@
 package co.samco.mendroid.viewmodel
 
 import android.app.Application
+import co.samco.mendroid.upload.LocalBackupWriter
+import co.samco.mendroid.upload.LocalBackupFile
+import co.samco.mendroid.upload.WriteMode
+import co.samco.mendroid.upload.BackupRegistration
+import co.samco.mendroid.upload.UploadKind
+import kotlinx.coroutines.CancellationException
 import android.net.Uri
 import android.provider.DocumentsContract
 import androidx.compose.runtime.getValue
@@ -48,7 +54,8 @@ class EncryptViewModel @Inject constructor(
     private val cryptoProvider: CryptoProvider,
     private val encryptHelper: EncryptHelper,
     private val errorToastManager: ErrorToastManager,
-    private val logFileManager: LogFileManager
+    private val logFileManager: LogFileManager,
+    private val uploads: LocalBackupWriter
 ) : AndroidViewModel(application) {
 
     companion object {
@@ -112,11 +119,6 @@ class EncryptViewModel @Inject constructor(
                 return@launch
             }
 
-            val outputStream = context.contentResolver.openOutputStream(currLog.uri, "wa")
-            if (outputStream == null) {
-                errorToastManager.showErrorToast(R.string.failed_to_write_to_log_file)
-                return@launch
-            }
 
             val logText = LogUtils.addHeaderToLogText(
                 currentEntryText.text,
@@ -125,9 +127,17 @@ class EncryptViewModel @Inject constructor(
                 "\n"
             )
 
-            cryptoProvider.encryptLogStream(logText, outputStream)
-
-            currentEntryText = TextFieldValue("")
+            try {
+                val saved = uploads.write(LocalBackupFile(currLog.uri.toString(), "${currLog.name}.mend", UploadKind.LOG), WriteMode.APPEND) { output ->
+                    cryptoProvider.encryptLogStream(logText, output)
+                }
+                if (saved.backup == BackupRegistration.NEEDS_ATTENTION) errorToastManager.showErrorToast(R.string.encrypted_backup_pending)
+                currentEntryText = TextFieldValue("")
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                errorToastManager.showErrorToast(R.string.failed_to_write_to_log_file)
+            }
         }
     }
 
@@ -140,8 +150,8 @@ class EncryptViewModel @Inject constructor(
             }
 
             loading = true
-            encryptHelper.encryptFileFromUri(uri)
-            loading = false
+            val success = try { encryptHelper.encryptFileFromUri(uri) } finally { loading = false }
+            if (!success) return@launch
 
             //Get the column flags and check for SUPPORTS_DELETE
             val flags = context.contentResolver.query(
@@ -242,8 +252,7 @@ class EncryptViewModel @Inject constructor(
         }
         viewModelScope.launch {
             loading = true
-            encryptHelper.encryptFileFromUri(uri)
-            clearCacheDir()
+            if (encryptHelper.encryptFileFromUri(uri)) clearCacheDir()
             loading = false
         }
     }

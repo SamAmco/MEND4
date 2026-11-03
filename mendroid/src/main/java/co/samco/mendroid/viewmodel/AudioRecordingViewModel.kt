@@ -328,13 +328,13 @@ class AudioRecordingViewModelImpl @Inject constructor(
         viewModelScope.launch {
             loading = true
             val uri = currentRecording.value?.toUri()
-            currentRecording.value = null
-
-            if (uri == null) errorToastManager.showErrorToast(R.string.failed_to_take_audio)
-            else encryptHelper.encryptFileFromUri(uri)
-
-            loading = false
-            dismissRecordAudioDialog()
+            try {
+                if (uri == null) errorToastManager.showErrorToast(R.string.failed_to_take_audio)
+                else if (encryptHelper.encryptFileFromUri(uri)) {
+                    currentRecording.value = null
+                    dismissRecordAudioDialog()
+                }
+            } finally { loading = false }
         }
     }
 }
