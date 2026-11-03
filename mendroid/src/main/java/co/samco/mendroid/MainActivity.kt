@@ -40,6 +40,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
@@ -128,7 +129,10 @@ fun Mend4App() {
     val localFocusManager = LocalFocusManager.current
     val localKeyboardController = LocalSoftwareKeyboardController.current
 
-    HomeScreenScaffold()
+    // The home text fields must not request focus behind the settings overlay.
+    Box(Modifier.focusProperties { canFocus = !showSettings }) {
+        HomeScreenScaffold()
+    }
 
     AnimatedVisibility(
         visible = showSettings,
@@ -140,7 +144,7 @@ fun Mend4App() {
 
     LaunchedEffect(showSettings) {
         if (showSettings) {
-            localFocusManager.clearFocus()
+            localFocusManager.clearFocus(force = true)
             localKeyboardController?.hide()
         }
     }
