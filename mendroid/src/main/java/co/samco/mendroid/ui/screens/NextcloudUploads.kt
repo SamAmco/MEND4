@@ -69,15 +69,28 @@ private fun summary(state: NextcloudUiState): Int = when {
 
 @Composable
 private fun UploadsDialog(state: NextcloudUiState, model: NextcloudViewModel, close: () -> Unit) {
+    var server by rememberSaveable { mutableStateOf("") }
+    val connecting = state.config.account == null
     AlertDialog(
         onDismissRequest = close,
-        title = { Text(stringResource(R.string.nextcloud_files_and_uploads)) },
-        confirmButton = { TextButton(onClick = close) { Text(stringResource(R.string.upload_close)) } },
+        title = { Text(stringResource(if (connecting) R.string.connect_nextcloud else R.string.nextcloud_files_and_uploads)) },
+        confirmButton = {
+            when {
+                !connecting -> TextButton(onClick = close) { Text(stringResource(R.string.upload_close)) }
+                state.actions.signingIn -> TextButton(onClick = model::cancelLogin) { Text(stringResource(R.string.upload_cancel)) }
+                else -> TextButton(enabled = server.isNotBlank(), onClick = { model.connect(server) }) {
+                    Text(stringResource(R.string.connect_nextcloud))
+                }
+            }
+        },
+        dismissButton = {
+            if (connecting) TextButton(onClick = close) { Text(stringResource(R.string.upload_close)) }
+        },
         text = {
             LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.heightIn(max = 560.dp)) {
                 item {
                     if (state.config.account == null) {
-                        NextcloudConnectionForm(state.actions.signingIn, model::connect, model::cancelLogin)
+                        NextcloudConnectionForm(server, { server = it }, state.actions.signingIn)
                     } else {
                         NextcloudDestinationSettings(state.config, model::browse, model::pause, model::mobileData)
                         AdditionalNextcloudFolders(state.config,

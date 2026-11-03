@@ -1,37 +1,34 @@
 package co.samco.mendroid.ui.screens
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material3.Button
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import co.samco.mendroid.R
 import co.samco.mendroid.nextcloud.NextcloudConfig
 import co.samco.mendroid.nextcloud.RemotePath
 import co.samco.mendroid.viewmodel.NextcloudFolderUse
 
 @Composable
-internal fun NextcloudConnectionForm(signingIn: Boolean, connect: (String) -> Unit, cancel: () -> Unit) {
-    var server by rememberSaveable { mutableStateOf("") }
-    OutlinedTextField(value = server, onValueChange = { server = it }, singleLine = true,
-        label = { Text(stringResource(R.string.nextcloud_server)) }, modifier = Modifier.fillMaxWidth())
-    Text(stringResource(R.string.nextcloud_setup_help))
-    Button(enabled = !signingIn && server.isNotBlank(), onClick = { connect(server) }) { Text(stringResource(R.string.connect_nextcloud)) }
-    if (signingIn) {
-        LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
-        Text(stringResource(R.string.nextcloud_finish_login))
-        TextButton(onClick = cancel) { Text(stringResource(R.string.upload_cancel)) }
+internal fun NextcloudConnectionForm(server: String, onServerChanged: (String) -> Unit, signingIn: Boolean) =
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        OutlinedTextField(value = server, onValueChange = onServerChanged, singleLine = true,
+            enabled = !signingIn, label = { Text(stringResource(R.string.nextcloud_server)) },
+            modifier = Modifier.fillMaxWidth())
+        Text(stringResource(R.string.nextcloud_setup_help))
+        if (signingIn) {
+            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+            Text(stringResource(R.string.nextcloud_finish_login))
+        }
     }
-}
 
 @Composable
 internal fun NextcloudDestinationSettings(
