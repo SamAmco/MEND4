@@ -87,6 +87,7 @@ android {
     testOptions {
         // AGP's Compose preview tasks need compiled resources, including app themes.
         unitTests.includeAndroidResources = true
+        unitTests.all { jvmArgs '--enable-native-access=ALL-UNNAMED' }
     }
     packaging {
         resources {
@@ -149,4 +150,5 @@ dependencies {
     debugImplementation 'androidx.compose.ui:ui-test-manifest'
 
     testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.robolectric:robolectric:4.17'
 }
