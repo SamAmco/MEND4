@@ -19,7 +19,7 @@ class BackupService @Inject constructor(
     val entries = queue.entries
     val progress = runner.progress
 
-    suspend fun refresh() { queue.pending() }
+    suspend fun refresh() { queue.refreshEntries() }
     suspend fun connect(session: NextcloudSession) = withContext(Dispatchers.IO) {
         settings.connect(session)
         retry()
@@ -49,8 +49,8 @@ class BackupService @Inject constructor(
     suspend fun backupExisting() {
         val destination = config.value
         require(destination.account != null && destination.attachments != null && destination.logs != null)
-        queue.pending() // Load/recover persisted entries before deciding which files are safe to scan.
-        val protected = queue.entries.value.filter {
+        queue.recoverAfterRestart()
+        val protected = queue.allEntries().filter {
             it.state == UploadState.WRITING || it.failure?.requiresLocalVerification == true
         }.map { it.file.uri }.toSet()
         for (file in existing.files().filterNot { it.uri in protected }) {

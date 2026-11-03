@@ -39,7 +39,7 @@ class UploadFailureNotifications @Inject constructor(
         // Load persisted failures before deciding whether to clear an existing notification.
         while (isActive) {
             try {
-                queue.pending()
+                queue.recoverAfterRestart()
                 break
             } catch (e: CancellationException) {
                 throw e

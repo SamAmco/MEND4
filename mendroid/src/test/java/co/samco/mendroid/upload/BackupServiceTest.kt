@@ -63,6 +63,26 @@ class BackupServiceTest {
         assertFalse(env.files.outputClosed)
         assertEquals("old ciphertext", env.files.sources.getValue(file.uri).readText())
     }
+    @Test fun bulkBackupReadsPersistedProtectionWithoutPrimingTheUiFlow() = runBlocking {
+        val file = env.files.source()
+        env.queue.beginWrite(file, requireNotNull(env.settings.config.value.target(file)))
+        env.queue.close()
+        val reopened = SqliteUploadQueue(RuntimeEnvironment.getApplication())
+        try {
+            val writer = LocalBackupWriter(reopened, env.files, env.lock, env.settings, env.wakeup)
+            val runner = UploadRunner(reopened, UploadSnapshots(reopened, env.files, env.lock),
+                UploadEligibility(env.settings, env.credentials, NetworkStatus { false }), TestTransport())
+            val backup = BackupService(env.settings, env.credentials, reopened, writer, ExistingBackupSource { listOf(file) },
+                object : RemoteFolderBrowser {
+                    override suspend fun folders(session: NextcloudSession, path: RemotePath) = emptyList<RemoteFolder>()
+                }, env.wakeup, runner)
+            assertTrue(reopened.entries.value.isEmpty())
+            backup.backupExisting()
+            assertTrue(reopened.pending().isEmpty())
+            assertEquals(UploadFailure.LOCAL_WRITE_INTERRUPTED, reopened.allEntries().single().failure)
+        } finally { reopened.close() }
+    }
+
     @Test fun bulkImportNeverBypassesVerificationOfFailedLocalWrites() = runBlocking {
         val file = env.files.source()
         env.queue.failWrite(env.queue.beginWrite(file, requireNotNull(env.settings.config.value.target(file))))

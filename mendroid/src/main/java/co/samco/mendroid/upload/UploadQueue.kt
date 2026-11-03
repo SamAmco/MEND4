@@ -17,7 +17,11 @@ import kotlinx.coroutines.withContext
 
 interface UploadQueue {
     val entries: StateFlow<List<UploadEntry>>
+    suspend fun allEntries(): List<UploadEntry>
     suspend fun pending(): List<UploadEntry>
+    suspend fun refreshEntries()
+    /** Once per queue instance, before starting writes or transfers. Repeated calls leave active work alone. */
+    suspend fun recoverAfterRestart()
     suspend fun recoverTransferClaims()
     suspend fun beginWrite(file: LocalBackupFile, target: UploadTarget): WriteToken
     suspend fun completeWrite(token: WriteToken): Transition
@@ -39,7 +43,7 @@ interface UploadQueue {
 class SqliteUploadQueue @Inject constructor(@ApplicationContext context: Context) :
     SQLiteOpenHelper(context, "nextcloud-uploads.db", null, 1), UploadQueue {
     private val lock = Any()
-    private var initialized = false
+    private var startupRecovered = false
     private val mutableEntries = MutableStateFlow<List<UploadEntry>>(emptyList())
     override val entries = mutableEntries.asStateFlow()
 
@@ -55,25 +59,47 @@ class SqliteUploadQueue @Inject constructor(@ApplicationContext context: Context
         throw SQLiteException("Missing upload database migration from $oldVersion to $newVersion")
     }
 
-    private suspend fun <T> access(publish: Boolean = true, block: SQLiteDatabase.() -> T): T = withContext(Dispatchers.IO) {
+    private suspend fun <T> read(block: SQLiteDatabase.() -> T): T = withContext(Dispatchers.IO) {
+        synchronized(lock) { readableDatabase.block() }
+    }
+
+    private suspend fun <T> mutate(block: SQLiteDatabase.() -> T): T = withContext(Dispatchers.IO) {
+        synchronized(lock) { transaction(block) }
+    }
+
+    /** Commit database changes before publishing their snapshot to observers. Caller holds lock. */
+    private fun <T> transaction(block: SQLiteDatabase.() -> T): T {
+        val db = writableDatabase
+        db.beginTransaction()
+        val result: T
+        val latest: List<UploadEntry>
+        try {
+            result = db.block()
+            latest = db.select()
+            db.setTransactionSuccessful()
+        } finally {
+            db.endTransaction()
+        }
+        mutableEntries.value = latest
+        return result
+    }
+
+    override suspend fun allEntries() = read { select() }
+    override suspend fun pending() = read { select("state = 'PENDING'") }
+
+    override suspend fun refreshEntries() {
+        read { mutableEntries.value = select() }
+    }
+
+    override suspend fun recoverAfterRestart() = withContext(Dispatchers.IO) {
         synchronized(lock) {
-            val db = writableDatabase
-            db.beginTransaction()
-            try {
-                if (!initialized) {
-                    db.execSQL("UPDATE uploads SET state = 'PENDING' WHERE state = 'UPLOADING'")
-                    db.execSQL("""UPDATE uploads SET state = 'ATTENTION', failure = 'LOCAL_WRITE_INTERRUPTED'
+            if (!startupRecovered) {
+                transaction {
+                    execSQL("UPDATE uploads SET state = 'PENDING' WHERE state = 'UPLOADING'")
+                    execSQL("""UPDATE uploads SET state = 'ATTENTION', failure = 'LOCAL_WRITE_INTERRUPTED'
                         WHERE state = 'WRITING'""")
                 }
-                val result = db.block()
-                val latest = if (publish || !initialized) db.select() else null
-                db.setTransactionSuccessful()
-                db.endTransaction()
-                initialized = true
-                if (latest != null) mutableEntries.value = latest
-                result
-            } finally {
-                if (db.inTransaction()) db.endTransaction()
+                startupRecovered = true
             }
         }
     }
@@ -122,55 +148,57 @@ class SqliteUploadQueue @Inject constructor(@ApplicationContext context: Context
         return if (count == 1) Transition.APPLIED else Transition.SUPERSEDED
     }
 
-    override suspend fun pending() = access(publish = false) { select("state = 'PENDING'") }
     // Called only after the runner acquires exclusive transfer ownership. Local WRITING rows are untouched.
     override suspend fun recoverTransferClaims() {
-        access { execSQL("UPDATE uploads SET state = 'PENDING' WHERE state = 'UPLOADING'") }
+        mutate { execSQL("UPDATE uploads SET state = 'PENDING' WHERE state = 'UPLOADING'") }
     }
-    override suspend fun beginWrite(file: LocalBackupFile, target: UploadTarget) =
-        access { WriteToken(newRevision(file, target, UploadState.WRITING)) }
-    override suspend fun completeWrite(token: WriteToken) = access {
+    override suspend fun beginWrite(file: LocalBackupFile, target: UploadTarget) = mutate {
+        check(startupRecovered) { "Recover the queue before starting a new local write" }
+        WriteToken(newRevision(file, target, UploadState.WRITING))
+    }
+    override suspend fun completeWrite(token: WriteToken) = mutate {
         transition(token.revision, UploadState.WRITING, UploadState.PENDING)
     }
-    override suspend fun failWrite(token: WriteToken) = access {
+    override suspend fun failWrite(token: WriteToken) = mutate {
         transition(token.revision, UploadState.WRITING, UploadState.ATTENTION, UploadFailure.LOCAL_WRITE_FAILED)
     }
-    override suspend fun registrationFailed(token: WriteToken) = access {
+    override suspend fun registrationFailed(token: WriteToken) = mutate {
         transition(token.revision, UploadState.WRITING, UploadState.ATTENTION, UploadFailure.REGISTRATION_FAILED)
     }
     override suspend fun enqueueExisting(file: LocalBackupFile, target: UploadTarget) {
-        access { newRevision(file, target, UploadState.PENDING) }
+        mutate { newRevision(file, target, UploadState.PENDING) }
     }
-    override suspend fun claim(revision: UploadRevision): UploadToken? = access {
+    override suspend fun claim(revision: UploadRevision): UploadToken? = mutate {
+        check(startupRecovered) { "Recover the queue before starting a new upload" }
         if (transition(revision, UploadState.PENDING, UploadState.UPLOADING) == Transition.APPLIED) UploadToken(revision) else null
     }
-    override suspend fun isCurrent(token: UploadToken) = access(publish = false) {
+    override suspend fun isCurrent(token: UploadToken) = read {
         select("id = ? AND revision = ? AND state = 'UPLOADING'",
             arrayOf(token.revision.id.toString(), token.revision.number.toString())).isNotEmpty()
     }
-    override suspend fun hasCollision(entry: UploadEntry) = access(publish = false) {
+    override suspend fun hasCollision(entry: UploadEntry) = read {
         select("account = ? AND remote = ? AND source != ?",
             arrayOf(entry.target.account.value, entry.target.path.value, entry.file.uri)).isNotEmpty()
     }
-    override suspend fun completeUpload(token: UploadToken) = access {
+    override suspend fun completeUpload(token: UploadToken) = mutate {
         transition(token.revision, UploadState.UPLOADING, UploadState.UPLOADED)
     }
-    override suspend fun failUpload(token: UploadToken, failure: UploadFailure) = access {
+    override suspend fun failUpload(token: UploadToken, failure: UploadFailure) = mutate {
         transition(token.revision, UploadState.UPLOADING,
             if (failure.automaticRetry) UploadState.PENDING else UploadState.ATTENTION, failure)
     }
-    override suspend fun deferUpload(token: UploadToken) = access {
+    override suspend fun deferUpload(token: UploadToken) = mutate {
         transition(token.revision, UploadState.UPLOADING, UploadState.PENDING)
     }
     override suspend fun retryFailures() {
-        access {
+        mutate {
             // Failed local writes are never made uploadable by Retry or reconnecting.
             val protected = UploadFailure.entries.filter { it.requiresLocalVerification }.joinToString(",") { "'${it.name}'" }
             execSQL("UPDATE uploads SET state = 'PENDING' WHERE state = 'ATTENTION' AND failure NOT IN ($protected)")
         }
     }
     override suspend fun forget(revision: UploadRevision) {
-        access { delete("uploads", "id = ? AND revision = ? AND state IN ('ATTENTION', 'UPLOADED')",
+        mutate { delete("uploads", "id = ? AND revision = ? AND state IN ('ATTENTION', 'UPLOADED')",
             arrayOf(revision.id.toString(), revision.number.toString())) }
     }
 }

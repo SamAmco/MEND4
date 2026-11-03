@@ -6,6 +6,7 @@ import java.io.FileOutputStream
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
+import kotlinx.coroutines.runBlocking
 import java.util.concurrent.ConcurrentHashMap
 
 internal class TestBackupFiles(private val directory: File) : LocalBackupFiles {
@@ -40,7 +41,9 @@ internal class TestWakeup : UploadWakeup {
 internal class UploadTestEnvironment(context: Context) {
     val credentials = MemoryCredentials()
     val settings = UploadSettings(context, credentials)
-    val queue = SqliteUploadQueue(context)
+    val queue = SqliteUploadQueue(context).also {
+        runBlocking { it.recoverAfterRestart() }
+    }
     val files = TestBackupFiles(context.cacheDir)
     val lock = LocalBackupLock()
     val wakeup = TestWakeup()

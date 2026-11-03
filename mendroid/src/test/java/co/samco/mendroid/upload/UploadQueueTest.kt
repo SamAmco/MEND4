@@ -17,11 +17,57 @@ class UploadQueueTest {
     private lateinit var queue: SqliteUploadQueue
     private val file = LocalBackupFile("content://log", "phone.mend", UploadKind.LOG)
     private val target = UploadTarget(AccountId("account"), RemotePath.of("/phone.mend"))
-    @Before fun setup() {
+    @Before fun setup() = runBlocking {
         RuntimeEnvironment.getApplication().deleteDatabase("nextcloud-uploads.db")
         queue = SqliteUploadQueue(RuntimeEnvironment.getApplication())
+        queue.recoverAfterRestart()
     }
     @After fun teardown() { queue.close() }
+
+    @Test fun readsDoNotRecoverRowsOrPopulateTheUiFlow() = runBlocking {
+        queue.beginWrite(file, target)
+        queue.enqueueExisting(file.copy(uri = "content://another"), target.copy(path = RemotePath.of("/another.mend")))
+        val upload = requireNotNull(queue.claim(queue.pending().single().revision))
+        queue.close()
+        queue = SqliteUploadQueue(RuntimeEnvironment.getApplication())
+
+        assertTrue(queue.pending().isEmpty())
+        assertTrue(queue.isCurrent(upload))
+        val persisted = queue.allEntries()
+        assertEquals(setOf(UploadState.WRITING, UploadState.UPLOADING), persisted.map { it.state }.toSet())
+        assertTrue(queue.entries.value.isEmpty())
+
+        queue.refreshEntries()
+        assertEquals(persisted, queue.entries.value)
+        assertEquals(persisted, queue.allEntries())
+    }
+
+    @Test fun startupRecoveryRunsOnceAndDoesNotResetActiveUploadClaims() = runBlocking {
+        queue.enqueueExisting(file, target)
+        val upload = requireNotNull(queue.claim(queue.pending().single().revision))
+        queue.close()
+        queue = SqliteUploadQueue(RuntimeEnvironment.getApplication())
+        queue.recoverAfterRestart()
+        assertFalse(queue.isCurrent(upload))
+        val active = requireNotNull(queue.claim(upload.revision))
+        queue.recoverAfterRestart()
+        assertTrue(queue.isCurrent(active))
+        queue.recoverTransferClaims()
+        assertFalse(queue.isCurrent(active))
+        assertEquals(1, queue.pending().size)
+    }
+
+    @Test fun recoveryMustPrecedeNewWritesAndRepeatedCallsCannotInterruptThem() = runBlocking {
+        queue.close()
+        queue = SqliteUploadQueue(RuntimeEnvironment.getApplication())
+        try { queue.beginWrite(file, target); fail("Expected recovery requirement") }
+        catch (_: IllegalStateException) { }
+        queue.recoverAfterRestart()
+        val writing = queue.beginWrite(file, target)
+        queue.recoverAfterRestart()
+        assertEquals(UploadState.WRITING, queue.allEntries().single().state)
+        assertEquals(Transition.APPLIED, queue.completeWrite(writing))
+    }
 
     @Test fun completingOldRevisionCannotHideNewerWrite() = runBlocking {
         val first = queue.beginWrite(file, target)
@@ -50,7 +96,8 @@ class UploadQueueTest {
         queue.claim(queue.pending().single().revision)
         queue.close()
         queue = SqliteUploadQueue(RuntimeEnvironment.getApplication())
-        queue.pending()
+        queue.recoverAfterRestart()
+        queue.recoverTransferClaims()
         assertEquals(UploadFailure.LOCAL_WRITE_INTERRUPTED, queue.entries.value.first { it.revision == writing.revision }.failure)
         assertEquals(1, queue.pending().size)
     }
@@ -92,6 +139,7 @@ class UploadQueueTest {
         val upload = requireNotNull(queue.claim(revision))
         queue.close()
         queue = SqliteUploadQueue(RuntimeEnvironment.getApplication())
+        queue.recoverAfterRestart()
         assertEquals(UploadFailure.AUTHENTICATION, queue.pending().single().failure)
         queue.completeUpload(requireNotNull(queue.claim(upload.revision)))
         assertNull(queue.entries.value.single().failure)

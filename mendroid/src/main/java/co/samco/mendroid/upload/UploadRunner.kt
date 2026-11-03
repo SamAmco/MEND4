@@ -26,6 +26,7 @@ class UploadRunner @Inject constructor(
 
     suspend fun run(foreground: suspend () -> Unit = {}): RunResult = withContext(Dispatchers.IO) {
         transfers.withLock {
+            queue.recoverAfterRestart()
             // No transfer is active now; recover claims left by a failed worker/database operation.
             queue.recoverTransferClaims()
             val attempted = mutableSetOf<UploadRevision>()

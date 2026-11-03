@@ -42,7 +42,7 @@ All implementation paths below are under
 
 | Component | Owns |
 | --- | --- |
-| `upload/UploadQueue.kt` | Transactional persistence and revision/state checks. Publishes read-only entries. |
+| `upload/UploadQueue.kt` | Transactional persistence and revision/state checks. Publishes read-only entries. Queries return snapshots without recovery or flow updates; `refreshEntries` explicitly refreshes observers. |
 | `upload/UploadSettings.kt` | Account-bound folder selections, network preferences and an outstanding rescan warning. Contains no password in observable state. |
 | `upload/EncryptedCredentialStore.kt` | Atomic credential-file format and non-exportable Android Keystore key. |
 | `upload/NextcloudLoginClient.kt` | Documented Login Flow v2 and OCS user-ID lookup. |
@@ -57,6 +57,16 @@ All implementation paths below are under
 | `ui/screens/Nextcloud*.kt` | Setup, destinations, folder picker, upload rows and string-resource presentation. |
 
 ## Enforced contracts
+
+- `allEntries`, `pending`, `isCurrent`, and `hasCollision` only query the database.
+  `refreshEntries` explicitly reloads the UI flow. Bulk backup filters a returned
+  `allEntries` snapshot instead of reading the UI flow after an unrelated query.
+- `recoverAfterRestart` explicitly recovers prior-process writes and uploads once
+  per queue instance. Starting a write or claiming an upload requires that recovery
+  to have completed; subsequent calls cannot reset active work. Startup notifications,
+  writers, the runner, and bulk backup call recovery explicitly at their entry points.
+  Recovering abandoned claims between worker attempts remains separate, under the
+  runner's exclusive transfer lock.
 
 - A queue entry retains its original account and remote path. Future destination
   changes never redirect pending work. Existing-file imports capture one destination
@@ -136,7 +146,7 @@ External file-manager edits cannot participate in MEND's local-write lock.
 
 The debug APK is `mendroid/build/outputs/apk/debug/mendroid-debug.apk`.
 Run `./gradlew :mendroid:assembleDebug :mendroid:lintDebug :mendroid:testDebugUnitTest`.
-The complete feature has 79 passing unit tests (60 upload tests, 9 log-directory tests, and 10 existing tests).
+The complete feature has 83 passing unit tests (64 upload tests, 9 log-directory tests, and 10 existing tests).
 Tests use real SQLite through Robolectric, fake transfer boundaries for runner
 contracts, mocked HTTP for WebDAV/login, and controlled coroutine scheduling for
 view-model races. Each rebuilt revision is checked before proceeding to the next.

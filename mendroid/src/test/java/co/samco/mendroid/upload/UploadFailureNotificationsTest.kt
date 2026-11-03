@@ -31,11 +31,12 @@ class UploadFailureNotificationsTest {
     private val file = LocalBackupFile("content://log", "phone.mend", UploadKind.LOG)
     private val target = UploadTarget(AccountId("account"), RemotePath.of("/phone.mend"))
 
-    @Before fun setup() {
+    @Before fun setup() = runBlocking {
         context = RuntimeEnvironment.getApplication()
         shadowOf(RuntimeEnvironment.getApplication()).grantPermissions(Manifest.permission.POST_NOTIFICATIONS)
         context.deleteDatabase("nextcloud-uploads.db")
         queue = SqliteUploadQueue(context)
+        queue.recoverAfterRestart()
         manager = context.getSystemService(NotificationManager::class.java)
         notifications = UploadFailureNotifications(context, queue)
     }

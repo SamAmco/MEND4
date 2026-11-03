@@ -21,7 +21,12 @@ class LocalBackupWriter @Inject constructor(
         withContext(Dispatchers.IO) {
             lock.withLock {
                 val target = settings.config.value.target(file)
-                val token = target?.let { tryQueue { queue.beginWrite(file, it) } }
+                val token = target?.let {
+                    tryQueue {
+                        queue.recoverAfterRestart()
+                        queue.beginWrite(file, it)
+                    }
+                }
                 try {
                     files.openOutput(file, mode).use { encrypt(it) }
                 } catch (e: Exception) {
