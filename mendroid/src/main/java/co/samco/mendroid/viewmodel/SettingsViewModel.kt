@@ -5,19 +5,22 @@ package co.samco.mendroid.viewmodel
 import android.app.Application
 import android.content.Intent
 import android.net.Uri
-import androidx.core.net.toUri
 import android.util.Xml
+import androidx.core.net.toUri
 import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import co.samco.mend4.core.Settings
+import co.samco.mendroid.R
 import co.samco.mendroid.model.ErrorToastManager
 import co.samco.mendroid.model.LocalLogDirectory
 import co.samco.mendroid.model.LogFileManager
 import co.samco.mendroid.model.PropertyManager
-import co.samco.mendroid.R
 import co.samco.mendroid.model.Theme
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.io.IOException
+import java.io.InputStream
+import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
@@ -33,9 +36,6 @@ import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import org.xmlpull.v1.XmlPullParser
-import java.io.FileInputStream
-import java.io.InputStream
-import javax.inject.Inject
 
 @HiltViewModel
 //Don't know why it thinks i'm leaking a context but it's application context so we're fine
@@ -85,6 +85,7 @@ class SettingsViewModel @Inject constructor(
 
     val encDirGood = propertyManager.encDirUri
         .map { it != null && it.toUri().assertValidDirectory() }
+        .flowOn(Dispatchers.IO)
         .stateIn(viewModelScope, SharingStarted.Lazily, false)
     val hasConfig = propertyManager.hasConfig
         .stateIn(viewModelScope, SharingStarted.Lazily, false)
@@ -131,58 +132,52 @@ class SettingsViewModel @Inject constructor(
             return
         }
 
-        context.contentResolver.openFileDescriptor(uri, "r")?.use { pfd ->
-            if (pfd.statSize < 0 || pfd.statSize > Integer.MAX_VALUE) return
-            FileInputStream(pfd.fileDescriptor).use {
-                try {
-                    propertyManager.clearSettings()
-                    tryParseXmlFile(it)
-                    propertyManager.setConfigUriPath(uri.path ?: uri.toString())
-                } catch (ex: ConfigImportException) {
-                    showErrorToast(ex.messageId, ex.formatArgs)
-                } catch (t: Throwable) {
-                    showErrorToast(R.string.config_import_error, emptyList())
-                }
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val settings = context.contentResolver.openInputStream(uri)?.use { tryParseXmlFile(it) }
+                    ?: throw IOException("Config file is unavailable")
+                propertyManager.clearSettings()
+                settings.forEach { (name, value) -> propertyManager.setValue(name, value) }
+                propertyManager.setConfigUriPath(uri.path ?: uri.toString())
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: ConfigImportException) {
+                showErrorToast(e.messageId, e.formatArgs)
+            } catch (_: Exception) {
+                showErrorToast(R.string.config_import_error, emptyList())
             }
         }
     }
 
-    private fun tryParseXmlFile(inputStream: InputStream) {
+    private fun tryParseXmlFile(inputStream: InputStream): Map<Settings.Name, String> {
         val parser = Xml.newPullParser()
         val settings = Settings.Name.All.associateBy { it.encodedName }
-        val found = mutableSetOf<String>()
+        val found = mutableMapOf<String, String>()
         parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, false)
         parser.setInput(inputStream, null)
         parser.nextTag()
         parser.require(XmlPullParser.START_TAG, null, "properties")
-        while (parser.next() != XmlPullParser.END_DOCUMENT) {
-            while (parser.next() != XmlPullParser.END_TAG) {
-                if (parser.eventType != XmlPullParser.START_TAG) {
-                    continue
-                }
-                val key = parser.getAttributeValue(null, "key")
-                parser.next()
-                if (parser.eventType != XmlPullParser.TEXT) {
-                    throw ConfigImportException(
-                        R.string.config_import_error_missing_text,
-                        listOf(key)
-                    )
-                }
-                val value = parser.text
-                if (key in found) {
-                    throw ConfigImportException(R.string.config_import_duplicate, listOf(key))
-                }
-                val setting = settings[key]
-                if (setting != null) {
-                    found.add(key)
-                    propertyManager.setValue(setting, value)
-                }
+        while (parser.nextTag() == XmlPullParser.START_TAG) {
+            if (parser.name == "comment") {
+                parser.nextText()
+                continue
             }
+            parser.require(XmlPullParser.START_TAG, null, "entry")
+            val key = parser.getAttributeValue(null, "key")
+                ?: throw ConfigImportException(R.string.config_import_error, emptyList())
+            val value = parser.nextText()
+            if (value.isEmpty()) {
+                throw ConfigImportException(R.string.config_import_error_missing_text, listOf(key))
+            }
+            if (key in found) throw ConfigImportException(R.string.config_import_duplicate, listOf(key))
+            if (key in settings) found[key] = value
         }
+        parser.require(XmlPullParser.END_TAG, null, "properties")
         if (found.size != settings.size) {
-            val missing = (settings.keys - found).joinToString(", ")
+            val missing = (settings.keys - found.keys).joinToString(", ")
             throw ConfigImportException(R.string.config_import_missing, listOf(missing))
         }
+        return found.mapKeys { (key, _) -> settings.getValue(key) }
     }
 
     private fun Uri.assertValidDirectory(): Boolean = try {
@@ -202,12 +197,20 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun onSetEncDir(uri: Uri?) {
-        if (uri == null || !uri.assertValidDirectory()) {
-            showErrorToast(R.string.enc_dir_error, emptyList())
-            return
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                if (uri == null || !uri.assertValidDirectory()) {
+                    showErrorToast(R.string.enc_dir_error, emptyList())
+                    return@launch
+                }
+                claimPersistentUriPermission(uri)
+                propertyManager.setEncDirUri(uri.toString())
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                showErrorToast(R.string.enc_dir_error, emptyList())
+            }
         }
-        claimPersistentUriPermission(uri)
-        propertyManager.setEncDirUri(uri.toString())
     }
 
     fun onSetLogDir(uri: Uri?) {
