@@ -1,8 +1,6 @@
 package co.samco.mendroid.upload
 
 import android.app.Application
-import android.database.sqlite.SQLiteDatabase
-import android.database.sqlite.SQLiteOpenHelper
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.*
@@ -85,29 +83,6 @@ class UploadQueueTest {
         queue.forget(old.revision)
         assertEquals(1, queue.pending().size)
     }
-    @Test fun migratesOriginalExperimentalQueueWithoutUploadingUnverifiedFiles() = runBlocking {
-        val context = RuntimeEnvironment.getApplication()
-        queue.close()
-        val legacy = object : SQLiteOpenHelper(context, "nextcloud-uploads.db", null, 1) {
-            override fun onCreate(db: SQLiteDatabase) {
-                db.execSQL("""CREATE TABLE uploads (id INTEGER PRIMARY KEY, source TEXT NOT NULL,
-                    account TEXT NOT NULL, remote TEXT NOT NULL, kind TEXT NOT NULL,
-                    revision INTEGER NOT NULL, state TEXT NOT NULL, message TEXT NOT NULL DEFAULT '',
-                    UNIQUE(account, remote, source))""")
-            }
-            override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) = Unit
-        }
-        legacy.writableDatabase.execSQL("""INSERT INTO uploads
-            (source, account, remote, kind, revision, state)
-            VALUES ('content://log', 'account', '/phone.mend', 'LOG', 1, 'ATTENTION')""")
-        legacy.close()
-        queue = SqliteUploadQueue(context)
-        queue.retryFailures()
-        assertTrue(queue.pending().isEmpty())
-        assertEquals("phone.mend", queue.entries.value.single().file.name)
-        assertTrue(queue.entries.value.single().failure?.requiresLocalVerification == true)
-    }
-
     @Test fun transferRecoveryNeverInterferesWithAnActiveLocalWrite() = runBlocking {
         val writing = queue.beginWrite(file, target)
         queue.enqueueExisting(file.copy(uri = "content://other"), target.copy(path = RemotePath.of("/other")))

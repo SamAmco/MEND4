@@ -4,6 +4,7 @@ import android.content.ContentValues
 import android.content.Context
 import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
+import android.database.sqlite.SQLiteException
 import android.database.sqlite.SQLiteOpenHelper
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
@@ -36,7 +37,7 @@ interface UploadQueue {
 /** Every transition is transactional and checks both revision and expected state. */
 @Singleton
 class SqliteUploadQueue @Inject constructor(@ApplicationContext context: Context) :
-    SQLiteOpenHelper(context, "nextcloud-uploads.db", null, 2), UploadQueue {
+    SQLiteOpenHelper(context, "nextcloud-uploads.db", null, 1), UploadQueue {
     private val lock = Any()
     private var initialized = false
     private val mutableEntries = MutableStateFlow<List<UploadEntry>>(emptyList())
@@ -50,18 +51,8 @@ class SqliteUploadQueue @Inject constructor(@ApplicationContext context: Context
             UNIQUE(account, remote, source))""")
     }
 
-    // Preserve queues created by the original implementation if someone installed that build.
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
-        if (oldVersion < 2) {
-            db.execSQL("ALTER TABLE uploads ADD COLUMN name TEXT NOT NULL DEFAULT ''")
-            db.execSQL("ALTER TABLE uploads ADD COLUMN failure TEXT")
-            db.rawQuery("SELECT id, remote FROM uploads", null).use { cursor ->
-                while (cursor.moveToNext()) db.update("uploads", ContentValues().apply {
-                    put("name", cursor.getString(1).substringAfterLast('/'))
-                }, "id = ?", arrayOf(cursor.getLong(0).toString()))
-            }
-            db.execSQL("UPDATE uploads SET failure = 'LOCAL_WRITE_INTERRUPTED' WHERE state = 'ATTENTION'")
-        }
+        throw SQLiteException("Missing upload database migration from $oldVersion to $newVersion")
     }
 
     private suspend fun <T> access(publish: Boolean = true, block: SQLiteDatabase.() -> T): T = withContext(Dispatchers.IO) {

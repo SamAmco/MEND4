@@ -11,15 +11,14 @@ manageable through the user's file manager.
 ## Review order
 
 The replacement jj stack starts at `n` (`nyvoxlro`, the existing date-scroll change).
-The original implementation is retained separately for reference. Each feature
+Each feature
 revision introduces final component implementations and their tests, rather than
 introducing a large implementation and then refactoring it in later revisions.
 
 1. **Platform imports.** Independent Kotlin name cleanup, without behavior changes.
 2. **Queue contracts.** `UploadModels`, `UploadQueue`, and their tests. Start here
    to understand file identity, destinations, revisions, failures, and legal state
-   transitions. Includes test runtime support and conservative migration of queues
-   from an earlier experimental APK.
+   transitions. Includes test runtime support.
 3. **Nextcloud interfaces.** Account/session types, protected credentials, settings,
    shared HTTP mechanics, browser login, and WebDAV listing/staging/publication.
    Protocol and settings tests live with these components.
@@ -83,6 +82,20 @@ All implementation paths below are under
   Observable state never contains the Nextcloud app password.
 - Deleting local files never deletes remote backups. Uploads need no MEND private key.
 
+## Database evolution
+
+The upload database starts at schema version 1. There are no migrations for
+unpublished development builds. `SQLiteOpenHelper` stores the schema version in
+SQLite's `PRAGMA user_version`; it does not require a version table.
+
+After release, schema changes must increment the helper version and implement
+transactional, sequential migrations in `onUpgrade`, with tests starting from each
+supported released schema. Preserve queued destinations, revisions, and local-write
+failure states. Persisted enum names are part of this schema contract too.
+Missing migrations fail without dropping the database; downgrades also fail by
+default. Do not silently recreate the queue: losing pending work or the distinction
+between successful and interrupted local writes would lose backup guarantees.
+
 ## Limits and acceptance checks
 
 One account and two remote folders. Transfers restart instead of resuming chunks;
@@ -92,7 +105,7 @@ External file-manager edits cannot participate in MEND's local-write lock.
 
 The debug APK is `mendroid/build/outputs/apk/debug/mendroid-debug.apk`.
 Run `./gradlew :mendroid:assembleDebug :mendroid:lintDebug :mendroid:testDebugUnitTest`.
-The complete feature has 60 passing unit tests (50 upload tests plus 10 existing tests).
+The complete feature has 59 passing unit tests (49 upload tests plus 10 existing tests).
 Tests use real SQLite through Robolectric, fake transfer boundaries for runner
 contracts, mocked HTTP for WebDAV/login, and controlled coroutine scheduling for
 view-model races. Each rebuilt revision is checked before proceeding to the next.
