@@ -28,12 +28,9 @@ interface UploadEntryPoint {
 }
 
 /** WorkManager adaptation only; transfer behavior is independently testable in UploadRunner. */
-open class UploadWorker(context: Context, parameters: WorkerParameters) : CoroutineWorker(context, parameters) {
-    protected open val retryFailures = false
-
+class UploadWorker(context: Context, parameters: WorkerParameters) : CoroutineWorker(context, parameters) {
     override suspend fun doWork(): Result = try {
         val services = EntryPointAccessors.fromApplication(applicationContext, UploadEntryPoint::class.java)
-        if (retryFailures && runAttemptCount == 0) services.queue().retryFailures()
         val runner = services.runner()
         when (runner.run { setForeground(getForegroundInfo()) }) {
             RunResult.RETRY -> Result.retry()
@@ -62,8 +59,17 @@ open class UploadWorker(context: Context, parameters: WorkerParameters) : Corout
     }
 }
 
-class UploadRetryWorker(context: Context, parameters: WorkerParameters) : UploadWorker(context, parameters) {
-    override val retryFailures = true
+/** Prepare a manual retry separately so database failures cannot consume the user's retry action. */
+class UploadRetryWorker(context: Context, parameters: WorkerParameters) : CoroutineWorker(context, parameters) {
+    override suspend fun doWork(): Result = try {
+        EntryPointAccessors.fromApplication(applicationContext, UploadEntryPoint::class.java).queue().retryFailures()
+        Result.success()
+    } catch (e: CancellationException) {
+        throw e
+    } catch (_: Exception) {
+        EntryPointAccessors.fromApplication(applicationContext, UploadEntryPoint::class.java).failures().showFailure()
+        Result.retry()
+    }
 }
 
 class UploadWakeWorker(context: Context, parameters: WorkerParameters) : CoroutineWorker(context, parameters) {

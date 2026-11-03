@@ -91,11 +91,13 @@ including across process restarts; success, replacement by a new local revision,
 or forgetting the failed entry clears it. No failure notification is posted for
 healthy queued work.
 
-Retry schedules a separate network-constrained attempt, bypassing the automatic
-worker's backoff. Repeated taps replace that manual request. Both workers use the
-same serialized runner; ordinary exponential backoff remains in place. Manual
-retry uses the existing queue policy and never enables a failed/interrupted local
-write. Notification posting respects Android's notification permission.
+Retry queues a preparation step followed by a network-constrained upload, bypassing
+the automatic worker's backoff. Repeated taps replace that manual request. The
+preparation step retries database errors until it can requeue eligible entries.
+After that, only the upload step repeats on network failures, so permanent failures
+are not continually requeued. Automatic and manual uploads use the same serialized
+runner and exponential backoff. Ordinary retry never enables failed/interrupted
+local writes. Notification posting respects Android's notification permission.
 
 ## Database evolution
 

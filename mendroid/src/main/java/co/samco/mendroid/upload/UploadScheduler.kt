@@ -33,10 +33,10 @@ class UploadScheduler @Inject constructor(
 
     fun retryFailedUploads() {
         // A separate request bypasses the automatic worker's backoff. The runner still serializes transfers.
-        WorkManager.getInstance(context).enqueueUniqueWork("nextcloud-manual-retry", ExistingWorkPolicy.REPLACE,
+        WorkManager.getInstance(context).beginUniqueWork("nextcloud-manual-retry", ExistingWorkPolicy.REPLACE,
             OneTimeWorkRequestBuilder<UploadRetryWorker>()
-                .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
                 .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS).build())
+            .then(uploadRequest()).enqueue()
     }
 
     override fun requestUpload() = wake(WakeReason.LOCAL_CHANGE)
@@ -53,8 +53,10 @@ class UploadScheduler @Inject constructor(
         }
         // Append closes the race between a worker finding no pending entry and a new local write.
         manager.enqueueUniqueWork("nextcloud-uploads", ExistingWorkPolicy.APPEND_OR_REPLACE,
-            OneTimeWorkRequestBuilder<UploadWorker>()
-                .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
-                .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS).build())
+            uploadRequest())
     }
+
+    private fun uploadRequest() = OneTimeWorkRequestBuilder<UploadWorker>()
+        .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
+        .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS).build()
 }
