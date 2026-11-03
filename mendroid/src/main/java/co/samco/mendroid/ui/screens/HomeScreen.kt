@@ -25,6 +25,8 @@ fun HomeScreen(
     val homeViewModel = viewModel<HomeViewModel>()
     val selectedTabIndex = homeViewModel.state.collectAsState().value.index
 
+    NextcloudUploadsButton()
+
     PrimaryTabRow(
         containerColor = MaterialTheme.colorScheme.background,
         contentColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),

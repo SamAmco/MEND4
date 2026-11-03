@@ -1,0 +1,64 @@
+package co.samco.mendroid.upload
+
+import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+
+/** Application commands exposed to presentation; persistence and credentials stay encapsulated. */
+class BackupService @Inject constructor(
+    private val settings: UploadSettings,
+    private val credentials: CredentialStore,
+    private val queue: UploadQueue,
+    private val writer: LocalBackupWriter,
+    private val existing: ExistingBackupSource,
+    private val folders: RemoteFolderBrowser,
+    private val wakeup: UploadWakeup,
+    runner: UploadRunner
+) {
+    val config = settings.config
+    val entries = queue.entries
+    val progress = runner.progress
+
+    suspend fun refresh() { queue.pending() }
+    suspend fun connect(session: NextcloudSession) = withContext(Dispatchers.IO) {
+        settings.connect(session)
+        retry()
+    }
+    suspend fun disconnect() = withContext(Dispatchers.IO) { settings.disconnect() }
+    private fun session(): NextcloudSession = (credentials.read() as? CredentialRead.Available)?.session
+        ?: throw UploadException(UploadFailure.ACCOUNT_UNAVAILABLE)
+    suspend fun folders(path: RemotePath): List<RemoteFolder> = folders.folders(session(), path)
+    suspend fun selectFolder(kind: UploadKind, path: RemotePath) = withContext(Dispatchers.IO) {
+        settings.selectFolder(kind, path)
+        wakeup.requestUpload()
+    }
+    suspend fun pause(value: Boolean) = withContext(Dispatchers.IO) {
+        settings.pause(value)
+        if (!value) wakeup.requestUpload()
+    }
+    suspend fun allowMobileData(value: Boolean) = withContext(Dispatchers.IO) {
+        settings.allowMobileData(value)
+        wakeup.requestUpload()
+    }
+    suspend fun retry() { queue.retryFailures(); wakeup.requestUpload() }
+    suspend fun forget(entry: UploadEntry) { queue.forget(entry.revision) }
+
+    suspend fun backupExisting() {
+        val destination = config.value
+        require(destination.account != null && destination.attachments != null && destination.logs != null)
+        queue.pending() // Load/recover persisted entries before deciding which files are safe to scan.
+        val protected = queue.entries.value.filter {
+            it.state == UploadState.WRITING || it.failure?.requiresLocalVerification == true
+        }.map { it.file.uri }.toSet()
+        for (file in existing.files().filterNot { it.uri in protected }) {
+            check(writer.enqueueExisting(file, destination.target(file)) == BackupRegistration.QUEUED)
+        }
+        settings.acknowledgeRescan()
+    }
+
+    suspend fun backupVerified(entry: UploadEntry) {
+        require(entry.failure?.requiresLocalVerification == true)
+        require(config.value.account?.id == entry.target.account)
+        check(writer.enqueueExisting(entry.file, entry.target) == BackupRegistration.QUEUED)
+    }
+}

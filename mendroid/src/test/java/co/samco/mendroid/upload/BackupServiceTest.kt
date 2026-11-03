@@ -1,0 +1,61 @@
+package co.samco.mendroid.upload
+
+import android.app.Application
+import kotlinx.coroutines.runBlocking
+import org.junit.After
+import org.junit.Assert.*
+import org.junit.Before
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
+import org.robolectric.annotation.Config
+
+@RunWith(RobolectricTestRunner::class)
+@Config(application = Application::class, sdk = [35])
+class BackupServiceTest {
+    private lateinit var env: UploadTestEnvironment
+    @Before fun setup() {
+        val context = RuntimeEnvironment.getApplication()
+        context.deleteDatabase("nextcloud-uploads.db")
+        env = UploadTestEnvironment(context)
+        env.connect()
+    }
+    @After fun teardown() { env.queue.close() }
+    private fun service(existing: List<LocalBackupFile> = emptyList()): BackupService {
+        val runner = UploadRunner(env.queue, env.snapshots, UploadEligibility(env.settings, env.credentials, NetworkStatus { false }), TestTransport())
+        return BackupService(env.settings, env.credentials, env.queue, env.writer, ExistingBackupSource { existing },
+            object : RemoteFolderBrowser {
+                override suspend fun folders(session: NextcloudSession, path: RemotePath) = emptyList<RemoteFolder>()
+            }, env.wakeup, runner)
+    }
+    @Test fun explicitVerificationRetainsOriginalDestinationAfterSettingsChange() = runBlocking {
+        val file = env.files.source()
+        val original = requireNotNull(env.settings.config.value.target(file))
+        env.queue.failWrite(env.queue.beginWrite(file, original))
+        val failed = env.queue.entries.value.single()
+        env.settings.selectFolder(UploadKind.LOG, RemotePath.of("/different"))
+        val service = service()
+        service.retry()
+        assertTrue(env.queue.pending().isEmpty())
+        service.backupVerified(failed)
+        assertEquals(original, env.queue.pending().single().target)
+    }
+    @Test fun oldFileBackupDoesNotRewriteLocalFiles() = runBlocking {
+        val file = env.files.source(content = "old ciphertext")
+        env.settings.recordUnqueuedSave()
+        service(listOf(file)).backupExisting()
+        assertFalse(env.settings.config.value.needsRescan)
+        assertEquals(1, env.queue.pending().size)
+        assertFalse(env.files.outputClosed)
+        assertEquals("old ciphertext", env.files.sources.getValue(file.uri).readText())
+    }
+    @Test fun bulkImportNeverBypassesVerificationOfFailedLocalWrites() = runBlocking {
+        val file = env.files.source()
+        env.queue.failWrite(env.queue.beginWrite(file, requireNotNull(env.settings.config.value.target(file))))
+        service(listOf(file)).backupExisting()
+        assertTrue(env.queue.pending().isEmpty())
+        assertEquals(UploadFailure.LOCAL_WRITE_FAILED, env.queue.entries.value.single().failure)
+    }
+
+}

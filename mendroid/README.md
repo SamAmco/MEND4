@@ -95,3 +95,63 @@ KSP 2.3.12 currently emits a Gradle 9.8 deprecation warning for its internal use
 	<img src="./screenshots/6.png" width="200px" />
 	<img src="./screenshots/7.png" width="200px" />
 </p>
+
+## Automatic Nextcloud backups
+
+Nextcloud uploads are optional and keep your existing local storage arrangement.
+Select an **enc folder on your device** and local log files as usual. From Settings
+or the upload status button above the main tabs:
+
+1. Enter your Nextcloud HTTPS server address (including its subdirectory, if any).
+2. Tap **Connect to Nextcloud**, sign in in your browser, and grant MEND access.
+3. Select an existing remote folder for attachments and another for logs. The root
+   folder is also selectable. MEND does not need the Nextcloud Android app.
+4. New successful attachment and log writes are queued automatically. To include
+   older files, tap **Back up existing local files** after selecting both folders.
+
+Uploads continue while MEND is locked. By default they wait for an unmetered
+connection; enable metered connections if you want to use mobile data. Android
+may delay background work, particularly after force-stopping the app or under
+battery restrictions. Reopen MEND after force-stopping it to resume scheduling.
+The status button opens individual upload states, progress and errors, with
+**Retry**, **Pause uploads**, and **Disconnect** controls. **Remove from upload
+list** clears a completed/failed queue entry without deleting local or remote
+files. Removing an entry does not prevent a future MEND write from queuing it again.
+
+The phone is authoritative for `.mend` logs: each upload replaces the whole remote
+log backup. Give this phone its own log filenames; changes made to the remote log
+by another machine will be overwritten. Multiple local writes coalesce and all
+transfers run serially. Attachments preserve their existing `.enc` filenames;
+an existing remote attachment is accepted only if its encrypted content matches.
+Two different local URIs targeting one remote name require attention.
+
+Local files remain user-managed. Deleting a local file never deletes its remote
+backup, but removing or moving a pending file may prevent its upload. MEND does not
+download missing attachments yet; restore them manually into the enc folder before
+opening their log references. It does not watch for edits made by other apps.
+An in-progress upload holds a temporary encrypted snapshot, so it can finish even
+if you delete the local original after that snapshot was taken.
+
+If a local save succeeds but the queue cannot record it, MEND shows a persistent
+attention warning. After checking the local files, use **Back up existing local
+files** to register them and clear that warning.
+
+Pending jobs remember their original account and remote path. Changing remote
+folder selections affects future writes, and reconnecting the original account
+allows its pending jobs to resume. A failed/interrupted local write is never
+uploaded automatically: check the local file and explicitly queue its backup, or write it again.
+Ordinary Retry and reconnect never enable failed/interrupted local writes. After
+checking a file, use its **Back up checked local file** action to explicitly queue
+it again; this retains the original destination. New successful writes also clear
+the local-write failure for their revision.
+
+No plaintext, private encryption key, or `config.xml` is uploaded. The Nextcloud
+app password is encrypted using Android Keystore and excluded from Android backup.
+
+Transfers use WebDAV PUT followed by MOVE from a temporary encrypted sibling.
+They currently restart a failed transfer rather than resuming chunks, so the
+server/proxy must allow a request as large as the encrypted file. Oversized files,
+full storage, access denial, and destination conflicts appear as errors. A failed
+connection can leave a `.mend-upload-*` encrypted temporary file on the server;
+it is safe to remove those when MEND is not uploading. MEND retains local files
+after successful uploads and does not propagate deletions.

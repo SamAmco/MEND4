@@ -5,6 +5,8 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContract
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -72,7 +74,8 @@ fun SettingsScreen() {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 32.dp),
+                    .padding(horizontal = 32.dp)
+                    .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.Center
             ) {
                 ButtonSettingRow(
@@ -100,6 +103,7 @@ fun SettingsScreen() {
                 )
                 Spacer(modifier = Modifier.size(48.dp))
                 ThemeButtons()
+                NextcloudUploadsButton()
                 Spacer(modifier = Modifier.size(48.dp))
             }
         }
