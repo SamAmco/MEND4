@@ -101,6 +101,8 @@
     <string name="pause_uploads">Pause uploads</string>
     <string name="upload_mobile_data">Allow metered connections (mobile data)</string>
     <string name="nextcloud_local_help">New MEND writes upload automatically. Log backups overwrite the remote copy. Deleting a local file never deletes its backup. Uploads may wait for connectivity or Android background scheduling.</string>
+    <string name="upload_failure_notification_title">Nextcloud upload failed</string>
+    <string name="upload_failure_notification_text">Some files could not be backed up. Tap to review, or retry the uploads.</string>
     <string name="upload_retry">Retry</string>
     <string name="nextcloud_disconnect">Disconnect</string>
     <string name="backup_existing_files">Back up existing local files</string>

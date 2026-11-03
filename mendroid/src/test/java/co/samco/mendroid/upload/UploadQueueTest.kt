@@ -83,6 +83,20 @@ class UploadQueueTest {
         queue.forget(old.revision)
         assertEquals(1, queue.pending().size)
     }
+    @Test fun lastFailureSurvivesRetryAndRestartUntilSuccessfulUpload() = runBlocking {
+        queue.enqueueExisting(file, target)
+        val revision = queue.pending().single().revision
+        queue.failUpload(requireNotNull(queue.claim(revision)), UploadFailure.AUTHENTICATION)
+        queue.retryFailures()
+        assertEquals(UploadFailure.AUTHENTICATION, queue.pending().single().failure)
+        val upload = requireNotNull(queue.claim(revision))
+        queue.close()
+        queue = SqliteUploadQueue(RuntimeEnvironment.getApplication())
+        assertEquals(UploadFailure.AUTHENTICATION, queue.pending().single().failure)
+        queue.completeUpload(requireNotNull(queue.claim(upload.revision)))
+        assertNull(queue.entries.value.single().failure)
+    }
+
     @Test fun transferRecoveryNeverInterferesWithAnActiveLocalWrite() = runBlocking {
         val writing = queue.beginWrite(file, target)
         queue.enqueueExisting(file.copy(uri = "content://other"), target.copy(path = RemotePath.of("/other")))

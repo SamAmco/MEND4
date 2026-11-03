@@ -23,12 +23,18 @@ import kotlinx.coroutines.CancellationException
 interface UploadEntryPoint {
     fun runner(): UploadRunner
     fun scheduler(): UploadScheduler
+    fun queue(): UploadQueue
+    fun failures(): UploadFailureNotifications
 }
 
 /** WorkManager adaptation only; transfer behavior is independently testable in UploadRunner. */
-class UploadWorker(context: Context, parameters: WorkerParameters) : CoroutineWorker(context, parameters) {
+open class UploadWorker(context: Context, parameters: WorkerParameters) : CoroutineWorker(context, parameters) {
+    protected open val retryFailures = false
+
     override suspend fun doWork(): Result = try {
-        val runner = EntryPointAccessors.fromApplication(applicationContext, UploadEntryPoint::class.java).runner()
+        val services = EntryPointAccessors.fromApplication(applicationContext, UploadEntryPoint::class.java)
+        if (retryFailures && runAttemptCount == 0) services.queue().retryFailures()
+        val runner = services.runner()
         when (runner.run { setForeground(getForegroundInfo()) }) {
             RunResult.RETRY -> Result.retry()
             RunResult.COMPLETE, RunResult.WAITING -> Result.success()
@@ -37,6 +43,7 @@ class UploadWorker(context: Context, parameters: WorkerParameters) : CoroutineWo
         throw e
     } catch (_: Exception) {
         // The queue itself may be temporarily unavailable, so there may be nowhere to record an error.
+        EntryPointAccessors.fromApplication(applicationContext, UploadEntryPoint::class.java).failures().showFailure()
         Result.retry()
     }
 
@@ -53,6 +60,10 @@ class UploadWorker(context: Context, parameters: WorkerParameters) : CoroutineWo
             .setContentIntent(intent).setOngoing(true).build()
         return ForegroundInfo(103, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
     }
+}
+
+class UploadRetryWorker(context: Context, parameters: WorkerParameters) : UploadWorker(context, parameters) {
+    override val retryFailures = true
 }
 
 class UploadWakeWorker(context: Context, parameters: WorkerParameters) : CoroutineWorker(context, parameters) {

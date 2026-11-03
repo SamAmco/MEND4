@@ -114,7 +114,9 @@ class SqliteUploadQueue @Inject constructor(@ApplicationContext context: Context
     ): Transition {
         val count = update("uploads", ContentValues().apply {
             put("state", next.name)
-            if (failure == null) putNull("failure") else put("failure", failure.name)
+            // Keep the last failure visible through retries; success or a new revision clears it.
+            if (failure != null) put("failure", failure.name)
+            else if (next == UploadState.UPLOADED) putNull("failure")
         }, "id = ? AND revision = ? AND state = ?",
             arrayOf(revision.id.toString(), revision.number.toString(), expected.name))
         return if (count == 1) Transition.APPLIED else Transition.SUPERSEDED
@@ -164,7 +166,7 @@ class SqliteUploadQueue @Inject constructor(@ApplicationContext context: Context
         access {
             // Failed local writes are never made uploadable by Retry or reconnecting.
             val protected = UploadFailure.entries.filter { it.requiresLocalVerification }.joinToString(",") { "'${it.name}'" }
-            execSQL("UPDATE uploads SET state = 'PENDING', failure = NULL WHERE state = 'ATTENTION' AND failure NOT IN ($protected)")
+            execSQL("UPDATE uploads SET state = 'PENDING' WHERE state = 'ATTENTION' AND failure NOT IN ($protected)")
         }
     }
     override suspend fun forget(revision: UploadRevision) {

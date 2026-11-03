@@ -21,12 +21,22 @@ enum class WakeReason { LOCAL_CHANGE, RECOVERY, UNMETERED_AVAILABLE }
 @Singleton
 class UploadScheduler @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val settings: UploadSettings
+    private val settings: UploadSettings,
+    private val failures: UploadFailureNotifications
 ) : UploadWakeup {
     fun initialize() {
+        failures.start()
         WorkManager.getInstance(context).enqueueUniquePeriodicWork("nextcloud-recovery", ExistingPeriodicWorkPolicy.KEEP,
             PeriodicWorkRequestBuilder<UploadWakeWorker>(15, TimeUnit.MINUTES).build())
         requestUpload()
+    }
+
+    fun retryFailedUploads() {
+        // A separate request bypasses the automatic worker's backoff. The runner still serializes transfers.
+        WorkManager.getInstance(context).enqueueUniqueWork("nextcloud-manual-retry", ExistingWorkPolicy.REPLACE,
+            OneTimeWorkRequestBuilder<UploadRetryWorker>()
+                .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
+                .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS).build())
     }
 
     override fun requestUpload() = wake(WakeReason.LOCAL_CHANGE)

@@ -82,6 +82,21 @@ All implementation paths below are under
   Observable state never contains the Nextcloud app password.
 - Deleting local files never deletes remote backups. Uploads need no MEND private key.
 
+## Upload failure notification
+
+An upload failure posts one ongoing, quiet notification with a Retry action, using
+an ID separate from the foreground-service notification. Further failures update
+the same notification. The last failure stays recorded while an upload is retried,
+including across process restarts; success, replacement by a new local revision,
+or forgetting the failed entry clears it. No failure notification is posted for
+healthy queued work.
+
+Retry schedules a separate network-constrained attempt, bypassing the automatic
+worker's backoff. Repeated taps replace that manual request. Both workers use the
+same serialized runner; ordinary exponential backoff remains in place. Manual
+retry uses the existing queue policy and never enables a failed/interrupted local
+write. Notification posting respects Android's notification permission.
+
 ## Database evolution
 
 The upload database starts at schema version 1. There are no migrations for
@@ -105,7 +120,7 @@ External file-manager edits cannot participate in MEND's local-write lock.
 
 The debug APK is `mendroid/build/outputs/apk/debug/mendroid-debug.apk`.
 Run `./gradlew :mendroid:assembleDebug :mendroid:lintDebug :mendroid:testDebugUnitTest`.
-The complete feature has 59 passing unit tests (49 upload tests plus 10 existing tests).
+The complete feature has 65 passing unit tests (55 upload tests plus 10 existing tests).
 Tests use real SQLite through Robolectric, fake transfer boundaries for runner
 contracts, mocked HTTP for WebDAV/login, and controlled coroutine scheduling for
 view-model races. Each rebuilt revision is checked before proceeding to the next.
