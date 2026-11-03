@@ -93,7 +93,7 @@
     <string name="all_files_uploaded">All files uploaded</string>
     <string name="upload_close">Close</string>
     <string name="upload_cancel">Cancel</string>
-    <string name="nextcloud_server">Nextcloud server (https://…)</string>
+    <string name="nextcloud_server">Nextcloud server</string>
     <string name="nextcloud_setup_help">Connect in your browser, then choose backup destinations or additional folders to read from. Local files stay where they are.</string>
     <string name="nextcloud_finish_login">Finish signing in and grant MEND access in your browser.</string>
     <string name="remote_attachment_folder">Attachments: %1$s</string>

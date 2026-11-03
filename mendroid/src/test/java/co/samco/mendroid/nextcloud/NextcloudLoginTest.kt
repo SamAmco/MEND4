@@ -33,7 +33,7 @@ class NextcloudLoginTest {
                 else -> """{"ocs":{"data":{"id":"actual-user"}}}"""
             }
         }
-        val request = login.begin("https://cloud.example")
+        val request = login.begin("cloud.example")
         assertEquals("https://cloud.example/login", request.browserUrl)
         val session = login.awaitSession(request)
         assertEquals("actual-user", session.account.userId)

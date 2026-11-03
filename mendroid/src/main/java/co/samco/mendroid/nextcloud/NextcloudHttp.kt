@@ -27,7 +27,8 @@ class NextcloudHttp internal constructor(private val client: OkHttpClient) {
     }
 
     fun serverUrl(value: String): String {
-        val url = value.trim().trimEnd('/').toHttpUrl()
+        val address = value.trim().let { if ("://" in it) it else "https://$it" }
+        val url = address.trimEnd('/').toHttpUrl()
         require(url.isHttps && url.username.isEmpty() && url.password.isEmpty() && url.query == null && url.fragment == null)
         return url.toString().trimEnd('/')
     }

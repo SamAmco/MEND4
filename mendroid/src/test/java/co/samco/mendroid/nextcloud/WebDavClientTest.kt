@@ -153,6 +153,8 @@ class WebDavClientTest {
     @Test fun pathsAreEncodedOnceAndSetupRequiresHttps() {
         assertTrue(client.fileUrl(session().account, RemotePath.of("/a b/ü.enc")).encodedPath.endsWith("/a%20b/%C3%BC.enc"))
         val http = NextcloudHttp()
+        assertEquals("https://shc-cloud.internal", http.serverUrl(" shc-cloud.internal/ "))
+        assertEquals("https://cloud.example:8443/nextcloud", http.serverUrl("cloud.example:8443/nextcloud/"))
         for (url in listOf("http://cloud.example", "https://user:pass@cloud.example", "https://cloud.example/?token=secret")) {
             try { http.serverUrl(url); fail(url) } catch (_: IllegalArgumentException) { }
         }
