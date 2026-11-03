@@ -35,6 +35,8 @@ class BackupService @Inject constructor(
         settings.selectFolder(kind, path)
         wakeup.requestUpload()
     }
+    suspend fun addAdditionalFolder(path: RemotePath) = withContext(Dispatchers.IO) { settings.addAdditionalFolder(path) }
+    suspend fun removeAdditionalFolder(path: RemotePath) = withContext(Dispatchers.IO) { settings.removeAdditionalFolder(path) }
     suspend fun pause(value: Boolean) = withContext(Dispatchers.IO) {
         settings.pause(value)
         wakeup.rescheduleUploads()

@@ -15,16 +15,20 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import co.samco.mendroid.R
 import co.samco.mendroid.upload.RemotePath
-import co.samco.mendroid.upload.UploadKind
+import co.samco.mendroid.viewmodel.NextcloudFolderUse
 import co.samco.mendroid.viewmodel.FolderPickerState
 
 @Composable
 internal fun NextcloudFolderPicker(
-    picker: FolderPickerState, browse: (UploadKind, RemotePath) -> Unit, select: () -> Unit, close: () -> Unit
+    picker: FolderPickerState, browse: (NextcloudFolderUse, RemotePath) -> Unit, select: () -> Unit, close: () -> Unit
 ) {
     AlertDialog(
         onDismissRequest = close,
-        title = { Text(stringResource(if (picker.kind == UploadKind.ATTACHMENT) R.string.choose_attachment_folder else R.string.choose_log_folder)) },
+        title = { Text(stringResource(when (picker.use) {
+            NextcloudFolderUse.ATTACHMENTS -> R.string.choose_attachment_folder
+            NextcloudFolderUse.LOGS -> R.string.choose_log_folder
+            NextcloudFolderUse.ADDITIONAL -> R.string.add_read_folder
+        })) },
         confirmButton = {
             TextButton(onClick = select, enabled = !picker.loading && picker.error == null) { Text(stringResource(R.string.use_this_folder)) }
         },
@@ -34,11 +38,11 @@ internal fun NextcloudFolderPicker(
                 Text(picker.path.value)
                 if (picker.loading) LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
                 if (picker.path != RemotePath.ROOT) {
-                    TextButton(onClick = { browse(picker.kind, picker.path.parent) }) { Text(stringResource(R.string.parent_folder)) }
+                    TextButton(onClick = { browse(picker.use, picker.path.parent) }) { Text(stringResource(R.string.parent_folder)) }
                 }
                 LazyColumn(Modifier.heightIn(max = 300.dp)) {
                     items(picker.folders, key = { it.path.value }) { child ->
-                        TextButton(onClick = { browse(picker.kind, child.path) }) { Text(child.name) }
+                        TextButton(onClick = { browse(picker.use, child.path) }) { Text(child.name) }
                     }
                 }
                 picker.error?.let { NextcloudError(it) }

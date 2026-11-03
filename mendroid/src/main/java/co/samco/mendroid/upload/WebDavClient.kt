@@ -1,5 +1,8 @@
 package co.samco.mendroid.upload
 
+import co.samco.mendroid.remote.RemoteDirectoryEntry
+import co.samco.mendroid.remote.RemoteReadClient
+import java.io.OutputStream
 import java.io.File
 import java.io.IOException
 import java.io.InputStream
@@ -14,6 +17,7 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import okio.BufferedSink
+import org.xmlpull.v1.XmlPullParserException
 
 /** A completed temporary upload. The runner owns the decision to publish it. */
 interface StagedUpload {
@@ -29,18 +33,32 @@ interface RemoteFolderBrowser {
     suspend fun folders(session: NextcloudSession, path: RemotePath): List<RemoteFolder>
 }
 
-class WebDavClient @Inject constructor(private val http: NextcloudHttp) : UploadTransport, RemoteFolderBrowser {
+class WebDavClient @Inject constructor(private val http: NextcloudHttp) : UploadTransport, RemoteFolderBrowser, RemoteReadClient {
     internal fun fileUrl(account: NextcloudAccount, path: RemotePath): HttpUrl =
         "${account.server}/remote.php/dav/files/".toHttpUrl().newBuilder().addPathSegment(account.userId).apply {
             path.value.split('/').filter(String::isNotEmpty).forEach { addPathSegment(it) }
         }.build()
 
-    override suspend fun folders(session: NextcloudSession, path: RemotePath): List<RemoteFolder> = withContext(Dispatchers.IO) {
-        val root = fileUrl(session.account, path).newBuilder().addPathSegment("").build()
+    override suspend fun folders(session: NextcloudSession, path: RemotePath): List<RemoteFolder> =
+        children(session, path).filter { it.directory }.map { RemoteFolder(it.path.name, it.path) }
+
+    override suspend fun children(session: NextcloudSession, folder: RemotePath): List<RemoteDirectoryEntry> = withContext(Dispatchers.IO) {
+        val root = fileUrl(session.account, folder).newBuilder().addPathSegment("").build()
         val xml = """<d:propfind xmlns:d="DAV:"><d:prop><d:resourcetype/></d:prop></d:propfind>"""
         val response = http.request(http.authorized(session, root).header("Depth", "1")
             .method("PROPFIND", xml.toRequestBody("application/xml".toMediaType())).build())
-        WebDavFolders().parse(root, path, response)
+        try {
+            WebDavListing().parse(root, folder, response)
+        } catch (e: XmlPullParserException) {
+            throw UploadException(UploadFailure.INVALID_RESPONSE).apply { initCause(e) }
+        }
+    }
+
+    override suspend fun download(session: NextcloudSession, file: RemotePath, output: OutputStream) {
+        http.response(http.authorized(session, fileUrl(session.account, file)).get().build()) {
+            http.checkStatus(it.code)
+            it.body.byteStream().use { input -> input.copyTo(output) }
+        }
     }
 
     override suspend fun stage(session: NextcloudSession, path: RemotePath, file: File, progress: (Long) -> Unit): StagedUpload {

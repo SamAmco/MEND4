@@ -4,8 +4,9 @@
 
 Uploads are additive. Use the user-selected local enc folder and local log
 directory; back up completed MEND writes to two separately selected Nextcloud folders.
-The phone is authoritative for its logs. No remote deletion, remote download,
-external file watching, or automatic local cleanup. Local encrypted files remain
+The phone is authoritative for its locally written logs. There is no remote
+deletion, external file watching, or automatic local cleanup. Optional additional
+Nextcloud folders supply read-only logs and attachments on demand. Local encrypted files remain
 manageable through the user's file manager.
 
 ## Review order
@@ -47,7 +48,7 @@ All implementation paths below are under
 | `upload/EncryptedCredentialStore.kt` | Atomic credential-file format and non-exportable Android Keystore key. |
 | `upload/NextcloudLoginClient.kt` | Documented Login Flow v2 and OCS user-ID lookup. |
 | `upload/NextcloudHttp.kt` | HTTPS setup validation, credential-origin checks, cancellation, response handling and typed HTTP failures. |
-| `upload/WebDavClient.kt`, `WebDavFolders.kt` | DAV paths, successful folder-property parsing, streaming PUT, explicit MOVE publication, conflict verification and bounded remote cleanup. |
+| `upload/WebDavClient.kt`, `WebDavListing.kt` | DAV paths, successful direct-child resource parsing, streaming GET/PUT, explicit MOVE publication, conflict verification and bounded remote cleanup. |
 | `upload/LocalBackupWriter.kt` | Local output-stream lifetime and successful-write registration. Local success is independent of queue availability. |
 | `upload/UploadSnapshots.kt` | Claim a revision and copy its encrypted bytes under the local-write lock. Explicit ready/superseded/unavailable results and snapshot cleanup. |
 | `upload/UploadRunner.kt` | Serialized transfer lifecycle and the decision whether a staged revision may be published. No scheduler or UI dependencies. |
@@ -91,6 +92,26 @@ All implementation paths below are under
 - Typed failures determine retry policy; UI text comes from string resources.
   Observable state never contains the Nextcloud app password.
 - Deleting local files never deletes remote backups. Uploads need no MEND private key.
+
+## Additional read folders
+
+`remote/NextcloudReadFiles.kt` lists immediate children through the shared WebDAV
+client and downloads selected files. Selections are bound to the connected account;
+file access checks that account and direct parent both before and after network
+I/O. These sources do not register uploads or modify local directories. Each folder
+is listed independently so a failure does not hide local logs or healthy sources.
+
+`remote/AttachmentFiles.kt` resolves readable local attachments first, then looks
+for the exact encrypted filename in the additional folders. `SelectLogViewModel`
+combines local and remote log entries, distinguishes their origins and refreshes
+after folder configuration changes. Every remote open downloads fresh bytes.
+
+`remote/RemoteReadCache.kt` owns encrypted temporary downloads for one unlock
+session. `PrivateKeyManager` synchronously ends that session when locking: readers
+are cancelled, cached files removed, private keys cleared, and decrypted log state
+reset. Generation checks prevent late downloads or decryptions from publishing
+results into a later session, even if an operation ignores cancellation. Downloads
+are also cleared at startup; they provide no offline availability guarantee.
 
 ## Scheduling
 
@@ -139,14 +160,14 @@ between successful and interrupted local writes would lose backup guarantees.
 
 ## Limits and acceptance checks
 
-One account and two remote folders. Transfers restart instead of resuming chunks;
+One account, two backup destinations, and any number of additional read folders. Transfers restart instead of resuming chunks;
 large files need enough temporary device space and a compatible server request-size
 limit. Lost connections can leave encrypted `.mend-upload-*` siblings on the server.
 External file-manager edits cannot participate in MEND's local-write lock.
 
 The debug APK is `mendroid/build/outputs/apk/debug/mendroid-debug.apk`.
 Run `./gradlew :mendroid:assembleDebug :mendroid:lintDebug :mendroid:testDebugUnitTest`.
-The complete feature has 83 passing unit tests (64 upload tests, 9 log-directory tests, and 10 existing tests).
+The complete suite has 111 unit tests, including remote reads and lock-session races.
 Tests use real SQLite through Robolectric, fake transfer boundaries for runner
 contracts, mocked HTTP for WebDAV/login, and controlled coroutine scheduling for
 view-model races. Each rebuilt revision is checked before proceeding to the next.
@@ -157,4 +178,7 @@ restart, both folder pickers, attachment/log transfers, offline then reconnect,
 unmetered/metered policy, app locking during upload, expired credentials, full server
 storage and large transfers. Repeatedly append to a log during a slow upload and
 compare the final remote encrypted bytes with the latest local file. Confirm local
-deletion leaves the remote backup and that restoration remains a manual operation.
+deletion leaves the remote backup. For additional read folders, verify direct-child
+listings, same-name logs in different folders, local attachment precedence, partial
+folder failures, fresh remote downloads, account changes, and locking during a
+download. Confirm locking clears cached downloads and no late result restores them.

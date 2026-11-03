@@ -12,21 +12,15 @@ import co.samco.mend4.core.crypto.CryptoProvider
 import co.samco.mend4.core.crypto.UnlockResult
 import co.samco.mendroid.BuildConfig
 import co.samco.mendroid.R
+import co.samco.mendroid.remote.RemoteReadCache
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.merge
-import kotlinx.coroutines.flow.shareIn
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.yield
 import java.io.ByteArrayOutputStream
@@ -71,7 +65,8 @@ class PrivateKeyManagerImpl @Inject constructor(
     private val cryptoProvider: CryptoProvider,
     private val errorToastManager: ErrorToastManager,
     private val propertyManager: PropertyManager,
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    private val remoteCache: RemoteReadCache
 ) : PrivateKeyManager, CoroutineScope {
 
     companion object {
@@ -80,30 +75,15 @@ class PrivateKeyManagerImpl @Inject constructor(
 
     override val coroutineContext: CoroutineContext = Job()
 
-    private val screenOffEvents = MutableSharedFlow<Unit>()
-    private val userLockEvents = MutableSharedFlow<Unit>()
-
-    private val onSuccessfulUnlock = MutableSharedFlow<UnlockResult.Success>()
-
+    private val sessionLock = Any()
+    private var sessionGeneration = 0L
+    private var privateKey: PrivateKey? = null
+    private val mutableUnlocked = MutableStateFlow(false)
+    override val unlocked = mutableUnlocked.asStateFlow()
     private val grantedUriList = Collections.synchronizedList(mutableListOf<Uri>())
-
-
-    private val lockEvents: SharedFlow<Unit> = merge(
-        screenOffEvents.filter { propertyManager.getLockOnScreenLock() },
-        userLockEvents
-    ).shareIn(this, SharingStarted.Eagerly, replay = 0)
-
-    private val privateKey = merge(
-        onSuccessfulUnlock.map { it.privateKey },
-        lockEvents.map { null }
-    ).stateIn(this, SharingStarted.Eagerly, null)
 
     //TODO implement this properly
     override val decryptingFile = MutableStateFlow(false)
-
-    override val unlocked: StateFlow<Boolean> = privateKey
-        .map { it != null }
-        .stateIn(this, SharingStarted.Lazily, false)
 
     init {
         launch {
@@ -117,14 +97,10 @@ class PrivateKeyManagerImpl @Inject constructor(
                 )
             }
         }
-        launch {
-            unlocked.collect {
-                if (!it) forceCleanFiles()
-            }
-        }
     }
 
     override fun forceCleanFiles() {
+        remoteCache.clear()
         grantedUriList.forEach {
             context.revokeUriPermission(it, Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
@@ -134,12 +110,8 @@ class PrivateKeyManagerImpl @Inject constructor(
 
     override val decryptingLog = MutableStateFlow(false)
 
-    private val onLogLinesDecrypted = MutableSharedFlow<List<LogLine>>()
-    override val decryptedLogLines = merge(
-        onLogLinesDecrypted,
-        lockEvents.map { emptyList() }
-    ).stateIn(this, SharingStarted.Eagerly, emptyList())
-
+    private val mutableLogLines = MutableStateFlow<List<LogLine>>(emptyList())
+    override val decryptedLogLines = mutableLogLines.asStateFlow()
 
     private val dateTimeRegex = Regex("""(\d{2})/(\d{2})/(\d{4}) (\d{2}):(\d{2}):(\d{2})""")
     private val logSplitter =
@@ -148,14 +120,14 @@ class PrivateKeyManagerImpl @Inject constructor(
     override suspend fun decryptLog(inputStream: InputStream) {
         if (decryptingLog.value) return
 
-        decryptingLog.value = true
-
-        val privKey = privateKey.value
-        if (privKey == null) {
+        val session = synchronized(sessionLock) { privateKey?.let { it to sessionGeneration } }
+        if (session == null) {
             errorToastManager.showErrorToast(R.string.no_private_key)
             return
         }
 
+        val (privKey, generation) = session
+        decryptingLog.value = true
         try {
             val byteArrayOutputStream = ByteArrayOutputStream()
             val outputStream = PrintStream(byteArrayOutputStream)
@@ -170,7 +142,11 @@ class PrivateKeyManagerImpl @Inject constructor(
                 .filter { it.isNotBlank() }
                 .map { getLogLine(it) }
 
-            onLogLinesDecrypted.emit(logEntries)
+            synchronized(sessionLock) {
+                if (generation == sessionGeneration && mutableUnlocked.value) mutableLogLines.value = logEntries
+            }
+        } catch (e: CancellationException) {
+            throw e
         } catch (t: Throwable) {
             t.printStackTrace()
             errorToastManager.showErrorToast(
@@ -208,38 +184,52 @@ class PrivateKeyManagerImpl @Inject constructor(
     }
 
     override suspend fun unlock(pass: CharArray): Boolean {
-        val unlockResult = try {
+        val generation = synchronized(sessionLock) { sessionGeneration }
+        val result = try {
             cryptoProvider.unlock(pass)
         } catch (e: Exception) {
-            e.printStackTrace()
             errorToastManager.showErrorToast(R.string.unlock_crashed)
             return false
         }
-
-        return if (unlockResult is UnlockResult.Success) {
-            onSuccessfulUnlock.emit(unlockResult)
-            true
-        } else false
+        if (result !is UnlockResult.Success) return false
+        return synchronized(sessionLock) {
+            if (generation != sessionGeneration) false
+            else {
+                sessionGeneration++
+                remoteCache.openSession()
+                privateKey = result.privateKey
+                mutableUnlocked.value = true
+                true
+            }
+        }
     }
 
-    override fun onUserLockMend() {
-        launch { userLockEvents.emit(Unit) }
+    private fun lockMend() = synchronized(sessionLock) {
+        sessionGeneration++
+        privateKey = null
+        mutableUnlocked.value = false
+        mutableLogLines.value = emptyList()
+        cancelDecryptingFile()
+        forceCleanFiles()
     }
+
+    override fun onUserLockMend() { lockMend() }
 
     override fun onScreenOff() {
-        launch { screenOffEvents.emit(Unit) }
+        if (propertyManager.getLockOnScreenLock()) lockMend()
     }
 
     private var decryptFileJob: Job? = null
 
     override fun decryptEncFile(fileUri: Uri) {
 
-        val privKey = privateKey.value
-        if (privKey == null) {
+        val session = synchronized(sessionLock) { privateKey?.let { it to sessionGeneration } }
+        if (session == null) {
             errorToastManager.showErrorToast(R.string.no_private_key)
             return
         }
 
+        val (privKey, generation) = session
         decryptFileJob?.cancel()
 
         decryptFileJob = launch(Dispatchers.IO) {
@@ -252,10 +242,19 @@ class PrivateKeyManagerImpl @Inject constructor(
                 return@launch
             }
 
-            decryptToTempFile(tempFile, fileUri, privKey)?.let {
-                //yield in case the coroutine is cancelled before the file is opened
-                yield()
-                offerFileView(tempFile, it)
+            var offered = false
+            try {
+                decryptToTempFile(tempFile, fileUri, privKey)?.let { extension ->
+                    yield()
+                    synchronized(sessionLock) {
+                        if (generation == sessionGeneration && mutableUnlocked.value) {
+                            offerFileView(tempFile, extension)
+                            offered = true
+                        }
+                    }
+                }
+            } finally {
+                if (!offered) tempFile.delete()
             }
         }
 

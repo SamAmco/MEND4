@@ -4,13 +4,11 @@ package co.samco.mendroid.viewmodel
 
 import android.app.Application
 import android.net.Uri
-import androidx.core.net.toUri
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.text.input.TextFieldValue
-import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import co.samco.mend4.core.AppProperties
@@ -18,11 +16,17 @@ import co.samco.mendroid.R
 import co.samco.mendroid.model.ErrorToastManager
 import co.samco.mendroid.model.LogLine
 import co.samco.mendroid.model.PrivateKeyManager
-import co.samco.mendroid.model.PropertyManager
+import co.samco.mendroid.remote.AttachmentFiles
+import co.samco.mendroid.upload.UploadException
+import co.samco.mendroid.upload.UploadFailure
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -61,7 +65,7 @@ data class DecryptFileDialogData(
 @HiltViewModel
 class DecryptedLogViewModel @Inject constructor(
     private val privateKeyManager: PrivateKeyManager,
-    private val propertyManager: PropertyManager,
+    private val attachments: AttachmentFiles,
     private val errorToastManager: ErrorToastManager,
     application: Application
 ) : AndroidViewModel(application) {
@@ -118,9 +122,18 @@ class DecryptedLogViewModel @Inject constructor(
 
     var filterEnabled by mutableStateOf(true)
 
-    private val _decryptFileDialogData = MutableSharedFlow<DecryptFileDialogData?>()
-    val decryptFileDialogData = _decryptFileDialogData
-        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+    private val _decryptFileDialogData = MutableStateFlow<DecryptFileDialogData?>(null)
+    val decryptFileDialogData = _decryptFileDialogData.asStateFlow()
+    private val resolvingAttachment = MutableStateFlow(false)
+    val downloadingFile = resolvingAttachment.asStateFlow()
+    private var lookupJob: Job? = null
+    private var lookupGeneration = 0
+
+    init {
+        viewModelScope.launch {
+            privateKeyManager.unlocked.collect { if (!it) onCancelDecryptFileClicked() }
+        }
+    }
 
     val logLines: StateFlow<List<LogViewData>> = combine(
         privateKeyManager.decryptedLogLines,
@@ -145,7 +158,7 @@ class DecryptedLogViewModel @Inject constructor(
     val decryptingLog = privateKeyManager.decryptingLog
         .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
-    val decryptingFile = privateKeyManager.decryptingFile
+    val decryptingFile = combine(privateKeyManager.decryptingFile, resolvingAttachment) { decrypting, resolving -> decrypting || resolving }
         .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
     private val _onScrollToIndex = MutableSharedFlow<Int>()
@@ -180,40 +193,36 @@ class DecryptedLogViewModel @Inject constructor(
     }
 
     fun onDecryptFileClicked(dialogData: DecryptFileDialogData) {
-        viewModelScope.launch {
-            privateKeyManager.decryptEncFile(dialogData.fileUri)
-            _decryptFileDialogData.emit(null)
-        }
+        if (!privateKeyManager.unlocked.value) return
+        privateKeyManager.decryptEncFile(dialogData.fileUri)
+        _decryptFileDialogData.value = null
     }
 
     fun onCancelDecryptFileClicked() {
-        viewModelScope.launch {
-            privateKeyManager.cancelDecryptingFile()
-            _decryptFileDialogData.emit(null)
-        }
+        lookupGeneration++
+        lookupJob?.cancel()
+        resolvingAttachment.value = false
+        privateKeyManager.cancelDecryptingFile()
+        _decryptFileDialogData.value = null
     }
 
     fun onFileIdClicked(fileId: String) {
+        if (!privateKeyManager.unlocked.value) return
+        lookupJob?.cancel()
+        val request = ++lookupGeneration
         val fileName = "$fileId.${AppProperties.ENC_FILE_EXTENSION}"
-
-        val encDir = propertyManager.getEncDirUri()
-            ?.let { it.toUri() }
-            ?.let { DocumentFile.fromTreeUri(getApplication(), it) }
-
-        if (encDir == null) {
-            errorToastManager.showErrorToast(R.string.could_not_find_enc_dir)
-            return
-        }
-
-        val file = encDir.findFile(fileName)
-
-        if (file == null) {
-            errorToastManager.showErrorToast(R.string.could_not_find_enc_file, listOf(fileName))
-            return
-        }
-
-        viewModelScope.launch {
-            _decryptFileDialogData.emit(DecryptFileDialogData(file.uri, fileName))
+        resolvingAttachment.value = true
+        lookupJob = viewModelScope.launch {
+            try {
+                val uri = attachments.find(fileName)
+                if (uri == null) errorToastManager.showErrorToast(R.string.could_not_find_enc_file, listOf(fileName))
+                else if (request == lookupGeneration && privateKeyManager.unlocked.value) _decryptFileDialogData.value = DecryptFileDialogData(uri, fileName)
+            } catch (e: CancellationException) { throw e }
+            catch (e: UploadException) {
+                errorToastManager.showErrorToast(if (e.reason == UploadFailure.AUTHENTICATION || e.reason == UploadFailure.ACCOUNT_UNAVAILABLE)
+                    R.string.remote_read_auth else R.string.remote_read_error)
+            } catch (_: Exception) { errorToastManager.showErrorToast(R.string.remote_read_error) }
+            finally { if (request == lookupGeneration) resolvingAttachment.value = false }
         }
     }
 }

@@ -2,6 +2,7 @@ package co.samco.mendroid.upload
 
 import android.app.Application
 import androidx.lifecycle.ViewModelStore
+import co.samco.mendroid.viewmodel.NextcloudFolderUse
 import co.samco.mendroid.viewmodel.NextcloudViewModel
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -55,7 +56,7 @@ class NextcloudViewModelTest {
         val model = model(object : RemoteFolderBrowser {
             override suspend fun folders(session: NextcloudSession, path: RemotePath) = withContext(NonCancellable) { response.await() }
         })
-        model.browse(UploadKind.LOG)
+        model.browse(NextcloudFolderUse.LOGS)
         runCurrent()
         model.closeFolderPicker()
         response.complete(listOf(RemoteFolder("old", RemotePath.of("/old"))))
@@ -68,9 +69,9 @@ class NextcloudViewModelTest {
             override suspend fun folders(session: NextcloudSession, path: RemotePath): List<RemoteFolder> =
                 if (path == RemotePath.ROOT) withContext(NonCancellable) { old.await() } else emptyList()
         })
-        model.browse(UploadKind.LOG)
+        model.browse(NextcloudFolderUse.LOGS)
         runCurrent()
-        model.browse(UploadKind.LOG, RemotePath.of("/new"))
+        model.browse(NextcloudFolderUse.LOGS, RemotePath.of("/new"))
         runCurrent()
         old.complete(listOf(RemoteFolder("stale", RemotePath.of("/stale"))))
         advanceUntilIdle()

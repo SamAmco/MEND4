@@ -40,3 +40,12 @@ internal fun NextcloudError(error: UploadUiError) {
     }
     Text(stringResource(message), color = MaterialTheme.colorScheme.error)
 }
+
+@StringRes
+internal fun remoteReadFailureMessage(reason: UploadFailure): Int = when (reason) {
+    UploadFailure.AUTHENTICATION, UploadFailure.ACCOUNT_UNAVAILABLE -> R.string.remote_read_auth
+    UploadFailure.CONNECTION, UploadFailure.SERVER_BUSY -> R.string.remote_read_connection
+    UploadFailure.DESTINATION_MISSING -> R.string.remote_read_missing
+    UploadFailure.ACCESS_DENIED -> R.string.remote_read_access
+    else -> R.string.remote_read_error
+}

@@ -17,7 +17,7 @@ import androidx.compose.ui.res.stringResource
 import co.samco.mendroid.R
 import co.samco.mendroid.upload.RemotePath
 import co.samco.mendroid.upload.UploadConfig
-import co.samco.mendroid.upload.UploadKind
+import co.samco.mendroid.viewmodel.NextcloudFolderUse
 
 @Composable
 internal fun NextcloudConnectionForm(signingIn: Boolean, connect: (String) -> Unit, cancel: () -> Unit) {
@@ -35,14 +35,14 @@ internal fun NextcloudConnectionForm(signingIn: Boolean, connect: (String) -> Un
 
 @Composable
 internal fun NextcloudDestinationSettings(
-    config: UploadConfig, browse: (UploadKind, RemotePath) -> Unit, pause: (Boolean) -> Unit, mobileData: (Boolean) -> Unit
+    config: UploadConfig, browse: (NextcloudFolderUse, RemotePath) -> Unit, pause: (Boolean) -> Unit, mobileData: (Boolean) -> Unit
 ) {
     Text(config.account?.server.orEmpty())
     Text(config.account?.userId.orEmpty())
-    TextButton(onClick = { browse(UploadKind.ATTACHMENT, config.attachments ?: RemotePath.ROOT) }) {
+    TextButton(onClick = { browse(NextcloudFolderUse.ATTACHMENTS, config.attachments ?: RemotePath.ROOT) }) {
         Text(stringResource(R.string.remote_attachment_folder, config.attachments?.value ?: stringResource(R.string.upload_not_selected)))
     }
-    TextButton(onClick = { browse(UploadKind.LOG, config.logs ?: RemotePath.ROOT) }) {
+    TextButton(onClick = { browse(NextcloudFolderUse.LOGS, config.logs ?: RemotePath.ROOT) }) {
         Text(stringResource(R.string.remote_log_folder, config.logs?.value ?: stringResource(R.string.upload_not_selected)))
     }
     ToggleSettingRow(stringResource(R.string.pause_uploads), config.paused, pause)
@@ -59,4 +59,17 @@ internal fun NextcloudBackupControls(importing: Boolean, retry: () -> Unit, disc
     }
     TextButton(onClick = existing, enabled = !importing) { Text(stringResource(R.string.backup_existing_files)) }
     if (importing) LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+}
+
+@Composable
+internal fun AdditionalNextcloudFolders(config: UploadConfig, browse: () -> Unit, remove: (RemotePath) -> Unit) {
+    Text(stringResource(R.string.additional_nextcloud_folders))
+    Text(stringResource(R.string.additional_nextcloud_help))
+    for (folder in config.additionalFolders) {
+        Row(Modifier.fillMaxWidth()) {
+            Text(folder.value, modifier = Modifier.weight(1f))
+            TextButton(onClick = { remove(folder) }) { Text(stringResource(R.string.remove_read_folder)) }
+        }
+    }
+    TextButton(onClick = browse) { Text(stringResource(R.string.add_read_folder)) }
 }

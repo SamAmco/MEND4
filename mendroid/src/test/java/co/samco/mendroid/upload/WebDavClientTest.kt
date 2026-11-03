@@ -1,6 +1,8 @@
 package co.samco.mendroid.upload
 
 import android.app.Application
+import co.samco.mendroid.remote.RemoteDirectoryEntry
+import java.io.ByteArrayOutputStream
 import java.io.File
 import java.nio.file.Files
 import kotlinx.coroutines.runBlocking
@@ -101,8 +103,52 @@ class WebDavClientTest {
             ${entry("${root}denied/", 403)}${entry("${root}a/nested/", 200)}
             ${entry("https://evil.example/outside/", 200)}${entry("${root}file.enc", 200, "")}
             </d:multistatus>"""
-        assertEquals(listOf(RemoteFolder("a b", RemotePath.of("/a b"))), WebDavFolders().parse(root, RemotePath.ROOT, xml))
+        assertEquals(listOf(RemoteFolder("a b", RemotePath.of("/a b"))), WebDavListing().parse(root, RemotePath.ROOT, xml).filter { it.directory }.map { RemoteFolder(it.path.name, it.path) })
     }
+    @Test fun filesAndCollectionsAreListedWithDepthOneWithoutDescending() = runBlocking {
+        server.enqueue(MockResponse().setResponseCode(207).setBody("""<d:multistatus xmlns:d="DAV:">
+            <d:response><d:href>/nextcloud/remote.php/dav/files/actual-user/archive/a%20b.mend</d:href>
+            <d:propstat><d:prop><d:resourcetype/></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response>
+            <d:response><d:href>/nextcloud/remote.php/dav/files/actual-user/archive/sub/</d:href>
+            <d:propstat><d:prop><d:resourcetype><d:collection/></d:resourcetype></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response>
+            <d:response><d:href>/nextcloud/remote.php/dav/files/actual-user/archive/denied.mend</d:href>
+            <d:propstat><d:prop><d:resourcetype/></d:prop><d:status>HTTP/1.1 403 Forbidden</d:status></d:propstat></d:response>
+            </d:multistatus>"""))
+        val entries = client.children(session(), RemotePath.of("/archive"))
+        assertEquals(listOf(RemoteDirectoryEntry(RemotePath.of("/archive/a b.mend"), false),
+            RemoteDirectoryEntry(RemotePath.of("/archive/sub"), true)), entries)
+        val request = server.takeRequest()
+        assertEquals("PROPFIND", request.method)
+        assertEquals("1", request.getHeader("Depth"))
+        assertEquals(1, server.requestCount)
+    }
+
+    @Test fun malformedListingHasAStructuredFailure() = runBlocking {
+        server.enqueue(MockResponse().setResponseCode(207).setBody("<d:multistatus xmlns:d=\"DAV:\"><d:response>"))
+        try { client.children(session(), RemotePath.ROOT); fail() }
+        catch (e: UploadException) { assertEquals(UploadFailure.INVALID_RESPONSE, e.reason) }
+    }
+
+    @Test fun downloadStreamsEncryptedBytesUsingOnlyAnAuthenticatedGet() = runBlocking {
+        server.enqueue(MockResponse().setBody("encrypted bytes"))
+        val output = ByteArrayOutputStream()
+        client.download(session(), RemotePath.of("/logs/a b.mend"), output)
+        assertEquals("encrypted bytes", output.toString(Charsets.UTF_8))
+        val request = server.takeRequest()
+        assertEquals("GET", request.method)
+        assertTrue(request.path.orEmpty().endsWith("/logs/a%20b.mend"))
+        assertNotNull(request.getHeader("Authorization"))
+        assertEquals(1, server.requestCount)
+    }
+
+    @Test fun downloadRejectsAuthErrorsWithoutWritingTheErrorBody() = runBlocking {
+        server.enqueue(MockResponse().setResponseCode(401).setBody("server error page"))
+        val output = ByteArrayOutputStream()
+        try { client.download(session(), RemotePath.of("/logs/a.mend"), output); fail() }
+        catch (e: UploadException) { assertEquals(UploadFailure.AUTHENTICATION, e.reason) }
+        assertEquals(0, output.size())
+    }
+
     @Test fun pathsAreEncodedOnceAndSetupRequiresHttps() {
         assertTrue(client.fileUrl(session().account, RemotePath.of("/a b/ü.enc")).encodedPath.endsWith("/a%20b/%C3%BC.enc"))
         val http = NextcloudHttp()

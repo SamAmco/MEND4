@@ -22,6 +22,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -66,7 +67,7 @@ fun DecryptLogText(modifier: Modifier) {
 
     if (decryptingFile) {
         Dialog(onDismissRequest = { viewModel.onCancelDecryptFileClicked() }) {
-            DecryptingFileDialog()
+            DecryptingFileDialog(viewModel.downloadingFile.collectAsState().value, viewModel::onCancelDecryptFileClicked)
         }
     } else if (decryptFileDialogData != null) {
         Dialog(onDismissRequest = { viewModel.onCancelDecryptFileClicked() }) {
@@ -112,7 +113,7 @@ private fun ColumnScope.EmptyLinesText() = Box(
 
 
 @Composable
-private fun DecryptingFileDialog() = Column(
+private fun DecryptingFileDialog(downloading: Boolean, cancel: () -> Unit) = Column(
     modifier = Modifier.background(MaterialTheme.colorScheme.background),
     horizontalAlignment = Alignment.CenterHorizontally,
     verticalArrangement = Arrangement.Center
@@ -120,9 +121,10 @@ private fun DecryptingFileDialog() = Column(
     CircularProgressIndicator(modifier = Modifier.padding(16.dp))
     Text(
         modifier = Modifier.padding(16.dp),
-        text = stringResource(id = R.string.decrypting_file),
+        text = stringResource(if (downloading) R.string.downloading_encrypted_file else R.string.decrypting_file),
         style = MaterialTheme.typography.titleLarge
     )
+    TextButton(onClick = cancel) { Text(stringResource(R.string.cancel)) }
 }
 
 @Composable

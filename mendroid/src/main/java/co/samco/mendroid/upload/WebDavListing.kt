@@ -1,67 +1,88 @@
 package co.samco.mendroid.upload
 
 import android.util.Xml
+import co.samco.mendroid.remote.RemoteDirectoryEntry
 import okhttp3.HttpUrl
 import org.xmlpull.v1.XmlPullParser
 
 data class RemoteFolder(val name: String, val path: RemotePath)
 
-/** Only successful DAV properties on immediate child collections become folder entries. */
-internal class WebDavFolders {
-    fun parse(root: HttpUrl, path: RemotePath, xml: String): List<RemoteFolder> {
+/** Only successful DAV resource types on immediate children become entries. */
+internal class WebDavListing {
+    fun parse(root: HttpUrl, path: RemotePath, xml: String): List<RemoteDirectoryEntry> {
         val parser = Xml.newPullParser().apply {
             setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, true)
             setInput(xml.reader())
         }
         parser.nextTag()
         if (parser.name != "multistatus" || parser.namespace != DAV) throw UploadException(UploadFailure.INVALID_RESPONSE)
-        val folders = mutableListOf<RemoteFolder>()
+        val entries = mutableListOf<RemoteDirectoryEntry>()
+        var complete = false
         while (parser.next() != XmlPullParser.END_DOCUMENT) {
+            if (parser.eventType == XmlPullParser.END_TAG && parser.depth == 1 && parser.name == "multistatus") complete = true
             if (parser.eventType == XmlPullParser.START_TAG && parser.namespace == DAV && parser.name == "response") {
                 val entry = response(parser)
-                if (entry.collection) child(root, path, entry.href)?.let(folders::add)
+                if (entry.collection != null) child(root, path, entry.href)?.let {
+                    entries.add(RemoteDirectoryEntry(it, entry.collection))
+                }
             }
         }
-        return folders.distinctBy { it.path }.sortedBy { it.name.lowercase() }
+        if (!complete) throw UploadException(UploadFailure.INVALID_RESPONSE)
+        return entries.distinctBy { it.path }.sortedBy { it.path.name.lowercase() }
     }
 
-    private data class Entry(val href: String, val collection: Boolean)
+    private data class Entry(val href: String, val collection: Boolean?)
 
     private fun response(parser: XmlPullParser): Entry {
         val depth = parser.depth
         var href = ""
-        var collection = false
+        var collection: Boolean? = null
         var valid = true
         while (parser.next() != XmlPullParser.END_DOCUMENT) {
             if (parser.eventType == XmlPullParser.END_TAG && parser.depth == depth) break
             if (parser.eventType != XmlPullParser.START_TAG || parser.namespace != DAV || parser.depth != depth + 1) continue
             when (parser.name) {
                 "href" -> href = parser.nextText()
-                "propstat" -> collection = propstat(parser) || collection
+                "propstat" -> collection = propstat(parser) ?: collection
                 "status" -> valid = successful(parser.nextText())
             }
         }
-        return Entry(href, valid && collection)
+        return Entry(href, if (valid) collection else null)
     }
 
-    private fun propstat(parser: XmlPullParser): Boolean {
+    private fun propstat(parser: XmlPullParser): Boolean? {
         val depth = parser.depth
         var collection = false
+        var hasType = false
         var status = ""
         while (parser.next() != XmlPullParser.END_DOCUMENT) {
             if (parser.eventType == XmlPullParser.END_TAG && parser.depth == depth) break
             if (parser.eventType != XmlPullParser.START_TAG || parser.namespace != DAV) continue
             when {
-                parser.name == "collection" && parser.depth == depth + 3 -> collection = true
+                parser.name == "resourcetype" && parser.depth == depth + 2 -> {
+                    hasType = true
+                    collection = resourceType(parser)
+                }
                 parser.name == "status" && parser.depth == depth + 1 -> status = parser.nextText()
             }
         }
-        return collection && successful(status)
+        return if (hasType && successful(status)) collection else null
+    }
+
+    private fun resourceType(parser: XmlPullParser): Boolean {
+        val depth = parser.depth
+        var collection = false
+        while (parser.next() != XmlPullParser.END_DOCUMENT) {
+            if (parser.eventType == XmlPullParser.END_TAG && parser.depth == depth) break
+            if (parser.eventType == XmlPullParser.START_TAG && parser.depth == depth + 1 &&
+                parser.namespace == DAV && parser.name == "collection") collection = true
+        }
+        return collection
     }
 
     private fun successful(status: String) = status.split(' ').getOrNull(1)?.toIntOrNull() in 200..299
 
-    private fun child(root: HttpUrl, path: RemotePath, href: String): RemoteFolder? {
+    private fun child(root: HttpUrl, path: RemotePath, href: String): RemotePath? {
         val url = root.resolve(href) ?: return null
         if (url.scheme != root.scheme || url.host != root.host || url.port != root.port) return null
         val parent = root.pathSegments.filter(String::isNotEmpty)
@@ -69,7 +90,7 @@ internal class WebDavFolders {
         if (segments.size != parent.size + 1 || segments.take(parent.size) != parent) return null
         val name = segments.last()
         if (name == "." || name == ".." || '/' in name || name.isBlank()) return null
-        return RemoteFolder(name, path.child(name))
+        return path.child(name)
     }
 
     private companion object { const val DAV = "DAV:" }

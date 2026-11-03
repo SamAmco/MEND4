@@ -25,6 +25,7 @@ import androidx.core.net.toUri
 import androidx.lifecycle.viewmodel.compose.viewModel
 import co.samco.mendroid.R
 import co.samco.mendroid.upload.UploadState
+import co.samco.mendroid.viewmodel.NextcloudFolderUse
 import co.samco.mendroid.viewmodel.NextcloudEffect
 import co.samco.mendroid.viewmodel.NextcloudUiState
 import co.samco.mendroid.viewmodel.NextcloudViewModel
@@ -55,7 +56,8 @@ fun NextcloudUploadsButton() {
 private fun summary(state: NextcloudUiState): Int = when {
     state.config.credentialError -> R.string.upload_credentials_unavailable
     state.config.account == null -> R.string.connect_nextcloud
-    state.config.attachments == null || state.config.logs == null -> R.string.choose_backup_folders
+    state.config.attachments == null || state.config.logs == null ->
+        if (state.config.additionalFolders.isEmpty()) R.string.choose_backup_folders else R.string.nextcloud_files_and_uploads
     state.config.needsRescan -> R.string.upload_needs_attention
     state.config.paused -> R.string.uploads_paused
     state.entries.any { it.state == UploadState.ATTENTION } -> R.string.upload_needs_attention
@@ -69,7 +71,7 @@ private fun summary(state: NextcloudUiState): Int = when {
 private fun UploadsDialog(state: NextcloudUiState, model: NextcloudViewModel, close: () -> Unit) {
     AlertDialog(
         onDismissRequest = close,
-        title = { Text(stringResource(R.string.nextcloud_uploads)) },
+        title = { Text(stringResource(R.string.nextcloud_files_and_uploads)) },
         confirmButton = { TextButton(onClick = close) { Text(stringResource(R.string.upload_close)) } },
         text = {
             LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.heightIn(max = 560.dp)) {
@@ -78,6 +80,8 @@ private fun UploadsDialog(state: NextcloudUiState, model: NextcloudViewModel, cl
                         NextcloudConnectionForm(state.actions.signingIn, model::connect, model::cancelLogin)
                     } else {
                         NextcloudDestinationSettings(state.config, model::browse, model::pause, model::mobileData)
+                        AdditionalNextcloudFolders(state.config,
+                            { model.browse(NextcloudFolderUse.ADDITIONAL) }, model::removeAdditionalFolder)
                         NextcloudBackupControls(state.actions.importing, model::retry, model::disconnect, model::backupExisting)
                     }
                 }

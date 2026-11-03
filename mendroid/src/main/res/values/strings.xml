@@ -31,9 +31,7 @@
     <string name="back">Back</string>
     <string name="no_private_key">No private key</string>
     <string name="decrypt_crashed">Decrypt threw an exception: %s</string>
-    <string name="error_opening_log">Could not get input stream for log file.</string>
     <string name="filter">Filter:</string>
-    <string name="could_not_find_enc_dir">Could not find enc-dir</string>
     <string name="could_not_find_enc_file">Could not find enc file: %s</string>
     <string name="decrypting_file">Decrypting…</string>
     <string name="would_you_like_to_decrypt_file">Would you like to decrypt and open: %s</string>
@@ -96,7 +94,7 @@
     <string name="upload_close">Close</string>
     <string name="upload_cancel">Cancel</string>
     <string name="nextcloud_server">Nextcloud server (https://…)</string>
-    <string name="nextcloud_setup_help">Connect in your browser, then choose remote folders for attachments and logs. Local files stay where they are.</string>
+    <string name="nextcloud_setup_help">Connect in your browser, then choose backup destinations or additional folders to read from. Local files stay where they are.</string>
     <string name="nextcloud_finish_login">Finish signing in and grant MEND access in your browser.</string>
     <string name="remote_attachment_folder">Attachments: %1$s</string>
     <string name="remote_log_folder">Logs: %1$s</string>
@@ -138,4 +136,19 @@
     <string name="upload_error_setup">Check your HTTPS server address, connection, and selected backup folders.</string>
     <string name="upload_error_operation">Operation failed. Check local file access and Nextcloud settings, then try again.</string>
     <string name="upload_error_unqueued">Some local saves could not be added to the upload queue. Check the local files, then use Back up existing local files.</string>
+    <string name="nextcloud_files_and_uploads">Nextcloud files and uploads</string>
+    <string name="nextcloud_log_entry">%1$s — Nextcloud %2$s</string>
+    <string name="additional_nextcloud_folders">Additional Nextcloud folders</string>
+    <string name="additional_nextcloud_help">Read logs and attachments from these folders while unlocked. Only files directly inside each folder are included. These folders are read-only sources.</string>
+    <string name="add_read_folder">Add Nextcloud folder</string>
+    <string name="remove_read_folder">Remove</string>
+    <string name="refresh_logs">Refresh logs</string>
+    <string name="opening_log">Opening log…</string>
+    <string name="downloading_encrypted_file">Downloading encrypted file…</string>
+    <string name="remote_folder_problem">%1$s: %2$s</string>
+    <string name="remote_read_error">Could not load the file. Check local access, Nextcloud connection and sign-in.</string>
+    <string name="remote_read_auth">Reconnect to Nextcloud to read these files.</string>
+    <string name="remote_read_connection">Nextcloud is unreachable. Local logs are still available. Refresh to try again.</string>
+    <string name="remote_read_missing">Nextcloud folder or file no longer exists.</string>
+    <string name="remote_read_access">Nextcloud denied access to this folder or file.</string>
 </resources>

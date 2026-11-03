@@ -140,9 +140,9 @@ an existing remote attachment is accepted only if its encrypted content matches.
 Two different local URIs targeting one remote name require attention.
 
 Local files remain user-managed. Deleting a local file never deletes its remote
-backup, but removing or moving a pending file may prevent its upload. MEND does not
-download missing attachments yet; restore them manually into the enc folder before
-opening their log references. It does not watch for edits made by other apps.
+backup, but removing or moving a pending file may prevent its upload. Configure
+additional Nextcloud folders below to open remotely stored logs and attachments.
+MEND does not watch for edits made by other apps.
 An in-progress upload holds a temporary encrypted snapshot, so it can finish even
 if you delete the local original after that snapshot was taken.
 
@@ -169,3 +169,23 @@ full storage, access denial, and destination conflicts appear as errors. A faile
 connection can leave a `.mend-upload-*` encrypted temporary file on the server;
 it is safe to remove those when MEND is not uploading. MEND retains local files
 after successful uploads and does not propagate deletions.
+
+## Reading additional Nextcloud folders
+
+Open **Nextcloud files and uploads** and add folders under **Additional Nextcloud
+folders**. These use the connected Nextcloud account and are read-only sources,
+independent of the two upload destinations. Only files directly in each selected
+folder are included; subfolders are not searched. Removing a source does not
+delete any files.
+
+While MEND is unlocked, the Decrypt tab lists local logs alongside `.mend` files
+from these folders. Remote entries show their Nextcloud path. Use Refresh to pick
+up changes. An unavailable folder shows an error while local logs and other
+available folders remain usable. Opening a remote log downloads a fresh encrypted
+copy before decrypting it.
+
+Attachment references check the local enc folder first, then the additional
+folders for the matching `.enc` filename. A remote match is downloaded on demand.
+Downloads are encrypted temporary files in the app cache, cleared whenever MEND
+locks and at app startup. Screen-off clears them when screen-off locking is
+enabled. They are not an offline library and are never queued for upload.

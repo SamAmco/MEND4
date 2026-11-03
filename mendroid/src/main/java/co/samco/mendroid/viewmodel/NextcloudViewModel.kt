@@ -31,8 +31,9 @@ sealed interface UploadUiError {
     data class Backup(val reason: UploadFailure) : UploadUiError
     data class Operation(val problem: UploadUiProblem) : UploadUiError
 }
+enum class NextcloudFolderUse { ATTACHMENTS, LOGS, ADDITIONAL }
 data class FolderPickerState(
-    val kind: UploadKind,
+    val use: NextcloudFolderUse,
     val path: RemotePath,
     val folders: List<RemoteFolder> = emptyList(),
     val loading: Boolean = true,
@@ -105,23 +106,23 @@ class NextcloudViewModel @Inject constructor(
     fun forget(entry: UploadEntry) = command { backups.forget(entry) }
     fun backupVerified(entry: UploadEntry) = command { backups.backupVerified(entry) }
 
-    fun browse(kind: UploadKind, path: RemotePath = RemotePath.ROOT) {
+    fun browse(use: NextcloudFolderUse, path: RemotePath = RemotePath.ROOT) {
         browseJob?.cancel()
         val generation = ++browseGeneration
-        actions.update { it.copy(picker = FolderPickerState(kind, path)) }
+        actions.update { it.copy(picker = FolderPickerState(use, path)) }
         browseJob = viewModelScope.launch {
             try {
                 val account = backups.config.value.account?.id
                 val result = backups.folders(path)
                 if (generation == browseGeneration) {
-                    val picker = if (backups.config.value.account?.id == account) FolderPickerState(kind, path, result, loading = false) else null
+                    val picker = if (backups.config.value.account?.id == account) FolderPickerState(use, path, result, loading = false) else null
                     actions.update { it.copy(picker = picker) }
                 }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
                 if (generation == browseGeneration) actions.update {
-                    it.copy(picker = FolderPickerState(kind, path, loading = false, error = error(e)))
+                    it.copy(picker = FolderPickerState(use, path, loading = false, error = error(e)))
                 }
             }
         }
@@ -130,13 +131,22 @@ class NextcloudViewModel @Inject constructor(
     fun selectFolder() {
         val picker = actions.value.picker ?: return
         if (picker.loading || picker.error != null) return
-        command { backups.selectFolder(picker.kind, picker.path); closeFolderPicker() }
+        command {
+            when (picker.use) {
+                NextcloudFolderUse.ATTACHMENTS -> backups.selectFolder(UploadKind.ATTACHMENT, picker.path)
+                NextcloudFolderUse.LOGS -> backups.selectFolder(UploadKind.LOG, picker.path)
+                NextcloudFolderUse.ADDITIONAL -> backups.addAdditionalFolder(picker.path)
+            }
+            closeFolderPicker()
+        }
     }
     fun closeFolderPicker() {
         browseGeneration++
         browseJob?.cancel()
         actions.update { it.copy(picker = null) }
     }
+
+    fun removeAdditionalFolder(path: RemotePath) = command { backups.removeAdditionalFolder(path) }
 
     fun backupExisting() {
         if (actions.value.importing) return

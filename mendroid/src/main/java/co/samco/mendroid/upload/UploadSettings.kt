@@ -15,7 +15,8 @@ data class UploadConfig(
     val paused: Boolean = false,
     val mobileData: Boolean = false,
     val credentialError: Boolean = false,
-    val needsRescan: Boolean = false
+    val needsRescan: Boolean = false,
+    val additionalFolders: List<RemotePath> = emptyList()
 ) {
     fun target(file: LocalBackupFile): UploadTarget? {
         val identity = account ?: return null
@@ -41,15 +42,17 @@ class UploadSettings @Inject constructor(
         val account = (credential as? CredentialRead.Available)?.session?.account
         val ownsFolders = account != null && prefs.getString("folderAccount", null) == account.id.value
         fun folder(key: String): RemotePath? = if (!ownsFolders) null else prefs.getString(key, null)?.let(RemotePath::of)
+        val additional = if (ownsFolders) prefs.getStringSet("additionalFolders", emptySet()).orEmpty()
+            .map(RemotePath::of).sortedBy { it.value } else emptyList()
         return UploadConfig(account, folder("attachments"), folder("logs"), prefs.getBoolean("paused", false),
-            prefs.getBoolean("mobileData", false), credential == CredentialRead.Unavailable, prefs.getBoolean("needsRescan", false))
+            prefs.getBoolean("mobileData", false), credential == CredentialRead.Unavailable, prefs.getBoolean("needsRescan", false), additional)
     }
 
     @Synchronized
     fun connect(session: NextcloudSession) {
         credentials.save(session)
         if (prefs.getString("folderAccount", null) != session.account.id.value) prefs.edit {
-            remove("attachments"); remove("logs"); putString("folderAccount", session.account.id.value)
+            remove("attachments"); remove("logs"); remove("additionalFolders"); putString("folderAccount", session.account.id.value)
         }
         mutableConfig.value = load()
     }
@@ -58,6 +61,20 @@ class UploadSettings @Inject constructor(
     fun selectFolder(kind: UploadKind, path: RemotePath) {
         check(mutableConfig.value.account != null)
         prefs.edit { putString(if (kind == UploadKind.ATTACHMENT) "attachments" else "logs", path.value) }
+        mutableConfig.value = load()
+    }
+
+    @Synchronized
+    fun addAdditionalFolder(path: RemotePath) {
+        check(mutableConfig.value.account != null)
+        val folders = mutableConfig.value.additionalFolders + path
+        prefs.edit { putStringSet("additionalFolders", folders.map { it.value }.toSet()) }
+        mutableConfig.value = load()
+    }
+
+    @Synchronized
+    fun removeAdditionalFolder(path: RemotePath) {
+        prefs.edit { putStringSet("additionalFolders", mutableConfig.value.additionalFolders.filterNot { it == path }.map { it.value }.toSet()) }
         mutableConfig.value = load()
     }
 
