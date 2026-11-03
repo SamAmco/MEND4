@@ -95,4 +95,34 @@ class BackupServiceTest {
         assertEquals(UploadFailure.LOCAL_WRITE_FAILED, env.queue.entries.value.single().failure)
     }
 
+    @Test fun bulkBackupRechecksProtectionAfterEnumeratingFiles() = runBlocking {
+        val file = env.files.source()
+        val runner = UploadRunner(env.queue, env.snapshots,
+            UploadEligibility(env.settings, env.credentials, NetworkStatus { false }), TestTransport())
+        val existing = ExistingBackupSource {
+            // A write failed after bulk backup started, before it registered this source.
+            env.queue.failWrite(env.queue.beginWrite(file, requireNotNull(env.settings.config.value.target(file))))
+            listOf(file)
+        }
+        val backup = BackupService(env.settings, env.credentials, env.queue, env.writer, existing,
+            object : RemoteFolderBrowser {
+                override suspend fun folders(session: NextcloudSession, path: RemotePath) = emptyList<RemoteFolder>()
+            }, env.wakeup, runner)
+        backup.backupExisting()
+        assertTrue(env.queue.pending().isEmpty())
+        assertEquals(UploadFailure.LOCAL_WRITE_FAILED, env.queue.allEntries().single().failure)
+    }
+
+    @Test fun staleVerificationCannotEnableANewerFailedWrite() = runBlocking {
+        val file = env.files.source()
+        val target = requireNotNull(env.settings.config.value.target(file))
+        env.queue.failWrite(env.queue.beginWrite(file, target))
+        val oldFailure = env.queue.allEntries().single()
+        env.queue.failWrite(env.queue.beginWrite(file, target))
+        try { service().backupVerified(oldFailure); fail("Expected stale verification to be rejected") }
+        catch (_: IllegalStateException) { }
+        assertTrue(env.queue.pending().isEmpty())
+        assertEquals(UploadFailure.LOCAL_WRITE_FAILED, env.queue.allEntries().single().failure)
+    }
+
 }

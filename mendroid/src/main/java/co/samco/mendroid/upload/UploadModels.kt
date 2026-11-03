@@ -36,7 +36,7 @@ data class UploadEntry(
 )
 data class UploadProgress(val revision: UploadRevision, val percent: Int)
 enum class RunResult { COMPLETE, WAITING, RETRY }
-enum class BackupRegistration { NOT_CONFIGURED, QUEUED, NEEDS_ATTENTION }
+enum class BackupRegistration { NOT_CONFIGURED, QUEUED, NEEDS_ATTENTION, SKIPPED }
 data class LocalSaveResult(val backup: BackupRegistration)
 
 class UploadException(val reason: UploadFailure) : IOException(reason.name)
@@ -65,3 +65,7 @@ fun NextcloudFailure.asUploadFailure(): UploadFailure = when (this) {
     NextcloudFailure.CONNECTION -> UploadFailure.CONNECTION
     NextcloudFailure.SERVER_BUSY -> UploadFailure.SERVER_BUSY
 }
+
+/** Protection belongs to the source file, including queue entries for other remote destinations. */
+val UploadEntry.protectsLocalFile: Boolean
+    get() = state == UploadState.WRITING || failure?.requiresLocalVerification == true

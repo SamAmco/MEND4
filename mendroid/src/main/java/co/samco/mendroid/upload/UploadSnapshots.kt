@@ -24,6 +24,9 @@ class UploadSnapshots @Inject constructor(
 ) {
     suspend fun prepare(entry: UploadEntry): SnapshotResult = withContext(Dispatchers.IO) {
         lock.withLock {
+            // A destination change can leave another row protecting the same local source.
+            if (queue.allEntries().any { it.file.uri == entry.file.uri && it.protectsLocalFile })
+                return@withLock SnapshotResult.Unavailable
             val token = queue.claim(entry.revision) ?: return@withLock SnapshotResult.Superseded
             var snapshot: File? = null
             try {

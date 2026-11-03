@@ -168,4 +168,17 @@ class LocalBackupWriterTest {
         assertEquals(UploadFailure.LOCAL_WRITE_FAILED, env.queue.entries.value.single().failure)
     }
 
+    @Test fun failedAppendLeavesTheLogUnchangedEvenWithoutQueueRegistration() = runBlocking {
+        val file = env.files.source(content = "old entries")
+        val broken = object : UploadQueue by env.queue {
+            override suspend fun beginWrite(file: LocalBackupFile, target: UploadTarget): WriteToken = throw IOException("queue unavailable")
+        }
+        val writer = LocalBackupWriter(broken, env.files, env.lock, env.settings, env.wakeup)
+        try {
+            writer.write(file, WriteMode.APPEND) { output -> output.write("partial".toByteArray()); throw IOException("disk full") }
+            fail()
+        } catch (_: IOException) { }
+        assertEquals("old entries", env.files.sources.getValue(file.uri).readText())
+    }
+
 }

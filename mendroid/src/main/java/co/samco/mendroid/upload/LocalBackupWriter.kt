@@ -29,7 +29,10 @@ class LocalBackupWriter @Inject constructor(
                     }
                 }
                 try {
-                    files.openOutput(file, mode).use { encrypt(it) }
+                    when (mode) {
+                        WriteMode.APPEND -> files.append(file, encrypt)
+                        WriteMode.REPLACE -> files.openOutput(file).use { encrypt(it) }
+                    }
                 } catch (e: Exception) {
                     withContext(NonCancellable) { token?.let { tryQueue { queue.failWrite(it) } } }
                     throw e
@@ -55,13 +58,24 @@ class LocalBackupWriter @Inject constructor(
             }
         }
 
-    /** Explicit user-requested backup of a file that was already written; not a fake local write. */
-    suspend fun enqueueExisting(file: LocalBackupFile, target: UploadTarget? = settings.config.value.target(file)): BackupRegistration = withContext(Dispatchers.IO) {
+    /** Checks protection under the write lock. Only explicit verification may override the current failed revision. */
+    suspend fun enqueueExisting(
+        file: LocalBackupFile,
+        target: UploadTarget? = settings.config.value.target(file),
+        verifiedRevision: UploadRevision? = null
+    ): BackupRegistration = withContext(Dispatchers.IO) {
         lock.withLock {
             if (target == null) return@withLock BackupRegistration.NOT_CONFIGURED
-            val queued = tryQueue { queue.enqueueExisting(file, target); true } == true
-            if (queued) requestWakeup()
-            if (queued) BackupRegistration.QUEUED else BackupRegistration.NEEDS_ATTENTION
+            val queued = tryQueue {
+                queue.recoverAfterRestart()
+                val protected = queue.allEntries().filter { it.file.uri == file.uri && it.protectsLocalFile }
+                if (protected.isNotEmpty() && protected.none { it.revision == verifiedRevision }) return@tryQueue false
+                queue.enqueueExisting(file, target)
+                true
+            } ?: return@withLock BackupRegistration.NEEDS_ATTENTION
+            if (!queued) return@withLock BackupRegistration.SKIPPED
+            requestWakeup()
+            BackupRegistration.QUEUED
         }
     }
 

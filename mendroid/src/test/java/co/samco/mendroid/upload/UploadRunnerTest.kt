@@ -155,4 +155,22 @@ class UploadRunnerTest {
         assertEquals(UploadState.UPLOADED, env.queue.entries.value.single().state)
     }
 
+    @Test fun anotherDestinationsFailedWriteBlocksSnapshotUntilVerified() = runBlocking {
+        val file = env.files.source(content = "encrypted bytes")
+        val original = requireNotNull(env.settings.config.value.target(file))
+        env.writer.enqueueExisting(file)
+        env.settings.selectLogFolder(RemotePath.of("/new"))
+        val changed = requireNotNull(env.settings.config.value.target(file))
+        env.queue.failWrite(env.queue.beginWrite(file, changed))
+        val failure = env.queue.allEntries().single { it.target == changed }
+        assertEquals(RunResult.COMPLETE, runner.run())
+        assertTrue(transport.staged.isEmpty())
+        assertEquals(UploadState.PENDING, env.queue.allEntries().single { it.target == original }.state)
+        assertEquals(BackupRegistration.QUEUED,
+            env.writer.enqueueExisting(file, changed, verifiedRevision = failure.revision))
+        runner.run()
+        assertEquals(2, transport.published.size)
+        assertTrue(env.queue.allEntries().all { it.state == UploadState.UPLOADED })
+    }
+
 }

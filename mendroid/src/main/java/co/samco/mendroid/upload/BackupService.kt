@@ -62,11 +62,9 @@ class BackupService @Inject constructor(
         val destination = config.value
         require(destination.account != null && destination.attachments != null && destination.logs != null)
         queue.recoverAfterRestart()
-        val protected = queue.allEntries().filter {
-            it.state == UploadState.WRITING || it.failure?.requiresLocalVerification == true
-        }.map { it.file.uri }.toSet()
-        for (file in existing.files().filterNot { it.uri in protected }) {
-            check(writer.enqueueExisting(file, destination.target(file)) == BackupRegistration.QUEUED)
+        for (file in existing.files()) {
+            val registered = writer.enqueueExisting(file, destination.target(file))
+            check(registered == BackupRegistration.QUEUED || registered == BackupRegistration.SKIPPED)
         }
         settings.acknowledgeRescan()
     }
@@ -74,6 +72,6 @@ class BackupService @Inject constructor(
     suspend fun backupVerified(entry: UploadEntry) {
         require(entry.failure?.requiresLocalVerification == true)
         require(config.value.account?.id == entry.target.account)
-        check(writer.enqueueExisting(entry.file, entry.target) == BackupRegistration.QUEUED)
+        check(writer.enqueueExisting(entry.file, entry.target, verifiedRevision = entry.revision) == BackupRegistration.QUEUED)
     }
 }

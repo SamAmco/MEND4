@@ -84,6 +84,16 @@ depend on queue models.
 - After obtaining exclusive transfer ownership, each runner invocation recovers
   abandoned upload claims. A temporary database failure cannot leave an upload
   permanently stuck until process restart; active local writes are unaffected.
+- On-device log appends use a seekable read/write descriptor, record the original
+  length, and truncate back to it if writing or cancellation fails. Successful
+  appends are flushed before queue completion. This requires no full-log backup
+  or extra storage proportional to the log size. Rollback failure remains a local
+  write failure; abrupt process death still uses interrupted-write attention recovery.
+- Existing-file registration checks protection while holding the same lock as local
+  writes. Bulk backup skips protected files; explicit verification carries the
+  expected failed revision so an old confirmation cannot enable a newer failure.
+  Snapshot preparation also checks other destinations for protection on the same
+  source and leaves those pending uploads untouched until the source is verified.
 - Record write intent before opening output. The writer owns stream closure and
   only queues a revision after successful closure.
 - A failed or interrupted local write requires a new successful write or an explicit
@@ -174,7 +184,7 @@ External file-manager edits cannot participate in MEND's local-write lock.
 
 The debug APK is `mendroid/build/outputs/apk/debug/mendroid-debug.apk`.
 Run `./gradlew :mendroid:assembleDebug :mendroid:lintDebug :mendroid:testDebugUnitTest`.
-The complete suite has 111 unit tests, including remote reads and lock-session races.
+The complete suite has 118 unit tests, including remote reads and lock-session races.
 Tests use real SQLite through Robolectric, fake transfer boundaries for runner
 contracts, mocked HTTP for WebDAV/login, and controlled coroutine scheduling for
 view-model races. Each rebuilt revision is checked before proceeding to the next.

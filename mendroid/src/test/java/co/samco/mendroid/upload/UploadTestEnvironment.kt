@@ -24,12 +24,19 @@ internal class TestBackupFiles(private val directory: File) : LocalBackupFiles {
         return LocalBackupFile(file.toURI().toString(), name, if (name.endsWith(".enc")) UploadKind.ATTACHMENT else UploadKind.LOG)
     }
     override fun openInput(file: LocalBackupFile): InputStream = sources[file.uri]?.inputStream() ?: throw IOException("missing")
-    override fun openOutput(file: LocalBackupFile, mode: WriteMode): OutputStream {
+    override fun openOutput(file: LocalBackupFile): OutputStream {
         if (failOutput) throw IOException("disk full")
         val source = sources[file.uri] ?: throw IOException("missing")
-        return object : FileOutputStream(source, mode == WriteMode.APPEND) {
+        return object : FileOutputStream(source) {
             override fun close() { super.close(); outputClosed = true }
         }
+    }
+    override suspend fun append(file: LocalBackupFile, write: suspend (OutputStream) -> Unit) {
+        if (failOutput) throw IOException("disk full")
+        val source = sources[file.uri] ?: throw IOException("missing")
+        object : FileOutputStream(source, true) {
+            override fun close() { super.close(); outputClosed = true }
+        }.use { appendRestoringOnFailure(it, write) }
     }
     override fun newSnapshot(): File = File.createTempFile("encrypted-", ".snapshot", directory).also(snapshots::add)
 }
