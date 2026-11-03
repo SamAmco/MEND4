@@ -28,9 +28,9 @@ class LocalBackupWriter @Inject constructor(
                     withContext(NonCancellable) { token?.let { tryQueue { queue.failWrite(it) } } }
                     throw e
                 }
-                // Once the stream closed successfully, cancellation must not lose the queue transition.
+                // Once the stream closed successfully, finish queue registration and await durable scheduling.
                 val registration = withContext(NonCancellable) {
-                    when {
+                    val result = when {
                         target == null -> BackupRegistration.NOT_CONFIGURED
                         token == null -> BackupRegistration.NEEDS_ATTENTION
                         tryQueue { queue.completeWrite(token) } != Transition.APPLIED -> {
@@ -39,8 +39,9 @@ class LocalBackupWriter @Inject constructor(
                         }
                         else -> BackupRegistration.QUEUED
                     }
+                    if (result == BackupRegistration.QUEUED) requestWakeup()
+                    result
                 }
-                if (registration == BackupRegistration.QUEUED) requestWakeup()
                 if (registration == BackupRegistration.NEEDS_ATTENTION) {
                     try { settings.recordUnqueuedSave() } catch (_: Exception) { /* The caller still receives the warning result. */ }
                 }
@@ -58,9 +59,11 @@ class LocalBackupWriter @Inject constructor(
         }
     }
 
-    private fun requestWakeup() {
-        // The durable queue and periodic wake-up remain authoritative if immediate scheduling fails.
-        try { wakeup.requestUpload() } catch (_: Exception) { }
+    private suspend fun requestWakeup() {
+        // A scheduling failure must not turn a successful local save into a failure. Startup retries pending work.
+        try { wakeup.requestUpload() }
+        catch (e: CancellationException) { throw e }
+        catch (_: Exception) { }
     }
 
     private suspend fun <T> tryQueue(block: suspend () -> T): T? = try { block() }

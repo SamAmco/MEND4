@@ -29,6 +29,19 @@ class BackupServiceTest {
                 override suspend fun folders(session: NextcloudSession, path: RemotePath) = emptyList<RemoteFolder>()
             }, env.wakeup, runner)
     }
+    @Test fun policyChangesReplaceScheduledWorkInsteadOfAppendingBehindOldConstraints() = runBlocking {
+        val service = service()
+        service.allowMobileData(true)
+        assertTrue(env.settings.config.value.mobileData)
+        service.pause(true)
+        assertTrue(env.settings.config.value.paused)
+        service.pause(false)
+        assertFalse(env.settings.config.value.paused)
+        service.disconnect()
+        assertNull(env.settings.config.value.account)
+        assertEquals(4, env.wakeup.reschedules)
+    }
+
     @Test fun explicitVerificationRetainsOriginalDestinationAfterSettingsChange() = runBlocking {
         val file = env.files.source()
         val original = requireNotNull(env.settings.config.value.target(file))

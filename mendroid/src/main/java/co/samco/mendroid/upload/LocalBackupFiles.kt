@@ -41,4 +41,8 @@ class LocalBackupLock @Inject constructor() {
     suspend fun <T> withLock(block: suspend () -> T): T = mutex.withLock { block() }
 }
 
-fun interface UploadWakeup { fun requestUpload() }
+interface UploadWakeup {
+    /** Returns after WorkManager has persisted the request, if uploads are enabled. */
+    suspend fun requestUpload()
+    suspend fun rescheduleUploads()
+}

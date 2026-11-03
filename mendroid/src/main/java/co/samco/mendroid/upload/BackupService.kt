@@ -24,7 +24,10 @@ class BackupService @Inject constructor(
         settings.connect(session)
         retry()
     }
-    suspend fun disconnect() = withContext(Dispatchers.IO) { settings.disconnect() }
+    suspend fun disconnect() = withContext(Dispatchers.IO) {
+        settings.disconnect()
+        wakeup.rescheduleUploads()
+    }
     private fun session(): NextcloudSession = (credentials.read() as? CredentialRead.Available)?.session
         ?: throw UploadException(UploadFailure.ACCOUNT_UNAVAILABLE)
     suspend fun folders(path: RemotePath): List<RemoteFolder> = folders.folders(session(), path)
@@ -34,13 +37,13 @@ class BackupService @Inject constructor(
     }
     suspend fun pause(value: Boolean) = withContext(Dispatchers.IO) {
         settings.pause(value)
-        if (!value) wakeup.requestUpload()
+        wakeup.rescheduleUploads()
     }
     suspend fun allowMobileData(value: Boolean) = withContext(Dispatchers.IO) {
         settings.allowMobileData(value)
-        wakeup.requestUpload()
+        wakeup.rescheduleUploads()
     }
-    suspend fun retry() { queue.retryFailures(); wakeup.requestUpload() }
+    suspend fun retry() { queue.retryFailures(); wakeup.rescheduleUploads() }
     suspend fun forget(entry: UploadEntry) { queue.forget(entry.revision) }
 
     suspend fun backupExisting() {

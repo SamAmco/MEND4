@@ -33,8 +33,8 @@ class UploadWorker(context: Context, parameters: WorkerParameters) : CoroutineWo
         val services = EntryPointAccessors.fromApplication(applicationContext, UploadEntryPoint::class.java)
         val runner = services.runner()
         when (runner.run { setForeground(getForegroundInfo()) }) {
-            RunResult.RETRY -> Result.retry()
-            RunResult.COMPLETE, RunResult.WAITING -> Result.success()
+            RunResult.RETRY, RunResult.WAITING -> Result.retry()
+            RunResult.COMPLETE -> Result.success()
         }
     } catch (e: CancellationException) {
         throw e
@@ -62,7 +62,9 @@ class UploadWorker(context: Context, parameters: WorkerParameters) : CoroutineWo
 /** Prepare a manual retry separately so database failures cannot consume the user's retry action. */
 class UploadRetryWorker(context: Context, parameters: WorkerParameters) : CoroutineWorker(context, parameters) {
     override suspend fun doWork(): Result = try {
-        EntryPointAccessors.fromApplication(applicationContext, UploadEntryPoint::class.java).queue().retryFailures()
+        val services = EntryPointAccessors.fromApplication(applicationContext, UploadEntryPoint::class.java)
+        services.queue().retryFailures()
+        services.scheduler().rescheduleUploads()
         Result.success()
     } catch (e: CancellationException) {
         throw e
@@ -72,10 +74,3 @@ class UploadRetryWorker(context: Context, parameters: WorkerParameters) : Corout
     }
 }
 
-class UploadWakeWorker(context: Context, parameters: WorkerParameters) : CoroutineWorker(context, parameters) {
-    override suspend fun doWork(): Result {
-        val reason = inputData.getString("reason")?.let(WakeReason::valueOf) ?: WakeReason.RECOVERY
-        EntryPointAccessors.fromApplication(applicationContext, UploadEntryPoint::class.java).scheduler().wake(reason)
-        return Result.success()
-    }
-}

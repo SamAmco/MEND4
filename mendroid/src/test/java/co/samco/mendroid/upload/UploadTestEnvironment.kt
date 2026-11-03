@@ -31,7 +31,10 @@ internal class TestBackupFiles(private val directory: File) : LocalBackupFiles {
 
 internal class TestWakeup : UploadWakeup {
     var requests = 0
-    override fun requestUpload() { requests++ }
+    var reschedules = 0
+    var onRequest: (suspend () -> Unit)? = null
+    override suspend fun requestUpload() { requests++; onRequest?.invoke() }
+    override suspend fun rescheduleUploads() { reschedules++; requestUpload() }
 }
 
 internal class UploadTestEnvironment(context: Context) {

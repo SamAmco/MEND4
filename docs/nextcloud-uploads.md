@@ -51,7 +51,7 @@ All implementation paths below are under
 | `upload/LocalBackupWriter.kt` | Local output-stream lifetime and successful-write registration. Local success is independent of queue availability. |
 | `upload/UploadSnapshots.kt` | Claim a revision and copy its encrypted bytes under the local-write lock. Explicit ready/superseded/unavailable results and snapshot cleanup. |
 | `upload/UploadRunner.kt` | Serialized transfer lifecycle and the decision whether a staged revision may be published. No scheduler or UI dependencies. |
-| `upload/UploadScheduler.kt`, `UploadWorker.kt` | WorkManager adaptation, wake-ups, network constraints, backoff and foreground notification. |
+| `upload/UploadScheduler.kt`, `UploadWorker.kt` | WorkManager adaptation, network constraints, backoff and foreground notification. |
 | `upload/BackupService.kt`, `DeviceBackupFiles.kt` | Application commands and explicit local-file discovery (logs come from `model/LocalLogDirectory.kt`); presentation does not access SQLite or credentials. |
 | `viewmodel/NextcloudViewModel.kt` | One read-only UI state, browser effects, independently tracked login/import/browse operations and stale-response prevention. |
 | `ui/screens/Nextcloud*.kt` | Setup, destinations, folder picker, upload rows and string-resource presentation. |
@@ -82,6 +82,20 @@ All implementation paths below are under
   Observable state never contains the Nextcloud app password.
 - Deleting local files never deletes remote backups. Uploads need no MEND private key.
 
+## Scheduling
+
+Successful local writes request an upload immediately and await WorkManager's
+confirmation that the request is persisted. The worker itself requires unmetered
+connectivity by default, or any connected network when mobile data is enabled.
+Transient transfer failures use exponential backoff. New writes append to existing
+work; explicit retries and policy changes replace it with current constraints.
+Pause/disconnect cancel scheduled transfers, and resume/reconnect schedule them.
+
+There is no periodic polling or separate network wake-up worker. Startup requests
+an upload to recover pending entries if the process died between recording them
+and scheduling WorkManager. That small gap is accepted: the queue and WorkManager
+use separate databases. Startup does not scan for unqueued local files.
+
 ## Upload failure notification
 
 An upload failure posts one ongoing, quiet notification with a Retry action, using
@@ -91,11 +105,11 @@ including across process restarts; success, replacement by a new local revision,
 or forgetting the failed entry clears it. No failure notification is posted for
 healthy queued work.
 
-Retry queues a preparation step followed by a network-constrained upload, bypassing
-the automatic worker's backoff. Repeated taps replace that manual request. The
-preparation step retries database errors until it can requeue eligible entries.
-After that, only the upload step repeats on network failures, so permanent failures
-are not continually requeued. Automatic and manual uploads use the same serialized
+Retry schedules a preparation worker that requeues eligible failures, then awaits
+scheduling an upload using the current network policy, bypassing existing backoff.
+Repeated taps replace the preparation request. Preparation retries database or
+scheduling errors. After it succeeds, only the upload worker repeats on network
+failures, so permanent failures are not continually requeued. Automatic and manual uploads use the same serialized
 runner and exponential backoff. Ordinary retry never enables failed/interrupted
 local writes. Notification posting respects Android's notification permission.
 
@@ -122,7 +136,7 @@ External file-manager edits cannot participate in MEND's local-write lock.
 
 The debug APK is `mendroid/build/outputs/apk/debug/mendroid-debug.apk`.
 Run `./gradlew :mendroid:assembleDebug :mendroid:lintDebug :mendroid:testDebugUnitTest`.
-The complete feature has 75 passing unit tests (56 upload tests, 9 log-directory tests, and 10 existing tests).
+The complete feature has 79 passing unit tests (60 upload tests, 9 log-directory tests, and 10 existing tests).
 Tests use real SQLite through Robolectric, fake transfer boundaries for runner
 contracts, mocked HTTP for WebDAV/login, and controlled coroutine scheduling for
 view-model races. Each rebuilt revision is checked before proceeding to the next.
