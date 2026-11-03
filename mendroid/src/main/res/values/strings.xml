@@ -79,4 +79,6 @@
     <string name="playing_back">Playing…</string>
     <string name="scroll_by_date">Scroll by date</string>
     <string name="unknown_date">Unknown date</string>
+    <string name="nextcloud_uploads">Nextcloud uploads</string>
+    <string name="upload_in_progress">Uploading encrypted files</string>
 </resources>

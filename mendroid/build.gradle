@@ -138,6 +138,7 @@ dependencies {
     implementation "com.google.dagger:hilt-android:2.60.1"
     implementation 'androidx.hilt:hilt-lifecycle-viewmodel-compose:1.4.0'
 
+    implementation 'androidx.work:work-runtime-ktx:2.12.0'
     implementation 'com.squareup.okhttp3:okhttp:5.5.1'
 
     //Core
