@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -43,9 +44,11 @@ internal fun NextcloudConnectionForm(
 @Composable
 internal fun NextcloudDestinationSettings(
     config: NextcloudConfig, browse: (NextcloudFolderUse, RemotePath) -> Unit, pause: (Boolean) -> Unit, mobileData: (Boolean) -> Unit
-) {
-    Text(config.account?.server.orEmpty())
-    Text(config.account?.userId.orEmpty())
+) = Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(config.account?.server.orEmpty())
+        Text(config.account?.userId.orEmpty())
+    }
     TextButton(onClick = { browse(NextcloudFolderUse.ATTACHMENTS, config.attachments ?: RemotePath.ROOT) }) {
         Text(stringResource(R.string.remote_attachment_folder, config.attachments?.value ?: stringResource(R.string.upload_not_selected)))
     }
@@ -59,8 +62,10 @@ internal fun NextcloudDestinationSettings(
 }
 
 @Composable
-internal fun NextcloudBackupControls(importing: Boolean, retry: () -> Unit, disconnect: () -> Unit, existing: () -> Unit) {
-    Row {
+internal fun NextcloudBackupControls(
+    importing: Boolean, retry: () -> Unit, disconnect: () -> Unit, existing: () -> Unit
+) = Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         TextButton(onClick = retry) { Text(stringResource(R.string.upload_retry)) }
         TextButton(onClick = disconnect) { Text(stringResource(R.string.nextcloud_disconnect)) }
     }
@@ -69,11 +74,13 @@ internal fun NextcloudBackupControls(importing: Boolean, retry: () -> Unit, disc
 }
 
 @Composable
-internal fun AdditionalNextcloudFolders(config: NextcloudConfig, browse: () -> Unit, remove: (RemotePath) -> Unit) {
-    Text(stringResource(R.string.additional_nextcloud_folders))
+internal fun AdditionalNextcloudFolders(
+    config: NextcloudConfig, browse: () -> Unit, remove: (RemotePath) -> Unit
+) = Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Text(stringResource(R.string.additional_nextcloud_folders), style = MaterialTheme.typography.titleSmall)
     Text(stringResource(R.string.additional_nextcloud_help))
     for (folder in config.additionalFolders) {
-        Row(Modifier.fillMaxWidth()) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text(folder.value, modifier = Modifier.weight(1f))
             TextButton(onClick = { remove(folder) }) { Text(stringResource(R.string.remove_read_folder)) }
         }

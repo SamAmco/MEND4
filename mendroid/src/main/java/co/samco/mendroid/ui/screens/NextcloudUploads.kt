@@ -105,16 +105,18 @@ private fun UploadsDialog(state: NextcloudUiState, model: NextcloudViewModel, cl
             if (connecting) TextButton(onClick = close) { Text(stringResource(R.string.upload_close)) }
         },
         text = {
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.heightIn(max = 560.dp)) {
-                item {
-                    if (state.config.account == null) {
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(24.dp), modifier = Modifier.heightIn(max = 560.dp)) {
+                if (connecting) {
+                    item {
                         NextcloudConnectionForm(server, { server = it }, state.actions.signingIn, trustSelfSigned, { trustSelfSigned = it })
-                    } else {
-                        NextcloudDestinationSettings(state.config, model::browse, model::pause, model::mobileData)
+                    }
+                } else {
+                    item { NextcloudDestinationSettings(state.config, model::browse, model::pause, model::mobileData) }
+                    item {
                         AdditionalNextcloudFolders(state.config,
                             { model.browse(NextcloudFolderUse.ADDITIONAL) }, model::removeAdditionalFolder)
-                        NextcloudBackupControls(state.actions.importing, model::retry, model::disconnect, model::backupExisting)
                     }
+                    item { NextcloudBackupControls(state.actions.importing, model::retry, model::disconnect, model::backupExisting) }
                 }
                 state.actions.error?.let { error -> item { NextcloudError(error) } }
                 if (state.actions.imported) item { Text(stringResource(R.string.upload_existing_queued)) }
