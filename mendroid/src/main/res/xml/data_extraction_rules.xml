@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- No app data may leave the device through Android backup or migration. -->
+<!-- Android system backup and device-to-device app-data transfer are disabled for the entire app. -->
 <data-extraction-rules>
     <cloud-backup>
         <exclude domain="root" path="." />

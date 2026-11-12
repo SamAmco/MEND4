@@ -56,7 +56,7 @@ interface UploadWakeup {
     suspend fun rescheduleUploads()
 }
 
-/** Appends never overwrite existing bytes, so truncation restores the previous contents without a backup copy. */
+/** Appends never overwrite existing bytes, so truncation restores the previous contents without copying the log. */
 internal suspend fun appendRestoringOnFailure(output: FileOutputStream, write: suspend (OutputStream) -> Unit) {
     val channel = output.channel
     val originalLength = channel.size()

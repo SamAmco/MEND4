@@ -10,8 +10,10 @@ not already configured. Use the included Gradle wrapper for the commands below.
 
 The `release` variant uses package name `co.samco.mendroid`, is not debuggable,
 and is signed using your own keystore. The current version is **6.0.0**
-(`versionCode` **60000**). Cloud backups are disabled, and the extraction rules
-exclude all app data from both cloud backups and device transfers.
+(`versionCode` **60000**). Android system backups and device-to-device app-data
+transfers are disabled for the entire app, in every build variant. The manifest
+sets `allowBackup=false`, and the extraction rules exclude all app data from both
+mechanisms.
 
 1. Keep your JKS file outside the repository. Find its key alias if needed:
 
@@ -61,10 +63,10 @@ exclude all app data from both cloud backups and device transfers.
 The normal debug build uses `co.samco.mendroid.debug`, so release installs alongside
 it with separate app data. Import your `config.xml` and select your encrypted-data
 folder and log directory in the release app. Keep the debug app until you have
-checked decryption in the release app. Update your existing debug installation too, or remove it after
-migrating, so its installed copy also stops participating in backups. Updating an
-existing installation of `co.samco.mendroid` requires
-the same signing key as that installation; keep using and securely retain your JKS.
+checked decryption in the release app. Both variants disable Android system
+backups and device-to-device app-data transfers. Updating an existing installation
+of `co.samco.mendroid` requires the same signing key as that installation; keep
+using and securely retain your JKS.
 
 In the unlocked notification, tap the body to open MEND, or use the **Lock MEND**
 action to lock immediately.
@@ -122,9 +124,11 @@ writing; MEND does not automatically recreate it. Changing log-dir clears the
 selection. Cloud document-provider folders cannot be selected for log-dir; use
 the separate Nextcloud settings to back up logs after local writes.
 
-## Automatic Nextcloud backups
+## Optional Nextcloud uploads
 
 Nextcloud uploads are optional and keep your existing local storage arrangement.
+They upload encrypted attachments and logs to the Nextcloud folders you select;
+they are separate from Android system backup, which is disabled for all app data.
 Select an **enc folder on your device** and a **local log directory** in Settings.
 Then open Nextcloud files and uploads from Settings:
 
@@ -133,7 +137,7 @@ Then open Nextcloud files and uploads from Settings:
 3. Select an existing remote folder for attachments and another for logs. The root
    folder is also selectable. MEND does not need the Nextcloud Android app.
 4. New successful attachment and log writes are queued automatically. To include
-   older files, tap **Back up existing local files** after selecting both folders.
+   older files, tap **Upload existing local files** after selecting both folders.
 
 Uploads continue while MEND is locked. By default they wait for an unmetered
 connection; enable metered connections if you want to use mobile data. Android
@@ -159,7 +163,7 @@ An in-progress upload holds a temporary encrypted snapshot, so it can finish eve
 if you delete the local original after that snapshot was taken.
 
 If a local save succeeds but the queue cannot record it, MEND shows a persistent
-attention warning. After checking the local files, use **Back up existing local
+attention warning. After checking the local files, use **Upload existing local
 files** to register them and clear that warning.
 
 Pending jobs remember their original account and remote path. Changing remote
@@ -167,12 +171,12 @@ folder selections affects future writes, and reconnecting the original account
 allows its pending jobs to resume. A failed/interrupted local write is never
 uploaded automatically: check the local file and explicitly queue its backup, or write it again.
 Ordinary Retry and reconnect never enable failed/interrupted local writes. After
-checking a file, use its **Back up checked local file** action to explicitly queue
+checking a file, use its **Upload checked local file** action to explicitly queue
 it again; this retains the original destination. New successful writes also clear
 the local-write failure for their revision.
 
 No plaintext, private encryption key, or `config.xml` is uploaded. The Nextcloud
-app password is encrypted using Android Keystore and excluded from Android backup.
+app password is encrypted using Android Keystore and stored privately on the device.
 
 Transfers use WebDAV PUT followed by MOVE from a temporary encrypted sibling.
 They currently restart a failed transfer rather than resuming chunks, so the

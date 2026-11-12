@@ -2,6 +2,10 @@
 
 ## Scope
 
+Android system backups and device-to-device app-data transfers are disabled for
+the entire app in every build variant. In this document, backup means an optional
+Nextcloud copy of an encrypted attachment or log, created through the upload queue.
+
 Uploads are additive. Use the user-selected local enc folder and local log
 directory; back up completed MEND writes to two separately selected Nextcloud folders.
 The phone is authoritative for its locally written logs. There is no remote

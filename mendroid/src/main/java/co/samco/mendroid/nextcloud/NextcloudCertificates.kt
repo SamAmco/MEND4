@@ -24,7 +24,7 @@ import org.json.JSONObject
 internal object TrustSelfSignedOnConnect
 internal class UntrustedSelfSignedCertificate(val certificate: X509Certificate) : CertificateException("Self-signed server certificate requires approval")
 
-/** Server-specific certificates approved during Connect, kept outside Android backups. */
+/** Server-specific certificates approved during Connect. */
 @Singleton
 class NextcloudCertificates internal constructor(directory: File) {
     @Inject constructor(@ApplicationContext context: Context) : this(context.noBackupFilesDir)
