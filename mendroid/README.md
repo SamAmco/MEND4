@@ -9,8 +9,8 @@ Set `sdk.dir` in the root `local.properties` to your Android SDK directory if it
 not already configured. Use the included Gradle wrapper for the commands below.
 
 The `release` variant uses package name `co.samco.mendroid`, is not debuggable,
-and is signed using your own keystore. The current version is **5.7.0**
-(`versionCode` **50700**). Cloud backups are disabled, and the extraction rules
+and is signed using your own keystore. The current version is **6.0.0**
+(`versionCode` **60000**). Cloud backups are disabled, and the extraction rules
 exclude all app data from both cloud backups and device transfers.
 
 1. Keep your JKS file outside the repository. Find its key alias if needed:
