@@ -1,5 +1,7 @@
 package co.samco.mendroid.viewmodel
 
+import android.util.Log
+import co.samco.mendroid.BuildConfig
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import co.samco.mendroid.nextcloud.NextcloudConfig
@@ -81,14 +83,25 @@ class NextcloudViewModel @Inject constructor(
         val generation = loginGeneration
         actions.update { it.copy(signingIn = true, error = null) }
         loginJob = viewModelScope.launch {
+            var stage = "requesting browser login"
             try {
                 val request = login.begin(server, trustSelfSigned)
+                stage = "opening browser"
                 effectsChannel.send(NextcloudEffect.OpenBrowser(request.browserUrl))
+                stage = "waiting for browser authorization"
                 val session = login.awaitSession(request)
+                stage = "saving account"
                 if (generation == loginGeneration) backups.connect(session)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
+                if (BuildConfig.DEBUG) {
+                    // Exception messages and URLs may contain login tokens. Log only types and frames.
+                    val trace = generateSequence<Throwable>(e) { it.cause }.take(8).joinToString("\nCaused by: ") {
+                        "${it.javaClass.name}\n${it.stackTrace.take(12).joinToString("\n") }"
+                    }
+                    Log.w("NextcloudLogin", "Failed while $stage:\n$trace")
+                }
                 if (generation == loginGeneration) actions.update { it.copy(error = error(e)) }
             } finally {
                 if (generation == loginGeneration) actions.update { it.copy(signingIn = false) }
