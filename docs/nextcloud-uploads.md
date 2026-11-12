@@ -114,6 +114,9 @@ depend on queue models.
 - Typed failures determine retry policy; UI text comes from string resources.
   Observable state never contains the Nextcloud app password.
 - Deleting local files never deletes remote backups. Uploads need no MEND private key.
+- Successful publication removes that revision from the queue and dialog automatically.
+  IDs are never reused, so a delayed callback cannot affect a newly queued entry.
+  Existing-file scans and new local writes can queue those files again.
 
 ## Server certificate trust
 
@@ -181,9 +184,11 @@ local writes. Notification posting respects Android's notification permission.
 
 ## Database evolution
 
-The upload database starts at schema version 1. There are no migrations for
-unpublished development builds. `SQLiteOpenHelper` stores the schema version in
-SQLite's `PRAGMA user_version`; it does not require a version table.
+The upload database uses schema version 2. Its migration from released version 1
+preserves unfinished uploads, destinations, revisions, and failures, removes completed
+entries, and changes IDs to `AUTOINCREMENT` so deleted IDs cannot be reused.
+`SQLiteOpenHelper` stores the schema version in SQLite's `PRAGMA user_version`;
+it does not require a version table.
 
 After release, schema changes must increment the helper version and implement
 transactional, sequential migrations in `onUpgrade`, with tests starting from each
@@ -202,7 +207,7 @@ External file-manager edits cannot participate in MEND's local-write lock.
 
 The debug APK is `mendroid/build/outputs/apk/debug/mendroid-debug.apk`.
 Run `./gradlew :mendroid:assembleDebug :mendroid:lintDebug :mendroid:testDebugUnitTest`.
-The complete suite has 133 tests, including TLS handshakes, remote reads, lock-session races,
+The complete suite has 138 tests, including schema migration, TLS handshakes, remote reads, lock-session races,
 and Compose log-link clicks and long-press text selection.
 Tests use real SQLite through Robolectric, fake transfer boundaries for runner
 contracts, mocked HTTP for WebDAV/login, and controlled coroutine scheduling for

@@ -33,6 +33,7 @@ interface UploadQueue {
     suspend fun claim(revision: UploadRevision): UploadToken?
     suspend fun isCurrent(token: UploadToken): Boolean
     suspend fun hasCollision(entry: UploadEntry): Boolean
+    /** Remove only the successfully published revision; leave superseding local writes queued. */
     suspend fun completeUpload(token: UploadToken): Transition
     suspend fun failUpload(token: UploadToken, failure: UploadFailure): Transition
     suspend fun deferUpload(token: UploadToken): Transition
@@ -43,22 +44,32 @@ interface UploadQueue {
 /** Every transition is transactional and checks both revision and expected state. */
 @Singleton
 class SqliteUploadQueue @Inject constructor(@ApplicationContext context: Context) :
-    SQLiteOpenHelper(context, "nextcloud-uploads.db", null, 1), UploadQueue {
+    SQLiteOpenHelper(context, "nextcloud-uploads.db", null, 2), UploadQueue {
     private val lock = Any()
     private var startupRecovered = false
     private val mutableEntries = MutableStateFlow<List<UploadEntry>>(emptyList())
     override val entries = mutableEntries.asStateFlow()
 
     override fun onCreate(db: SQLiteDatabase) {
+        // Never reuse a deleted ID: delayed callbacks may still hold tokens for that row.
         db.execSQL("""CREATE TABLE uploads (
-            id INTEGER PRIMARY KEY, source TEXT NOT NULL, name TEXT NOT NULL,
+            id INTEGER PRIMARY KEY AUTOINCREMENT, source TEXT NOT NULL, name TEXT NOT NULL,
             account TEXT NOT NULL, remote TEXT NOT NULL, kind TEXT NOT NULL,
             revision INTEGER NOT NULL, state TEXT NOT NULL, failure TEXT,
             UNIQUE(account, remote, source))""")
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
-        throw SQLiteException("Missing upload database migration from $oldVersion to $newVersion")
+        if (oldVersion != 1 || newVersion != 2) {
+            throw SQLiteException("Missing upload database migration from $oldVersion to $newVersion")
+        }
+        // SQLiteOpenHelper runs this migration transactionally. Preserve unfinished work and IDs.
+        db.execSQL("ALTER TABLE uploads RENAME TO uploads_v1")
+        onCreate(db)
+        db.execSQL("INSERT INTO uploads SELECT * FROM uploads_v1")
+        db.execSQL("DROP TABLE uploads_v1")
+        // Copy first so AUTOINCREMENT also remembers IDs belonging to completed entries.
+        db.execSQL("DELETE FROM uploads WHERE state = 'UPLOADED'")
     }
 
     private suspend fun <T> read(block: SQLiteDatabase.() -> T): T = withContext(Dispatchers.IO) {
@@ -142,9 +153,8 @@ class SqliteUploadQueue @Inject constructor(@ApplicationContext context: Context
     ): Transition {
         val count = update("uploads", ContentValues().apply {
             put("state", next.name)
-            // Keep the last failure visible through retries; success or a new revision clears it.
+            // Keep the last failure visible through retries; success removes the entry.
             if (failure != null) put("failure", failure.name)
-            else if (next == UploadState.UPLOADED) putNull("failure")
         }, "id = ? AND revision = ? AND state = ?",
             arrayOf(revision.id.toString(), revision.number.toString(), expected.name))
         return if (count == 1) Transition.APPLIED else Transition.SUPERSEDED
@@ -183,7 +193,9 @@ class SqliteUploadQueue @Inject constructor(@ApplicationContext context: Context
             arrayOf(entry.target.account.value, entry.target.path.value, entry.file.uri)).isNotEmpty()
     }
     override suspend fun completeUpload(token: UploadToken) = mutate {
-        transition(token.revision, UploadState.UPLOADING, UploadState.UPLOADED)
+        val count = delete("uploads", "id = ? AND revision = ? AND state = 'UPLOADING'",
+            arrayOf(token.revision.id.toString(), token.revision.number.toString()))
+        if (count == 1) Transition.APPLIED else Transition.SUPERSEDED
     }
     override suspend fun failUpload(token: UploadToken, failure: UploadFailure) = mutate {
         transition(token.revision, UploadState.UPLOADING,
@@ -200,7 +212,7 @@ class SqliteUploadQueue @Inject constructor(@ApplicationContext context: Context
         }
     }
     override suspend fun forget(revision: UploadRevision) {
-        mutate { delete("uploads", "id = ? AND revision = ? AND state IN ('ATTENTION', 'UPLOADED')",
+        mutate { delete("uploads", "id = ? AND revision = ? AND state = 'ATTENTION'",
             arrayOf(revision.id.toString(), revision.number.toString())) }
     }
 }

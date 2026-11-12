@@ -51,10 +51,57 @@ class NextcloudViewModelTest {
         runner = UploadRunner(env.queue, env.snapshots, UploadEligibility(env.settings, env.credentials, NetworkStatus { false }), TestTransport())
     }
     @After fun teardown() { models.clear(); env.queue.close(); Dispatchers.resetMain() }
-    private fun model(browser: RemoteFolderBrowser): NextcloudViewModel {
+    private fun model(browser: RemoteFolderBrowser = object : RemoteFolderBrowser {
+        override suspend fun folders(session: NextcloudSession, path: RemotePath) = emptyList<RemoteFolder>()
+    }): NextcloudViewModel {
         val service = BackupService(env.settings, env.credentials, env.queue, env.writer,
             ExistingBackupSource { emptyList() }, browser, env.wakeup, runner)
         return NextcloudViewModel(service, login).also { models.put("test", it) }
+    }
+
+    @Test fun successfulUploadsDisappearWhileFailuresRemainIncludingWhenReopeningTheDialog() = runTest(dispatcher) {
+        val completed = env.files.source("done.mend")
+        val failed = env.files.source("failed.mend")
+        for (file in listOf(completed, failed)) {
+            env.queue.enqueueExisting(file, requireNotNull(env.settings.config.value.target(file)))
+        }
+        val model = model()
+        advanceUntilIdle()
+        assertEquals(2, model.state.value.entries.size)
+        for (entry in env.queue.pending()) {
+            val upload = requireNotNull(env.queue.claim(entry.revision))
+            if (entry.file == completed) env.queue.completeUpload(upload)
+            else env.queue.failUpload(upload, UploadFailure.AUTHENTICATION)
+        }
+        advanceUntilIdle()
+        assertEquals(failed, model.state.value.entries.single().file)
+        val reopened = model()
+        advanceUntilIdle()
+        assertEquals(failed, reopened.state.value.entries.single().file)
+        assertEquals(UploadFailure.AUTHENTICATION, reopened.state.value.entries.single().failure)
+    }
+
+    @Test fun anUploadedFileReappearsWhenQueuedAgainOrWrittenAgain() = runTest(dispatcher) {
+        val file = env.files.source()
+        val target = requireNotNull(env.settings.config.value.target(file))
+        env.queue.enqueueExisting(file, target)
+        val model = model()
+        advanceUntilIdle()
+        env.queue.completeUpload(requireNotNull(env.queue.claim(env.queue.pending().single().revision)))
+        advanceUntilIdle()
+        assertTrue(model.state.value.entries.isEmpty())
+
+        assertEquals(BackupRegistration.QUEUED, env.writer.enqueueExisting(file, target))
+        advanceUntilIdle()
+        assertEquals(file, model.state.value.entries.single().file)
+        env.queue.completeUpload(requireNotNull(env.queue.claim(env.queue.pending().single().revision)))
+        advanceUntilIdle()
+        assertTrue(model.state.value.entries.isEmpty())
+
+        env.writer.write(file, WriteMode.APPEND) { it.write("new entry".toByteArray()) }
+        advanceUntilIdle()
+        assertEquals(file, model.state.value.entries.single().file)
+        assertEquals(UploadState.PENDING, model.state.value.entries.single().state)
     }
 
     @Test fun dismissedPickerCannotReopenWhenAnOldRequestCompletes() = runTest(dispatcher) {

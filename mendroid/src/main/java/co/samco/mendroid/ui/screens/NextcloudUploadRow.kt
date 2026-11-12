@@ -32,7 +32,6 @@ internal fun NextcloudUploadRow(
             UploadState.WRITING -> R.string.upload_saving
             UploadState.PENDING -> R.string.uploads_waiting
             UploadState.UPLOADING -> R.string.upload_in_progress
-            UploadState.UPLOADED -> R.string.upload_complete
             UploadState.ATTENTION -> R.string.upload_needs_attention
         }))
         if (progress?.revision == entry.revision) {
@@ -42,7 +41,7 @@ internal fun NextcloudUploadRow(
         if (entry.failure?.requiresLocalVerification == true && entry.target.account == account) {
             TextButton(onClick = { checking = true }) { Text(stringResource(R.string.upload_verified_action)) }
         }
-        if (entry.state == UploadState.ATTENTION || entry.state == UploadState.UPLOADED) {
+        if (entry.state == UploadState.ATTENTION) {
             TextButton(onClick = { forget(entry) }) { Text(stringResource(R.string.upload_forget)) }
         }
         if (entry.target.account != account) Text(stringResource(R.string.upload_other_account), style = MaterialTheme.typography.bodySmall)

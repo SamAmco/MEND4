@@ -89,8 +89,7 @@
     <string name="uploads_paused">Nextcloud uploads paused</string>
     <string name="upload_needs_attention">Upload needs attention</string>
     <string name="uploads_waiting">Waiting to upload</string>
-    <string name="no_uploads_yet">Nextcloud connected — no uploads yet</string>
-    <string name="all_files_uploaded">All files uploaded</string>
+    <string name="no_pending_uploads">No uploads pending</string>
     <string name="upload_close">Close</string>
     <string name="upload_cancel">Cancel</string>
     <string name="nextcloud_server">Nextcloud server</string>
@@ -108,7 +107,6 @@
     <string name="nextcloud_disconnect">Disconnect</string>
     <string name="backup_existing_files">Upload existing local files</string>
     <string name="upload_saving">Saving locally</string>
-    <string name="upload_complete">Uploaded</string>
     <string name="upload_other_account">This upload belongs to another account.</string>
     <string name="choose_attachment_folder">Remote attachment folder</string>
     <string name="choose_log_folder">Remote log folder</string>

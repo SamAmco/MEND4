@@ -16,7 +16,7 @@ data class UploadRevision(val id: Long, val number: Long)
 class WriteToken internal constructor(val revision: UploadRevision)
 class UploadToken internal constructor(val revision: UploadRevision)
 enum class Transition { APPLIED, SUPERSEDED }
-enum class UploadState { WRITING, PENDING, UPLOADING, UPLOADED, ATTENTION }
+enum class UploadState { WRITING, PENDING, UPLOADING, ATTENTION }
 
 /** Persist reasons, not presentation text. Local write failures require explicit verification. */
 enum class UploadFailure(val automaticRetry: Boolean = false, val requiresLocalVerification: Boolean = false) {

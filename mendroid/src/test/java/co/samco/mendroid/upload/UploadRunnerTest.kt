@@ -67,7 +67,7 @@ class UploadRunnerTest {
         assertEquals(listOf("latest"), transport.published)
         assertEquals(2, transport.discarded)
         assertTrue(env.files.snapshots.all { !it.exists() })
-        assertEquals(UploadState.UPLOADED, env.queue.entries.value.single().state)
+        assertTrue(env.queue.entries.value.isEmpty())
     }
     @Test fun runnerSerializesEvenWhenCalledOutsideWorkManager() = runBlocking {
         val file = env.files.source()
@@ -152,7 +152,7 @@ class UploadRunnerTest {
         assertEquals(UploadState.UPLOADING, env.queue.entries.value.single().state)
         unavailable = false
         assertEquals(RunResult.COMPLETE, recovering.run())
-        assertEquals(UploadState.UPLOADED, env.queue.entries.value.single().state)
+        assertTrue(env.queue.entries.value.isEmpty())
     }
 
     @Test fun anotherDestinationsFailedWriteBlocksSnapshotUntilVerified() = runBlocking {
@@ -170,7 +170,7 @@ class UploadRunnerTest {
             env.writer.enqueueExisting(file, changed, verifiedRevision = failure.revision))
         runner.run()
         assertEquals(2, transport.published.size)
-        assertTrue(env.queue.allEntries().all { it.state == UploadState.UPLOADED })
+        assertTrue(env.queue.allEntries().isEmpty())
     }
 
 }

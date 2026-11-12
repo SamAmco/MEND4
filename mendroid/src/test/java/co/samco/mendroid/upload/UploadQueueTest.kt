@@ -26,6 +26,57 @@ class UploadQueueTest {
     }
     @After fun teardown() { queue.close() }
 
+    @Test fun successDeletesTheEntryAndItsIdIsNeverReusedByLaterUploads() = runBlocking {
+        queue.enqueueExisting(file, target)
+        val old = requireNotNull(queue.claim(queue.pending().single().revision))
+        assertEquals(Transition.APPLIED, queue.completeUpload(old))
+        assertTrue(queue.entries.value.isEmpty())
+        assertTrue(queue.allEntries().isEmpty())
+        queue.enqueueExisting(file, target)
+        val current = requireNotNull(queue.claim(queue.pending().single().revision))
+        assertTrue(current.revision.id > old.revision.id)
+        assertEquals(Transition.SUPERSEDED, queue.completeUpload(old))
+        assertTrue(queue.isCurrent(current))
+    }
+
+    @Test fun completedFilesDoNotBlockAnotherLocalFileUsingTheSameRemoteName() = runBlocking {
+        queue.enqueueExisting(file, target)
+        queue.completeUpload(requireNotNull(queue.claim(queue.pending().single().revision)))
+        queue.enqueueExisting(file.copy(uri = "content://replacement"), target)
+        assertFalse(queue.hasCollision(queue.pending().single()))
+    }
+
+    @Test fun versionOneMigrationClearsOnlyCompletedRowsAndPreservesUnfinishedWorkAndIds() = runBlocking {
+        queue.close()
+        val context = RuntimeEnvironment.getApplication()
+        context.deleteDatabase("nextcloud-uploads.db")
+        context.openOrCreateDatabase("nextcloud-uploads.db", 0, null).use { db ->
+            db.execSQL("""CREATE TABLE uploads (
+                id INTEGER PRIMARY KEY, source TEXT NOT NULL, name TEXT NOT NULL,
+                account TEXT NOT NULL, remote TEXT NOT NULL, kind TEXT NOT NULL,
+                revision INTEGER NOT NULL, state TEXT NOT NULL, failure TEXT,
+                UNIQUE(account, remote, source))""")
+            db.execSQL("""INSERT INTO uploads VALUES
+                (10, 'content://pending', 'pending.mend', 'account', '/pending.mend', 'LOG', 3, 'PENDING', 'CONNECTION'),
+                (11, 'content://failed', 'failed.mend', 'account', '/failed.mend', 'LOG', 4, 'ATTENTION', 'LOCAL_WRITE_FAILED'),
+                (12, 'content://done', 'done.mend', 'account', '/done.mend', 'LOG', 5, 'UPLOADED', NULL)""")
+            db.version = 1
+        }
+        queue = SqliteUploadQueue(context)
+        val migrated = queue.allEntries().associateBy { it.file.name }
+        assertEquals(setOf("pending.mend", "failed.mend"), migrated.keys)
+        assertEquals(UploadRevision(10, 3), migrated.getValue("pending.mend").revision)
+        assertEquals(UploadState.PENDING, migrated.getValue("pending.mend").state)
+        assertEquals(UploadFailure.CONNECTION, migrated.getValue("pending.mend").failure)
+        assertEquals(UploadRevision(11, 4), migrated.getValue("failed.mend").revision)
+        assertEquals(UploadState.ATTENTION, migrated.getValue("failed.mend").state)
+        assertEquals(UploadFailure.LOCAL_WRITE_FAILED, migrated.getValue("failed.mend").failure)
+        assertEquals(2, queue.readableDatabase.version)
+        queue.recoverAfterRestart()
+        queue.enqueueExisting(file, target)
+        assertTrue(queue.pending().single { it.file == file }.revision.id > 12)
+    }
+
     @Test fun readsDoNotRecoverRowsOrPopulateTheUiFlow() = runBlocking {
         queue.beginWrite(file, target)
         queue.enqueueExisting(file.copy(uri = "content://another"), target.copy(path = RemotePath.of("/another.mend")))
@@ -144,7 +195,7 @@ class UploadQueueTest {
         queue.recoverAfterRestart()
         assertEquals(UploadFailure.AUTHENTICATION, queue.pending().single().failure)
         queue.completeUpload(requireNotNull(queue.claim(upload.revision)))
-        assertNull(queue.entries.value.single().failure)
+        assertTrue(queue.entries.value.isEmpty())
     }
 
     @Test fun transferRecoveryNeverInterferesWithAnActiveLocalWrite() = runBlocking {

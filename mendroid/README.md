@@ -143,10 +143,12 @@ Uploads continue while MEND is locked. By default they wait for an unmetered
 connection; enable metered connections if you want to use mobile data. Android
 may delay background work, particularly after force-stopping the app or under
 battery restrictions. Reopen MEND after force-stopping it to resume scheduling.
-The Nextcloud button in Settings opens individual upload states, progress and errors, with
+The Nextcloud button in Settings opens unfinished upload states, progress and errors, with
 **Retry**, **Pause uploads**, and **Disconnect** controls. **Remove from upload
-list** clears a completed/failed queue entry without deleting local or remote
-files. Removing an entry does not prevent a future MEND write from queuing it again.
+list** clears a failed queue entry without deleting local or remote files.
+Successful uploads disappear from the list automatically, including after reopening
+the app. Use **Upload existing local files** to queue them again. New MEND writes
+also appear in the list until they finish uploading.
 
 The phone is authoritative for `.mend` logs: each upload replaces the whole remote
 log backup. Give this phone its own log filenames; changes made to the remote log

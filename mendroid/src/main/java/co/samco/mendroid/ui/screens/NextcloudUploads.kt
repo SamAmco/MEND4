@@ -69,8 +69,7 @@ private fun summary(state: NextcloudUiState): Int = when {
     state.entries.any { it.state == UploadState.ATTENTION } -> R.string.upload_needs_attention
     state.entries.any { it.state == UploadState.UPLOADING } -> R.string.upload_in_progress
     state.entries.any { it.state == UploadState.PENDING || it.state == UploadState.WRITING } -> R.string.uploads_waiting
-    state.entries.isEmpty() -> R.string.no_uploads_yet
-    else -> R.string.all_files_uploaded
+    else -> R.string.no_pending_uploads
 }
 
 @Composable
