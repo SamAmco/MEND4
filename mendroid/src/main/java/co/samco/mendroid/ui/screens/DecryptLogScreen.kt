@@ -2,6 +2,7 @@ package co.samco.mendroid.ui.screens
 
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
@@ -18,31 +19,22 @@ fun DecryptLogScreen(
 ) {
     NavHost(
         navController = navController,
-        startDestination = NAV_LOG_LIST
+        startDestination = NAV_LOG_LIST,
+        enterTransition = { slideInHorizontally(tween(250)) { it } },
+        exitTransition = { slideOutHorizontally(tween(250)) { -it } },
+        popEnterTransition = { slideInHorizontally(tween(250)) { -it } },
+        popExitTransition = { slideOutHorizontally(tween(250)) { it } },
+        // Predictive back has separate defaults; keep gestures consistent with the back button.
+        predictivePopEnterTransition = { slideInHorizontally(tween(250)) { -it } },
+        predictivePopExitTransition = { slideOutHorizontally(tween(250)) { it } }
     ) {
-        composable(
-            route = NAV_LOG_LIST,
-            exitTransition = {
-                slideOutHorizontally { -it }
-            },
-            popEnterTransition = {
-                slideInHorizontally { -it }
-            }
-        ) {
+        composable(route = NAV_LOG_LIST) {
             LogList(
                 modifier = modifier,
                 navController = navController
             )
         }
-        composable(
-            route = NAV_DECRYPT_LOG_TEXT,
-            enterTransition = {
-                slideInHorizontally { it }
-            },
-            popExitTransition = {
-                slideOutHorizontally { it }
-            }
-        ) {
+        composable(route = NAV_DECRYPT_LOG_TEXT) {
             DecryptLogText(modifier = modifier)
         }
     }
