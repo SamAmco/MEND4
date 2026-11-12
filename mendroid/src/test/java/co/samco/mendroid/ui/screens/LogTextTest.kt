@@ -1,7 +1,9 @@
 package co.samco.mendroid.ui.screens
 
 import android.app.Application
+import android.content.ComponentName
 import android.widget.Magnifier
+import androidx.activity.ComponentActivity
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.width
@@ -27,7 +29,10 @@ import org.junit.Assert.*
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.junit.rules.ExternalResource
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import org.robolectric.annotation.Implementation
@@ -43,7 +48,14 @@ class LogTextTest {
         @Implementation fun dismiss() = Unit
     }
 
-    @get:Rule val compose = createComposeRule()
+    @get:Rule(order = 0) val hostActivity = object : ExternalResource() {
+        override fun before() {
+            // Register the test host in Robolectric without adding it to the release APK.
+            val context = RuntimeEnvironment.getApplication()
+            shadowOf(context.packageManager).addActivityIfNotPresent(ComponentName(context, ComponentActivity::class.java))
+        }
+    }
+    @get:Rule(order = 1) val compose = createComposeRule()
     private val ids = listOf("57395938485923", "1235808528302530", "57395938485923")
     private val line = LogLine("ordinary words: ${ids.joinToString(",")}", null).asViewData(0)
 
