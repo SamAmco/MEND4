@@ -1,225 +1,171 @@
-# Nextcloud backups: design and review guide
+# Android Nextcloud integration
 
-## Scope
+This guide is for developers changing the Android app's Nextcloud integration.
+For connecting an account, choosing folders, and managing uploads, see the
+[Android user guide](../mendroid/README.md#optional-nextcloud-uploads).
 
-Android system backups and device-to-device app-data transfers are disabled for
-the entire app in every build variant. In this document, backup means an optional
-Nextcloud copy of an encrypted attachment or log, created through the upload queue.
+MEND uploads encrypted attachments and logs to a single Nextcloud account. Local
+files are the source of truth: log uploads replace the remote log, and deleting a
+local file does not delete its remote copy. Additional Nextcloud folders provide
+read-only access to remote logs and attachments. There is no two-way sync,
+recursive folder search, or monitoring of edits made by other apps.
 
-Uploads are additive. Use the user-selected local enc folder and local log
-directory; back up completed MEND writes to two separately selected Nextcloud folders.
-The phone is authoritative for its locally written logs. There is no remote
-deletion, external file watching, or automatic local cleanup. Optional additional
-Nextcloud folders supply read-only logs and attachments on demand. Local encrypted files remain
-manageable through the user's file manager.
+## Where to start
 
-## Review order
+Implementation paths below are relative to
+[`mendroid/src/main/java/co/samco/mendroid`](../mendroid/src/main/java/co/samco/mendroid).
 
-The replacement jj stack starts at `n` (`nyvoxlro`, the existing date-scroll change).
-Each feature
-revision introduces final component implementations and their tests, rather than
-introducing a large implementation and then refactoring it in later revisions.
-
-1. **Platform imports.** Independent Kotlin name cleanup, without behavior changes.
-2. **Queue contracts.** `UploadModels`, `UploadQueue`, and their tests. Start here
-   to understand file identity, destinations, revisions, failures, and legal state
-   transitions. Includes test runtime support.
-3. **Nextcloud interfaces.** Account/session types, protected credentials, settings,
-   shared HTTP mechanics, browser login, and WebDAV listing/staging/publication.
-   Protocol and settings tests live with these components.
-4. **Local writes and snapshots.** Shared file lock, owned output streams, explicit
-   existing-file enqueue, and owned encrypted snapshots. Tests include queue-storage
-   failures, cancelled writes, and snapshots taken during local changes.
-5. **Background uploads.** Eligibility, runner, scheduling, workers, notification,
-   DI bindings, and startup. Runner tests cover serialization, supersession, policy
-   changes, cleanup and retries without invoking WorkManager.
-6. **MEND write integration.** Attachment/log hooks, explicit encryption success,
-   original-file deletion guard, and retention of failed audio recordings.
-7. **User controls.** Backup commands and existing-file discovery, coherent read-only
-   view-model state, browser effects, cancellable folder navigation, small Compose
-   components, localized messages, and setup documentation. Application/view-model
-   tests cover explicit verification, old-file backups, reconnect and stale responses.
-
-All implementation paths below are under
-`mendroid/src/main/java/co/samco/mendroid/`.
-
-## Responsibilities
-
-| Component | Owns |
+| Component | Responsibility |
 | --- | --- |
-| `upload/UploadQueue.kt` | Transactional persistence and revision/state checks. Publishes read-only entries. Queries return snapshots without recovery or flow updates; `refreshEntries` explicitly refreshes observers. |
-| `nextcloud/NextcloudSettings.kt` | Account-bound folder selections, network preferences and an outstanding rescan warning. Contains no password in observable state. |
-| `nextcloud/EncryptedCredentialStore.kt` | Atomic credential-file format and non-exportable Android Keystore key. |
-| `nextcloud/NextcloudLoginClient.kt` | Documented Login Flow v2 and OCS user-ID lookup. |
-| `nextcloud/NextcloudHttp.kt` | HTTPS setup validation, credential-origin checks, cancellation, response handling and typed HTTP failures. |
-| `nextcloud/NextcloudCertificates.kt` | Platform trust plus server-specific self-signed certificates explicitly approved by Connect. |
-| `nextcloud/WebDavClient.kt`, `nextcloud/WebDavListing.kt` | DAV paths, successful direct-child resource parsing, streaming GET/PUT, explicit MOVE publication, conflict verification and bounded remote cleanup. |
-| `upload/LocalBackupWriter.kt` | Local output-stream lifetime and successful-write registration. Local success is independent of queue availability. |
-| `upload/UploadSnapshots.kt` | Claim a revision and copy its encrypted bytes under the local-write lock. Explicit ready/superseded/unavailable results and snapshot cleanup. |
-| `upload/UploadRunner.kt` | Serialized transfer lifecycle and the decision whether a staged revision may be published. No scheduler or UI dependencies. |
-| `upload/UploadScheduler.kt`, `UploadWorker.kt` | WorkManager adaptation, network constraints, backoff and foreground notification. |
-| `upload/BackupService.kt`, `DeviceBackupFiles.kt` | Application commands and explicit local-file discovery (logs come from `model/LocalLogDirectory.kt`); presentation does not access SQLite or credentials. |
-| `viewmodel/NextcloudViewModel.kt` | One read-only UI state, browser effects, independently tracked login/import/browse operations and stale-response prevention. |
-| `ui/screens/Nextcloud*.kt` | Setup, destinations, folder picker, upload rows and string-resource presentation. |
+| [`nextcloud/`](../mendroid/src/main/java/co/samco/mendroid/nextcloud) | Account settings, credentials, TLS, browser login, and shared HTTP/WebDAV operations. |
+| [`LocalBackupWriter`](../mendroid/src/main/java/co/samco/mendroid/upload/LocalBackupWriter.kt) | Writes local encrypted files and registers successful saves for upload. |
+| [`UploadQueue`](../mendroid/src/main/java/co/samco/mendroid/upload/UploadQueue.kt) | SQLite persistence, revision checks, state transitions, and crash recovery. |
+| [`UploadRunner`](../mendroid/src/main/java/co/samco/mendroid/upload/UploadRunner.kt) | Serializes transfers, prepares snapshots, and decides whether to publish them. |
+| [`UploadScheduler`](../mendroid/src/main/java/co/samco/mendroid/upload/UploadScheduler.kt) | Schedules WorkManager jobs with network constraints and retry backoff. |
+| [`remote/`](../mendroid/src/main/java/co/samco/mendroid/remote) | Remote log discovery, attachment lookup, and downloads tied to an unlock session. |
+| [`NextcloudViewModel`](../mendroid/src/main/java/co/samco/mendroid/viewmodel/NextcloudViewModel.kt) | UI commands and state, including login, folder selection, and upload management. |
 
-Shared account/session types, paths, credentials, settings, HTTP and WebDAV live in
-`nextcloud/`. Connection failures use `NextcloudFailure` and `NextcloudException`;
-remote reads do not depend on the upload package. The uploader explicitly translates
-connection failures into persisted `UploadFailure` states and owns retry policy.
-`NextcloudConfig.target` is an upload-package extension, so shared settings do not
-depend on queue models.
+`BackupService` connects UI commands to upload components. Shared connection types
+belong in `nextcloud/`; upload state and retry policy belong in `upload/`.
+`NextcloudFailure` describes connection/server errors, while `UploadFailure` also
+includes local-write and queue failures.
 
-## Enforced contracts
+## From a local save to a remote file
 
-- `allEntries`, `pending`, `isCurrent`, and `hasCollision` only query the database.
-  `refreshEntries` explicitly reloads the UI flow. Bulk backup filters a returned
-  `allEntries` snapshot instead of reading the UI flow after an unrelated query.
-- `recoverAfterRestart` explicitly recovers prior-process writes and uploads once
-  per queue instance. Starting a write or claiming an upload requires that recovery
-  to have completed; subsequent calls cannot reset active work. Startup notifications,
-  writers, the runner, and bulk backup call recovery explicitly at their entry points.
-  Recovering abandoned claims between worker attempts remains separate, under the
-  runner's exclusive transfer lock.
+With uploads configured, a save follows this sequence:
 
-- A queue entry retains its original account and remote path. Future destination
-  changes never redirect pending work. Existing-file imports capture one destination
-  configuration for the whole operation.
-- Queue transitions require the expected state and revision. Old completions,
-  failures or history removal cannot alter a newer local revision.
-- After obtaining exclusive transfer ownership, each runner invocation recovers
-  abandoned upload claims. A temporary database failure cannot leave an upload
-  permanently stuck until process restart; active local writes are unaffected.
-- On-device log appends use a seekable read/write descriptor, record the original
-  length, and truncate back to it if writing or cancellation fails. Successful
-  appends are flushed before queue completion. This requires no full-log backup
-  or extra storage proportional to the log size. Rollback failure remains a local
-  write failure; abrupt process death still uses interrupted-write attention recovery.
-- Existing-file registration checks protection while holding the same lock as local
-  writes. Bulk backup skips protected files; explicit verification carries the
-  expected failed revision so an old confirmation cannot enable a newer failure.
-  Snapshot preparation also checks other destinations for protection on the same
-  source and leaves those pending uploads untouched until the source is verified.
-- Record write intent before opening output. The writer owns stream closure and
-  only queues a revision after successful closure.
-- A failed or interrupted local write requires a new successful write or an explicit
-  user-confirmed checked-file backup. Ordinary Retry, reconnect, and bulk existing-file scans cannot enable it.
-- Queue failures do not prevent a local save. The result distinguishes save success
-  from backup registration, and a persisted rescan warning prevents an "all uploaded"
-  claim until a successful explicit scan.
-- Snapshot reads share a lock with MEND writes. Network I/O does not hold that lock.
-  The runner itself serializes transfers, independently of WorkManager.
-- A staged upload is published only after checking its revision and current account/
-  pause/network eligibility. Superseded revisions are discarded; the runner can
-  process their successor during the same run.
-- Typed failures determine retry policy; UI text comes from string resources.
-  Observable state never contains the Nextcloud app password.
-- Deleting local files never deletes remote backups. Uploads need no MEND private key.
-- Successful publication removes that revision from the queue and dialog automatically.
-  IDs are never reused, so a delayed callback cannot affect a newly queued entry.
-  Existing-file scans and new local writes can queue those files again.
+1. `LocalBackupWriter` records a write intent and writes the encrypted local file.
+   It owns stream closure and queues the revision only after the write succeeds.
+2. `UploadScheduler` requests durable WorkManager execution. Saving locally does
+   not wait for the network transfer.
+3. `UploadSnapshots` claims a queued revision and copies its encrypted bytes into
+   a temporary snapshot while holding the same lock used by local writers.
+4. `UploadRunner` releases the local-write lock before network I/O. `WebDavClient`
+   uploads the snapshot to a temporary `.mend-upload-*` sibling using WebDAV PUT.
+5. Before publishing, the runner checks that the revision is still current and
+   that the account and upload policy still permit the transfer. WebDAV MOVE
+   publishes the final filename. Successful completion removes the queue entry.
 
-## Server certificate trust
+Snapshots let local writes continue during a transfer. They are deleted after the
+attempt; abandoned snapshots are cleared when snapshot storage is first used in
+a new process. Transfers restart from the beginning rather than resuming chunks,
+so large files require temporary device space and suitable server size limits.
+Failed remote cleanup can leave encrypted temporary siblings on the server.
+Other apps do not participate in the local-write lock; external edits can race
+with snapshot reads.
 
-Addresses without a scheme default to HTTPS. Platform certificate validation is
-the default. Checking **Trust self-signed certificates** tags only the initial
-Connect request: it can retry with the presented self-signed certificate, then
-remember the exact certificate after TLS and hostname verification succeed.
-The atomic approval file lives in `noBackupFilesDir`, scoped by HTTPS hostname
-and port. Uploads, downloads and login polling share this trust configuration.
-Expired certificates and hostname mismatches remain errors. A replacement
-self-signed certificate requires Connect approval again; background requests
-cannot approve certificates. Certificate failures require attention rather than
-automatic retries. Browser login has its own certificate trust policy.
+Log publication allows replacement. Attachment publication refuses to overwrite
+a different remote file; an existing attachment counts as success only if its
+encrypted bytes match. Pending entries from different local URIs targeting the
+same account and remote path require the user to resolve the collision.
 
-## Additional read folders
+A new local write supersedes an older revision for the same source and destination.
+A superseded staged upload is discarded. Changing destination settings affects
+future writes; pending entries retain their original account and remote path.
 
-`remote/NextcloudReadFiles.kt` lists immediate children through the shared WebDAV
-client and downloads selected files. Selections are bound to the connected account;
-file access checks that account and direct parent both before and after network
-I/O. These sources do not register uploads or modify local directories. Each folder
-is listed independently so a failure does not hide local logs or healthy sources.
+## Queue state and local-write safety
 
-`remote/AttachmentFiles.kt` resolves readable local attachments first, then looks
-for the exact encrypted filename in the additional folders. `SelectLogViewModel`
-combines local and remote log entries, distinguishes their origins and refreshes
-after folder configuration changes. Every remote open downloads fresh bytes.
+| State | Meaning |
+| --- | --- |
+| `WRITING` | A local write has started and is not yet safe to upload. |
+| `PENDING` | The revision is ready for an upload attempt, possibly following a retryable failure. |
+| `UPLOADING` | The runner has claimed this revision. |
+| `ATTENTION` | Automatic attempts have stopped; the recorded failure determines the required action. |
 
-`remote/RemoteReadCache.kt` owns encrypted temporary downloads for one unlock
-session. `PrivateKeyManager` synchronously ends that session when locking: readers
-are cancelled, cached files removed, private keys cleared, and decrypted log state
-reset. Generation checks prevent late downloads or decryptions from publishing
-results into a later session, even if an operation ignores cancellation. Downloads
-are also cleared at startup; they provide no offline availability guarantee.
+There is no completed state: successful publication deletes that revision. An
+existing-file scan or another local write can queue the file again. Transitions
+check the row ID, revision number, and expected state. IDs use `AUTOINCREMENT`
+so delayed callbacks cannot affect new entries after old entries are deleted.
 
-## Scheduling
+`recoverAfterRestart` runs once per queue instance. It returns abandoned uploads
+to `PENDING` and marks interrupted writes as needing local verification. The runner
+also recovers abandoned upload claims under its exclusive transfer lock between
+attempts. Database reads do not perform recovery or refresh observable state;
+`refreshEntries` explicitly refreshes the UI snapshot.
 
-Successful local writes request an upload immediately and await WorkManager's
-confirmation that the request is persisted. The worker itself requires unmetered
-connectivity by default, or any connected network when mobile data is enabled.
-Transient transfer failures use exponential backoff. New writes append to existing
-work; explicit retries and policy changes replace it with current constraints.
-Pause/disconnect cancel scheduled transfers, and resume/reconnect schedule them.
+Local log appends record the original file length and truncate back to it if the
+append fails in the running process. Process death cannot run that rollback.
+Failed or interrupted local writes must therefore remain protected until a new
+successful write or explicit verification of that file. Ordinary Retry, reconnect,
+and bulk existing-file scans must not make those files uploadable. Snapshot
+preparation checks protection across destinations for the same local source.
 
-There is no periodic polling or separate network wake-up worker. Startup requests
-an upload to recover pending entries if the process died between recording them
-and scheduling WorkManager. That small gap is accepted: the queue and WorkManager
-use separate databases. Startup does not scan for unqueued local files.
+Queue registration errors do not undo a successful local save. The caller receives
+a separate upload-registration result, and a rescan warning tells the user to
+check local files and use **Upload existing local files**.
 
-## Upload failure notification
+## Scheduling, retries, and notifications
 
-An upload failure posts one ongoing, quiet notification with a Retry action, using
-an ID separate from the foreground-service notification. Further failures update
-the same notification. The last failure stays recorded while an upload is retried,
-including across process restarts; success, replacement by a new local revision,
-or forgetting the failed entry clears it. No failure notification is posted for
-healthy queued work.
+`UploadWorker` runs the serialized upload runner. WorkManager requires an unmetered
+network by default, or any connected network when metered connections are enabled.
+Waiting for those constraints is not an upload failure. Connection and temporary
+server failures retry with exponential backoff; other failures require attention.
+Pause and disconnect cancel scheduled work.
 
-Retry schedules a preparation worker that requeues eligible failures, then awaits
-scheduling an upload using the current network policy, bypassing existing backoff.
-Repeated taps replace the preparation request. Preparation retries database or
-scheduling errors. After it succeeds, only the upload worker repeats on network
-failures, so permanent failures are not continually requeued. Automatic and manual uploads use the same serialized
-runner and exponential backoff. Ordinary retry never enables failed/interrupted
-local writes. Notification posting respects Android's notification permission.
+`UploadRetryWorker` handles explicit Retry actions. It requeues eligible failures
+and schedules an upload with the current policy, replacing the existing backoff.
+It does not perform the network transfer itself or bypass local-write protection.
 
-## Database evolution
+There is no periodic scan or separate wake-up worker. Queue persistence and
+WorkManager scheduling use separate databases; app startup schedules pending work
+again to recover a process death between those operations. Startup does not scan
+local folders for unqueued files.
 
-The upload database uses schema version 2. Its migration from released version 1
-preserves unfinished uploads, destinations, revisions, and failures, removes completed
-entries, and changes IDs to `AUTOINCREMENT` so deleted IDs cannot be reused.
-`SQLiteOpenHelper` stores the schema version in SQLite's `PRAGMA user_version`;
-it does not require a version table.
+`UploadFailureNotifications` observes persisted failures and maintains one quiet,
+ongoing notification with Retry. It remains during retries and requires Android
+notification permission and an enabled channel. This is separate from the
+foreground notification used for large transfers. Uploading encrypted files does
+not require the MEND private key, so uploads can continue while MEND is locked.
 
-After release, schema changes must increment the helper version and implement
-transactional, sequential migrations in `onUpgrade`, with tests starting from each
-supported released schema. Preserve queued destinations, revisions, and local-write
-failure states. Persisted enum names are part of this schema contract too.
-Missing migrations fail without dropping the database; downgrades also fail by
-default. Do not silently recreate the queue: losing pending work or the distinction
-between successful and interrupted local writes would lose backup guarantees.
+## Login, credentials, and certificate trust
 
-## Limits and acceptance checks
+`NextcloudLoginClient` uses Nextcloud Login Flow v2: browser approval yields an app
+password, then an OCS user lookup resolves the user ID used in WebDAV paths.
+`NextcloudHttp` enforces HTTPS, credential-origin checks, and disabled redirects.
+WebDAV uses PROPFIND for listings, GET for downloads, and PUT/MOVE for publication.
 
-One account, two backup destinations, and any number of additional read folders. Transfers restart instead of resuming chunks;
-large files need enough temporary device space and a compatible server request-size
-limit. Lost connections can leave encrypted `.mend-upload-*` siblings on the server.
-External file-manager edits cannot participate in MEND's local-write lock.
+The app password is encrypted with an Android Keystore key and stored privately
+on the device. It must not enter observable UI state or logs. Uploads contain
+encrypted attachments and logs, not plaintext, private keys, or `config.xml`.
+Android system backups and device-to-device app-data transfers are disabled for
+the entire app in every build variant.
 
-The debug APK is `mendroid/build/outputs/apk/debug/mendroid-debug.apk`.
-Run `./gradlew :mendroid:assembleDebug :mendroid:lintDebug :mendroid:testDebugUnitTest`.
-The complete suite has 138 tests, including schema migration, TLS handshakes, remote reads, lock-session races,
-and Compose log-link clicks and long-press text selection.
-Tests use real SQLite through Robolectric, fake transfer boundaries for runner
-contracts, mocked HTTP for WebDAV/login, and controlled coroutine scheduling for
-view-model races. Each rebuilt revision is checked before proceeding to the next.
+Platform TLS trust is the default. Connect can explicitly approve a self-signed
+certificate and persist its exact public certificate for that HTTPS hostname and
+port. Hostname and expiry checks still apply. Background requests cannot approve
+a new certificate; a changed self-signed certificate requires Connect approval
+again. Browser login has its own certificate trust policy.
 
-No Android device/emulator or real Nextcloud account is available in this session.
-Before relying on a build, verify browser login/2FA, Keystore storage across process
-restart, both folder pickers, attachment/log transfers, offline then reconnect,
-unmetered/metered policy, app locking during upload, expired credentials, full server
-storage and large transfers. Repeatedly append to a log during a slow upload and
-compare the final remote encrypted bytes with the latest local file. Confirm local
-deletion leaves the remote backup. For additional read folders, verify direct-child
-listings, same-name logs in different folders, local attachment precedence, partial
-folder failures, fresh remote downloads, account changes, and locking during a
-download. Confirm locking clears cached downloads and no late result restores them.
+## Remote reads and locking
+
+`NextcloudReadFiles` lists direct children of the configured additional folders.
+Opening a remote log downloads fresh encrypted bytes. `AttachmentFiles` checks
+for an exact filename in the local enc directory first, then the additional
+folders. Remote sources do not register uploads or modify local files.
+
+`RemoteReadCache` owns encrypted downloads for one unlock session. Locking MEND
+cancels readers and clears those downloads. Session-generation checks reject late
+results even if an operation ignores cancellation. Downloads provide no offline
+availability guarantee. Keep this lifetime separate from upload snapshots, which
+must remain usable while MEND is locked.
+
+## Maintaining and testing the integration
+
+`UploadQueue` owns the database schema version and migrations through
+`SQLiteOpenHelper`. Migrations must preserve unfinished destinations, revisions,
+and local-write protection. Persisted enum names are part of the schema contract.
+Never recover a schema error by wiping the queue. The existing migration also
+covers removal of completed entries and preservation of monotonically increasing IDs.
+
+Tests live under
+[`mendroid/src/test/java/co/samco/mendroid`](../mendroid/src/test/java/co/samco/mendroid).
+Queue and migration tests use SQLite through Robolectric; runner tests control
+transfer boundaries; HTTP tests cover login, WebDAV, and TLS; remote-read tests
+exercise account changes and lock-session cancellation. Extend the relevant tests
+when changing those contracts. Build prerequisites and commands are in the
+[Android development guide](../mendroid/README.md#development-checks).
+
+Device checks are still needed for browser approval, Android permissions,
+WorkManager network restrictions, notifications, and gesture-driven UI. When
+changing transfer behavior, also check repeated log writes during an upload and
+locking during a remote download.

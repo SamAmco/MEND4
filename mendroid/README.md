@@ -78,19 +78,12 @@ not exercise those device interactions.
 
 ## Development checks
 
-In Nextcloud settings, you can enter a hostname such as `shc-cloud.internal`;
-MEND supplies `https://`. For a server with a self-signed certificate, select
-**Trust self-signed certificates** and press **Connect**. Connect remembers that
-certificate for this hostname and port, including for background transfers.
-Hostname and expiry checks still apply. A changed self-signed certificate requires
-connecting again with the checkbox enabled. The browser login page may show its
-own certificate warning separately.
-On Android 17 and newer, Connect also requests local-network access. Allow it
-to reach a server on your home network; public servers work without this permission.
-
 ```sh
 ./gradlew :mendroid:assembleDebug :mendroid:lintDebug :mendroid:testDebugUnitTest --warning-mode all
 ```
+
+For the Nextcloud architecture, state transitions, and security boundaries, see the
+[Nextcloud developer guide](../docs/nextcloud-uploads.md).
 
 Kotlin and lint warnings fail the Android build. The app uses Material 3 throughout.
 The certificate trust manager has a targeted lint suppression: it delegates chain
@@ -138,6 +131,16 @@ Then open Nextcloud files and uploads from Settings:
    folder is also selectable. MEND does not need the Nextcloud Android app.
 4. New successful attachment and log writes are queued automatically. To include
    older files, tap **Upload existing local files** after selecting both folders.
+
+In Nextcloud settings, you can enter a hostname such as `shc-cloud.internal`;
+MEND supplies `https://`. For a server with a self-signed certificate, select
+**Trust self-signed certificates** and press **Connect**. Connect remembers that
+certificate for this hostname and port, including for background transfers.
+Hostname and expiry checks still apply. A changed self-signed certificate requires
+connecting again with the checkbox enabled. The browser login page may show its
+own certificate warning separately.
+On Android 17 and newer, Connect also requests local-network access. Allow it
+to reach a server on your home network; public servers work without this permission.
 
 Uploads continue while MEND is locked. By default they wait for an unmetered
 connection; enable metered connections if you want to use mobile data. Android
