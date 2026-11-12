@@ -4,7 +4,6 @@ import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,6 +23,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -33,26 +33,31 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalViewConfiguration
+import androidx.compose.ui.platform.ViewConfiguration
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.LinkAnnotation
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withLink
-import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import co.samco.mendroid.R
 import co.samco.mendroid.ui.common.ConfirmCancelDialogBody
-import co.samco.mendroid.ui.common.Divider
 import co.samco.mendroid.ui.common.DateScrollLazyColumn
+import co.samco.mendroid.ui.common.Divider
 import co.samco.mendroid.viewmodel.DecryptFileDialogData
 import co.samco.mendroid.viewmodel.DecryptedLogViewModel
 import co.samco.mendroid.viewmodel.LogViewData
+import co.samco.mendroid.viewmodel.TextPart
 import co.samco.mendroid.viewmodel.TextType
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
@@ -255,7 +260,7 @@ private fun ColumnScope.LogLines(logLines: List<LogViewData>) = SelectionContain
 
                     LogText(
                         logLine = logLines[index],
-                        cardInteractionSource = interactionSource
+                        onFileIdClicked = viewModel::onFileIdClicked
                     )
                 }
 
@@ -266,60 +271,47 @@ private fun ColumnScope.LogLines(logLines: List<LogViewData>) = SelectionContain
 }
 
 @Composable
-private fun LogText(logLine: LogViewData, cardInteractionSource: MutableInteractionSource) {
-    val viewModel = hiltViewModel<DecryptedLogViewModel>()
-
-    val annotatedString = buildAnnotatedString {
-        for (textPart in logLine.text) {
-            val link = LinkAnnotation.Clickable(
-                tag = textPart.type.name,
-                linkInteractionListener = {
-                    if (textPart.type == TextType.FILE_ID) {
-                        viewModel.onFileIdClicked(textPart.text)
-                    } else {
-                        val press = PressInteraction.Press(Offset.Zero)
-                        cardInteractionSource.tryEmit(press)
-                        cardInteractionSource.tryEmit(PressInteraction.Release(press))
-                        viewModel.onLogLineClicked(logLine)
-                    }
-                }
-            )
-
-            when (textPart.type) {
-                TextType.PLAIN -> withStyle(style = plainTextSpanStyle()) {
-                    withLink(link) { append(textPart.text) }
-                }
-
-                TextType.FILE_ID -> withStyle(style = fileIdSpanStyle()) {
-                    withLink(link) { append(textPart.text) }
-                }
-            }
-
+internal fun LogText(logLine: LogViewData, onFileIdClicked: (String) -> Unit) {
+    val annotatedString = annotatedLogText(
+        logLine.text,
+        SpanStyle(
+            color = MaterialTheme.colorScheme.onPrimary,
+            background = MaterialTheme.colorScheme.primary,
+            textDecoration = TextDecoration.None
+        ),
+        onFileIdClicked
+    )
+    val configuration = LocalViewConfiguration.current
+    val inlineLinkConfiguration = remember(configuration) {
+        object : ViewConfiguration by configuration {
+            override val minimumTouchTargetSize = DpSize.Zero
         }
     }
-    Text(
-        modifier = Modifier.padding(vertical = 16.dp, horizontal = 16.dp),
-        text = annotatedString
-    )
+    // Expanded touch targets overlap neighboring links and selectable prose in wrapped text.
+    CompositionLocalProvider(LocalViewConfiguration provides inlineLinkConfiguration) {
+        Text(
+            modifier = Modifier.padding(16.dp),
+            text = annotatedString,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onBackground
+        )
+    }
 }
 
-@Composable
-private fun plainTextSpanStyle() = SpanStyle(
-    color = MaterialTheme.colorScheme.onBackground,
-    fontSize = MaterialTheme.typography.bodyLarge.fontSize,
-    fontWeight = MaterialTheme.typography.bodyLarge.fontWeight,
-    fontStyle = MaterialTheme.typography.bodyLarge.fontStyle,
-    fontFamily = MaterialTheme.typography.bodyLarge.fontFamily,
-    letterSpacing = MaterialTheme.typography.bodyLarge.letterSpacing,
-)
-
-@Composable
-private fun fileIdSpanStyle() = SpanStyle(
-    color = MaterialTheme.colorScheme.onPrimary,
-    fontSize = MaterialTheme.typography.bodyLarge.fontSize,
-    fontWeight = MaterialTheme.typography.bodyLarge.fontWeight,
-    fontStyle = MaterialTheme.typography.bodyLarge.fontStyle,
-    fontFamily = MaterialTheme.typography.bodyLarge.fontFamily,
-    letterSpacing = MaterialTheme.typography.bodyLarge.letterSpacing,
-    background = MaterialTheme.colorScheme.primary
-)
+/** Ordinary text stays selectable; only attachment IDs create link controls. */
+internal fun annotatedLogText(
+    parts: List<TextPart>,
+    fileIdStyle: SpanStyle,
+    onFileIdClicked: (String) -> Unit
+): AnnotatedString = buildAnnotatedString {
+    parts.forEachIndexed { index, part ->
+        when (part.type) {
+            TextType.PLAIN -> append(part.text)
+            TextType.FILE_ID -> withLink(LinkAnnotation.Clickable(
+                tag = "attachment-$index",
+                styles = TextLinkStyles(style = fileIdStyle),
+                linkInteractionListener = { onFileIdClicked(part.text) }
+            )) { append(part.text) }
+        }
+    }
+}

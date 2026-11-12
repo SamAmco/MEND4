@@ -198,7 +198,8 @@ External file-manager edits cannot participate in MEND's local-write lock.
 
 The debug APK is `mendroid/build/outputs/apk/debug/mendroid-debug.apk`.
 Run `./gradlew :mendroid:assembleDebug :mendroid:lintDebug :mendroid:testDebugUnitTest`.
-The complete suite has 130 unit tests, including TLS handshakes, remote reads and lock-session races.
+The complete suite has 133 tests, including TLS handshakes, remote reads, lock-session races,
+and Compose log-link clicks and long-press text selection.
 Tests use real SQLite through Robolectric, fake transfer boundaries for runner
 contracts, mocked HTTP for WebDAV/login, and controlled coroutine scheduling for
 view-model races. Each rebuilt revision is checked before proceeding to the next.
