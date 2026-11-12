@@ -9,8 +9,8 @@ Set `sdk.dir` in the root `local.properties` to your Android SDK directory if it
 not already configured. Use the included Gradle wrapper for the commands below.
 
 The `release` variant uses package name `co.samco.mendroid`, is not debuggable,
-and is signed using your own keystore. The current version is **6.0.0**
-(`versionCode` **60000**). Android system backups and device-to-device app-data
+and is signed using your own keystore. The current version is **6.0.1**
+(`versionCode` **60001**). Android system backups and device-to-device app-data
 transfers are disabled for the entire app, in every build variant. The manifest
 sets `allowBackup=false`, and the extraction rules exclude all app data from both
 mechanisms.
