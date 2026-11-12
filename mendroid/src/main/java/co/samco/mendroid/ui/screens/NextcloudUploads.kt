@@ -1,6 +1,11 @@
 package co.samco.mendroid.ui.screens
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -22,6 +27,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import co.samco.mendroid.R
 import co.samco.mendroid.upload.UploadState
@@ -71,6 +77,17 @@ private fun summary(state: NextcloudUiState): Int = when {
 private fun UploadsDialog(state: NextcloudUiState, model: NextcloudViewModel, close: () -> Unit) {
     var server by rememberSaveable { mutableStateOf("") }
     var trustSelfSigned by rememberSaveable { mutableStateOf(false) }
+    val context = LocalContext.current
+    val localNetworkPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
+        // Public servers remain usable if local-network access is denied.
+        model.connect(server, trustSelfSigned)
+    }
+    val connect = {
+        if (Build.VERSION.SDK_INT >= 37 && ContextCompat.checkSelfPermission(context,
+                Manifest.permission.ACCESS_LOCAL_NETWORK) != PackageManager.PERMISSION_GRANTED) {
+            localNetworkPermission.launch(Manifest.permission.ACCESS_LOCAL_NETWORK)
+        } else model.connect(server, trustSelfSigned)
+    }
     val connecting = state.config.account == null
     AlertDialog(
         onDismissRequest = close,
@@ -79,7 +96,7 @@ private fun UploadsDialog(state: NextcloudUiState, model: NextcloudViewModel, cl
             when {
                 !connecting -> TextButton(onClick = close) { Text(stringResource(R.string.upload_close)) }
                 state.actions.signingIn -> TextButton(onClick = model::cancelLogin) { Text(stringResource(R.string.upload_cancel)) }
-                else -> TextButton(enabled = server.isNotBlank(), onClick = { model.connect(server, trustSelfSigned) }) {
+                else -> TextButton(enabled = server.isNotBlank(), onClick = connect) {
                     Text(stringResource(R.string.connect_nextcloud))
                 }
             }

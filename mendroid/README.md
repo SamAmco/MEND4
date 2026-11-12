@@ -83,6 +83,8 @@ certificate for this hostname and port, including for background transfers.
 Hostname and expiry checks still apply. A changed self-signed certificate requires
 connecting again with the checkbox enabled. The browser login page may show its
 own certificate warning separately.
+On Android 17 and newer, Connect also requests local-network access. Allow it
+to reach a server on your home network; public servers work without this permission.
 
 ```sh
 ./gradlew :mendroid:assembleDebug :mendroid:lintDebug :mendroid:testDebugUnitTest --warning-mode all
